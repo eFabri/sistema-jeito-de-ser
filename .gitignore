@@ -41,3 +41,7 @@ next-env.d.ts
 # editor
 .idea
 .vscode
+
+# dados privados (CSVs exportados do Access — PII de clientes)
+/csvs/
+*.csv
