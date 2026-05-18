@@ -31,33 +31,49 @@ export default function LoginPage() {
       background: 'linear-gradient(135deg, #0e0c09 0%, #13100c 60%, #0f0d0a 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: 'var(--font-body)',
+      overflow: 'hidden', position: 'relative',
     }}>
-      {/* Fundo decorativo */}
+      {/* Fundo decorativo — duas elipses douradas com leve movimento (tema 'tecido') */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,95,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,95,0.08) 0%, transparent 70%)',
+      }} />
+      <div className="float" style={{
+        position: 'fixed', top: '15%', left: '-10%', width: 320, height: 320,
+        background: 'radial-gradient(circle, rgba(212,175,95,0.05) 0%, transparent 70%)',
+        pointerEvents: 'none', animationDuration: '8s',
+      }} />
+      <div className="float" style={{
+        position: 'fixed', bottom: '10%', right: '-8%', width: 280, height: 280,
+        background: 'radial-gradient(circle, rgba(176,143,212,0.04) 0%, transparent 70%)',
+        pointerEvents: 'none', animationDuration: '10s', animationDelay: '1.2s',
       }} />
 
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px', position: 'relative', zIndex: 1 }}>
+      <div className="animate-in" style={{ width: '100%', maxWidth: 400, padding: '0 24px', position: 'relative', zIndex: 1 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 64, height: 64, borderRadius: 20,
-            background: 'linear-gradient(135deg, rgba(212,175,95,0.2), rgba(212,175,95,0.05))',
-            border: '1px solid rgba(212,175,95,0.2)',
-            marginBottom: 16,
+          <div className="float" style={{
+            display: 'inline-block', marginBottom: 18,
+            filter: 'drop-shadow(0 8px 24px rgba(212,175,95,0.18))',
           }}>
-            <span style={{ fontSize: 28, fontFamily: 'var(--font-display)', color: '#d4af5f', fontWeight: 700 }}>JS</span>
+            <img
+              src="/logo.png"
+              alt="Jeito de Ser"
+              style={{
+                width: 110, height: 110, borderRadius: '50%',
+                border: '2px solid rgba(212,175,95,0.4)',
+                boxShadow: '0 0 0 6px rgba(212,175,95,0.06), 0 0 28px rgba(212,175,95,0.15)',
+              }}
+            />
           </div>
-          <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700,
-            color: '#f5ecd7', letterSpacing: '0.02em', lineHeight: 1,
+          <h1 className="shimmer-gold" style={{
+            fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700,
+            letterSpacing: '0.02em', lineHeight: 1,
           }}>
             Jeito de Ser
           </h1>
-          <p style={{ color: 'rgba(212,175,95,0.5)', fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 6 }}>
-            Sistema de Gestão
+          <p style={{ color: 'rgba(212,175,95,0.55)', fontSize: 11, letterSpacing: '0.32em', textTransform: 'uppercase', marginTop: 10, fontWeight: 600 }}>
+            Gestão & Moda
           </p>
         </div>
 

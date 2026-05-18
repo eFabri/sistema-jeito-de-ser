@@ -110,6 +110,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.id}
                 onClick={() => router.push(item.id)}
                 title={collapsed ? item.label : undefined}
+                className="nav-item"
                 style={{
                   display: 'flex', alignItems: 'center',
                   gap: collapsed ? 0 : 10,
@@ -119,14 +120,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   background: ativo
                     ? 'linear-gradient(135deg, rgba(212,175,95,0.18), rgba(212,175,95,0.06))'
                     : 'transparent',
-                  color: ativo ? '#d4af5f' : 'rgba(245,236,215,0.38)',
+                  color: ativo ? '#d4af5f' : 'rgba(245,236,215,0.42)',
                   borderLeft: ativo ? '2px solid #d4af5f' : '2px solid transparent',
                   fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: ativo ? 600 : 400,
-                  transition: 'all 0.15s', whiteSpace: 'nowrap',
-                  width: '100%',
+                  transition: 'background 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+                  whiteSpace: 'nowrap', width: '100%',
+                }}
+                onMouseEnter={e => {
+                  if (!ativo) e.currentTarget.style.background = 'rgba(212,175,95,0.05)'
+                  if (!ativo) e.currentTarget.style.color = 'rgba(245,236,215,0.85)'
+                }}
+                onMouseLeave={e => {
+                  if (!ativo) e.currentTarget.style.background = 'transparent'
+                  if (!ativo) e.currentTarget.style.color = 'rgba(245,236,215,0.42)'
                 }}
               >
-                <span style={{ fontSize: 17, flexShrink: 0 }}>{item.icon}</span>
+                <span
+                  className={`nav-icon ${ativo ? 'nav-icon-active' : ''}`}
+                  style={{ fontSize: 17, flexShrink: 0, display: 'inline-block' }}
+                >
+                  {item.icon}
+                </span>
                 {!collapsed && item.label}
               </button>
             )
@@ -182,15 +196,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               cursor: 'pointer', marginBottom: 18,
               letterSpacing: '0.02em',
-              transition: 'all 0.15s',
+              transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,95,0.14)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,95,0.06)' }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(212,175,95,0.16)'
+              e.currentTarget.style.transform = 'translateX(-2px)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(212,175,95,0.06)'
+              e.currentTarget.style.transform = 'translateX(0)'
+            }}
           >
             ← Voltar
           </button>
         )}
-        {children}
+        {/* key={pathname} força remount em troca de rota → re-dispara animação de entrada */}
+        <div key={pathname} className="animate-in">
+          {children}
+        </div>
       </main>
     </div>
   )

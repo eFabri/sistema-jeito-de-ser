@@ -89,14 +89,20 @@ function Section({ title, children, action, onAction }: any) {
 }
 
 // ─── RELATÓRIOS PRINCIPAL ─────────────────────────────────
+type TipoRelatorio = 'vendas' | 'produtos' | 'inadimplencia' | 'estoque' | 'vendedoras' | 'inativos' | 'top-clientes'
+
 export default function RelatoriosPage() {
   const router     = useRouter()
-  const [relatorio, setRelatorio] = useState<'vendas' | 'produtos' | 'inadimplencia' | 'estoque' | 'vendedoras'>('vendas')
+  const [relatorio, setRelatorio] = useState<TipoRelatorio>('vendas')
   const [periodo,  setPeriodo]   = useState('mes')
   const [iniCustom, setIniCustom] = useState('')
   const [fimCustom, setFimCustom] = useState('')
   const [data,     setData]      = useState<any>(null)
   const [loading,  setLoading]   = useState(true)
+
+  // Filtros específicos dos novos relatórios
+  const [diasInativo, setDiasInativo] = useState(30)
+  const [tipoRanking, setTipoRanking] = useState<'mes' | 'trimestre'>('mes')
 
   const { ini, fim } = periodo === 'custom'
     ? { ini: iniCustom, fim: fimCustom }
@@ -105,15 +111,22 @@ export default function RelatoriosPage() {
   const carregar = useCallback(async () => {
     if (periodo === 'custom' && (!iniCustom || !fimCustom)) return
     setLoading(true)
-    const tipoMap: Record<string, string> = {
-      vendas: 'vendas_periodo', produtos: 'produtos',
-      inadimplencia: 'inadimplencia', estoque: 'estoque', vendedoras: 'vendedoras',
+    let res: Response
+    if (relatorio === 'inativos') {
+      res = await fetch(`/api/relatorios/clientes-inativos?dias=${diasInativo}&limit=500`)
+    } else if (relatorio === 'top-clientes') {
+      res = await fetch(`/api/relatorios/top-clientes?tipo=${tipoRanking}&limit=20`)
+    } else {
+      const tipoMap: Record<string, string> = {
+        vendas: 'vendas_periodo', produtos: 'produtos',
+        inadimplencia: 'inadimplencia', estoque: 'estoque', vendedoras: 'vendedoras',
+      }
+      res = await fetch(`/api/relatorios?tipo=${tipoMap[relatorio]}&ini=${ini}&fim=${fim}`)
     }
-    const res  = await fetch(`/api/relatorios?tipo=${tipoMap[relatorio]}&ini=${ini}&fim=${fim}`)
     const json = await res.json()
     setData(json)
     setLoading(false)
-  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom])
+  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom, diasInativo, tipoRanking])
 
   useEffect(() => { carregar() }, [carregar])
 
@@ -121,6 +134,8 @@ export default function RelatoriosPage() {
     { id: 'vendas',        label: 'Vendas',       icon: '◈' },
     { id: 'produtos',      label: 'Produtos',     icon: '◫' },
     { id: 'vendedoras',    label: 'Vendedoras',   icon: '◉' },
+    { id: 'top-clientes',  label: 'Top Clientes', icon: '♛' },
+    { id: 'inativos',      label: 'Inativos',     icon: '◌' },
     { id: 'inadimplencia', label: 'Inadimplência',icon: '⚠' },
     { id: 'estoque',       label: 'Estoque',      icon: '◐' },
   ]
@@ -173,6 +188,38 @@ export default function RelatoriosPage() {
                 <input type="date" className="input" style={{ width: 150 }} value={fimCustom} onChange={e => setFimCustom(e.target.value)} />
               </>
             )}
+          </div>
+        )}
+
+        {/* FILTRO INATIVOS — quantos dias sem comprar */}
+        {relatorio === 'inativos' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 4 }}>Sem comprar há:</span>
+            {[30, 60, 90, 180, 365].map(d => (
+              <button key={d} onClick={() => setDiasInativo(d)} style={{
+                padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                border: `1px solid ${diasInativo === d ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
+                background: diasInativo === d ? 'rgba(212,175,95,0.15)' : 'rgba(255,255,255,0.02)',
+                color: diasInativo === d ? '#d4af5f' : 'var(--text-muted)',
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+              }}>+{d}d</button>
+            ))}
+          </div>
+        )}
+
+        {/* FILTRO TOP CLIENTES — mensal ou trimestral */}
+        {relatorio === 'top-clientes' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 4 }}>Ranking por:</span>
+            {([['mes', 'Mês atual'], ['trimestre', 'Trimestre atual']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setTipoRanking(id)} style={{
+                padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                border: `1px solid ${tipoRanking === id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
+                background: tipoRanking === id ? 'rgba(212,175,95,0.15)' : 'rgba(255,255,255,0.02)',
+                color: tipoRanking === id ? '#d4af5f' : 'var(--text-muted)',
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+              }}>{label}</button>
+            ))}
           </div>
         )}
 
@@ -410,9 +457,238 @@ export default function RelatoriosPage() {
                 </Section>
               )}
             </div>
+          ) : relatorio === 'top-clientes' && data ? (
+            <TopClientesBlock data={data} router={router} />
+          ) : relatorio === 'inativos' && data ? (
+            <InativosBlock data={data} router={router} dias={diasInativo} />
           ) : null
         )}
       </div>
     </AppLayout>
+  )
+}
+
+// ─── TOP CLIENTES (Ranking) ──────────────────────────────────
+function TopClientesBlock({ data, router }: { data: any; router: any }) {
+  const ranking: any[] = data.ranking || []
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Métricas resumo */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
+        <MetricCard label="Período"           value={data.label} />
+        <MetricCard label="Clientes que compraram" value={data.total_clientes_que_compraram?.toLocaleString('pt-BR') || 0} />
+        <MetricCard label="Total no período"  value={BRL(data.total_periodo || 0)} gold />
+        <MetricCard label="Top exibidos"      value={`${ranking.length}`} sub="ordenados por valor" />
+      </div>
+
+      <Section title="🏆 Ranking dos Clientes que Mais Compraram">
+        {ranking.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+            Nenhuma venda registrada nesse período.
+          </div>
+        ) : (
+          <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {ranking.map((c: any) => (
+              <RankingRow key={c.cod_cliente} cliente={c} onClick={() => router.push(`/clientes/${c.cod_cliente}`)} />
+            ))}
+          </div>
+        )}
+      </Section>
+    </div>
+  )
+}
+
+function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void }) {
+  // Top 1-3 ganham medalha. Restante: número simples.
+  const pos = cliente.posicao
+  const isPodium = pos <= 3
+  const medalhas: any = {
+    1: { bg: 'linear-gradient(135deg, #f5d76e, #d4af5f)', glow: 'rgba(245,215,110,0.5)', label: '1' },
+    2: { bg: 'linear-gradient(135deg, #d1d1d1, #9a9a9a)', glow: 'rgba(209,209,209,0.4)', label: '2' },
+    3: { bg: 'linear-gradient(135deg, #cd9b6a, #a0673b)', glow: 'rgba(205,155,106,0.4)', label: '3' },
+  }
+  const med = medalhas[pos]
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'grid', gridTemplateColumns: '60px 1fr 140px 130px 130px 44px',
+        gap: 14, alignItems: 'center',
+        padding: '14px 18px',
+        background: isPodium
+          ? 'linear-gradient(90deg, rgba(212,175,95,0.06), rgba(212,175,95,0.02))'
+          : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${isPodium ? 'rgba(212,175,95,0.2)' : 'var(--border)'}`,
+        borderRadius: 12, cursor: 'pointer',
+        transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateX(4px)'
+        e.currentTarget.style.borderColor = 'rgba(212,175,95,0.35)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateX(0)'
+        e.currentTarget.style.borderColor = isPodium ? 'rgba(212,175,95,0.2)' : 'var(--border)'
+      }}
+    >
+      {/* Medalha ou número */}
+      <div className="medal-in" style={{ display: 'flex', justifyContent: 'center' }}>
+        {med ? (
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: med.bg,
+            boxShadow: `0 0 18px ${med.glow}, inset 0 -2px 0 rgba(0,0,0,0.2)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700,
+            color: '#1a1610',
+          }}>
+            {med.label}
+          </div>
+        ) : (
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'rgba(212,175,95,0.06)',
+            border: '1px solid rgba(212,175,95,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, color: 'var(--gold-dim)', fontWeight: 700,
+          }}>
+            {pos}
+          </div>
+        )}
+      </div>
+
+      {/* Nome + cidade */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: '#d4af5f', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+            Top cliente {pos}
+          </span>
+          {cliente.categoria && (
+            <span className="badge badge-gold" style={{ fontSize: 9 }}>{cliente.categoria}</span>
+          )}
+        </div>
+        <div style={{ fontSize: 15, color: '#f5ecd7', fontWeight: 600, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {cliente.nome}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+          {cliente.cidade || '—'}{cliente.celular ? ` · ${cliente.celular}` : ''}
+        </div>
+      </div>
+
+      {/* Total comprado */}
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#d4af5f', marginTop: 2 }}>
+          {BRL(cliente.total)}
+        </div>
+      </div>
+
+      {/* Qtd compras */}
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Compras</div>
+        <div style={{ fontSize: 15, color: '#f5ecd7', fontWeight: 600, marginTop: 2 }}>
+          {cliente.qtd_compras}
+        </div>
+      </div>
+
+      {/* Ticket médio */}
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Ticket médio</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+          {BRL(cliente.ticket_medio)}
+        </div>
+      </div>
+
+      <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+    </div>
+  )
+}
+
+// ─── INATIVOS ────────────────────────────────────────────────
+function InativosBlock({ data, router, dias }: { data: any; router: any; dias: number }) {
+  const clientes: any[] = data.clientes || []
+  const nuncaCompraram = clientes.filter(c => c.dias_sem_comprar === null).length
+  const inativosLongos = clientes.filter(c => (c.dias_sem_comprar || 0) > 90).length
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
+        <MetricCard label="Clientes Inativos" value={data.total?.toLocaleString('pt-BR')} sub={`sem compra há ${dias}+ dias`} alert={data.total > 100} />
+        <MetricCard label="Nunca Compraram" value={nuncaCompraram.toLocaleString('pt-BR')} />
+        <MetricCard label="Há mais de 90 dias" value={inativosLongos.toLocaleString('pt-BR')} alert={inativosLongos > 50} />
+      </div>
+
+      <Section title="◌ Clientes que precisam de reativação">
+        {clientes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+            Nenhum cliente inativo nesse critério 🎉
+          </div>
+        ) : (
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 140px 130px 110px 130px 44px',
+              padding: '12px 18px', borderBottom: '1px solid var(--border)',
+              background: 'rgba(212,175,95,0.03)',
+            }}>
+              {['Cliente', 'Telefone', 'Cidade', 'Categoria', 'Última compra', ''].map((h, i) => (
+                <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
+              ))}
+            </div>
+            {clientes.slice(0, 200).map((c, i) => {
+              const d = c.dias_sem_comprar
+              const corDias = d === null ? '#5eaadf' : d > 180 ? '#ef6b4d' : d > 90 ? '#f5a623' : 'var(--text-secondary)'
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => router.push(`/clientes/${c.id}`)}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 140px 130px 110px 130px 44px',
+                    padding: '12px 18px',
+                    borderBottom: i < clientes.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                    cursor: 'pointer', alignItems: 'center', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      background: 'linear-gradient(135deg, rgba(212,175,95,0.18), rgba(212,175,95,0.05))',
+                      border: '1px solid var(--border)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 13,
+                    }}>
+                      {c.nome?.charAt(0)}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {c.nome}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.celular || c.whatsapp || '—'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.cidade || '—'}</div>
+                  <div>
+                    {c.categoria ? <span className="badge badge-gold" style={{ fontSize: 9 }}>{c.categoria}</span> : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: corDias, fontWeight: 600 }}>
+                    {d === null ? 'Nunca comprou' : `há ${d} dias`}
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+                </div>
+              )
+            })}
+            {clientes.length > 200 && (
+              <div style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, borderTop: '1px solid var(--border)' }}>
+                Mostrando 200 de {clientes.length} inativos. Use filtros mais restritivos para refinar.
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+    </div>
   )
 }

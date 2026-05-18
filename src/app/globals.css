@@ -139,6 +139,137 @@ html, body {
   pointer-events: none; z-index: 9999;
 }
 
-/* Animações */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.animate-in { animation: fadeIn 0.25s ease forwards; }
+/* ─── ANIMAÇÕES — Linguagem visual de moda ────────────────
+   Princípios: cortes suaves, brilho dourado discreto,
+   reveal sequencial (como uma vitrine sendo iluminada),
+   easing 'silk' (cubic-bezier curva-de-tecido). */
+
+@keyframes silkFade {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to   { opacity: 1; transform: none;             filter: none; }
+}
+.animate-in { animation: silkFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Entrada sequencial — usar inline style={{animationDelay}} ou nth-child */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.stagger > * { opacity: 0; animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.40s; }
+
+/* Float suave — pra logo e elementos hero (1.5s sobe/desce 4px) */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.float { animation: float 3.6s ease-in-out infinite; }
+
+/* Shimmer dourado — passada de luz num gradiente metálico */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-gold {
+  background: linear-gradient(
+    110deg,
+    rgba(212,175,95,0.15) 0%,
+    rgba(212,175,95,0.45) 45%,
+    rgba(245,236,215,0.6) 50%,
+    rgba(212,175,95,0.45) 55%,
+    rgba(212,175,95,0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glow pulsante — pra item ativo do menu, status connected, etc */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,95,0.20); }
+  50%      { box-shadow: 0 0 18px 2px rgba(212,175,95,0.18); }
+}
+.glow-gold { animation: glowPulse 2.4s ease-in-out infinite; }
+
+/* Card hover (vitrine): leve elevação + glow + borda dourada */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  transition: border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.3s;
+}
+.card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,175,95,0.08);
+  background-color: rgba(212,175,95,0.022);
+}
+
+/* Botões — easing mais suave + leve scale no press */
+.btn { transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.12s; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn-primary:hover {
+  background: linear-gradient(135deg, rgba(212,175,95,0.38), rgba(212,175,95,0.20));
+  box-shadow: 0 6px 20px rgba(212,175,95,0.18);
+}
+
+/* Inputs — focus dourado com glow sutil */
+.input { transition: border-color 0.25s, box-shadow 0.25s, background 0.2s; }
+.input:focus {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 3px rgba(212,175,95,0.08);
+  background: rgba(255,255,255,0.05);
+}
+
+/* Ícone de menu pulsando no item ativo */
+@keyframes iconPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+.nav-icon-active { animation: iconPulse 2s ease-in-out infinite; }
+.nav-icon { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.nav-item:hover .nav-icon { transform: scale(1.15) rotate(3deg); }
+
+/* Page transition wrapper — entrada elegante de "vestido caindo" */
+@keyframes runwayEnter {
+  from { opacity: 0; transform: translateY(20px); clip-path: inset(0 50% 0 50%); }
+  to   { opacity: 1; transform: none;             clip-path: inset(0 0 0 0); }
+}
+.page-enter { animation: runwayEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Ranking medalha — rotação sutil ao montar */
+@keyframes medalIn {
+  from { opacity: 0; transform: scale(0.5) rotate(-15deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
+}
+.medal-in { animation: medalIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Skeleton loading pulse */
+@keyframes skeletonPulse {
+  0%, 100% { background-color: rgba(212,175,95,0.04); }
+  50%      { background-color: rgba(212,175,95,0.10); }
+}
+.skeleton { animation: skeletonPulse 1.4s ease-in-out infinite; border-radius: 8px; }
+
+/* Respeitar prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
