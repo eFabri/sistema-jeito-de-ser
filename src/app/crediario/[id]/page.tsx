@@ -195,7 +195,7 @@ export default function CrediarioDetalhePage() {
                     <div style={{ fontSize: 12, color: '#f5ecd7' }}>{p.parcela || '—'}</div>
                     <div style={{ fontSize: 13, color: '#f5ecd7' }}>{fmtData(p.data_vencimento)}</div>
                     <div style={{ fontSize: 13, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(Number(p.valor))}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.pago ? fmtData(p.data_pagamento) : '—'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.pago ? fmtData(p.data_cobranca) : '—'}</div>
                     <div>
                       <span style={{
                         background: `${cor}22`, color: cor, border: `1px solid ${cor}55`,

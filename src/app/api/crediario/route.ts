@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
 
   // 1. Busca contas com paginação manual via offset/limit
   //    (range() do supabase-js às vezes interpreta como HTTP Range bytes)
-  type CR = { id: number; cod_cliente: number; valor: number; pago: boolean; data_vencimento: string | null; data_pagamento: string | null }
+  type CR = { id: number; cod_cliente: number; valor: number; pago: boolean; data_vencimento: string | null; data_cobranca: string | null }
   const todas: CR[] = []
   const pageSize = 1000
   let pagina = 0
   while (true) {
     let q1 = supabase
       .from('contas_a_receber')
-      .select('id, cod_cliente, valor, pago, data_vencimento, data_pagamento')
+      .select('id, cod_cliente, valor, pago, data_vencimento, data_cobranca')
       .not('cod_cliente', 'is', null)
       .limit(pageSize)
     // Pula offset registros manualmente — supabase-js usa range() que funciona

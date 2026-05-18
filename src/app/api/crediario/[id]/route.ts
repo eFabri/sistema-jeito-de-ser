@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   // Contas a receber (parcelas) desse cliente
   const { data: parcelas } = await supabase
     .from('contas_a_receber')
-    .select('id, parcela, valor, data_vencimento, data_pagamento, pago, cod_venda, observacao')
+    .select('id, parcela, valor, data_vencimento, data_cobranca, pago, cod_venda, historico')
     .eq('cod_cliente', codCliente)
     .order('data_vencimento', { ascending: true })
 
