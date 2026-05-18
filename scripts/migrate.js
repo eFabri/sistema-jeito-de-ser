@@ -69,6 +69,28 @@ function parseInt2(str) {
   return parseInt(str) || null;
 }
 
+// Lê TODOS os registros de uma tabela paginando (Supabase limita 1000 por default).
+// Retorna um Map<codigo_legado, id>.
+async function loadLegacyMap(table) {
+  const pageSize = 1000;
+  let from = 0;
+  const map = {};
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('id, codigo_legado')
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      if (r.codigo_legado != null) map[r.codigo_legado] = r.id;
+    }
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return map;
+}
+
 async function upsertBatch(table, rows, batchSize = 100) {
   let inserted = 0;
   let failed = 0;
@@ -287,9 +309,7 @@ async function migrarVendas() {
   console.log('\n🛍️  Migrando vendas...');
 
   // Buscar mapa de clientes legado→novo id
-  const { data: clientesMap } = await supabase
-    .from('clientes').select('id, codigo_legado');
-  const cliMap = Object.fromEntries((clientesMap || []).map(c => [c.codigo_legado, c.id]));
+  const cliMap = await loadLegacyMap('clientes');
 
   const rows = readCSV('tbl_Vendas.csv');
   const mapped = rows.map(r => ({
@@ -315,10 +335,8 @@ async function migrarVendas() {
 async function migrarVendasItens() {
   console.log('\n📦 Migrando itens de vendas...');
 
-  const { data: vendasMap } = await supabase.from('vendas').select('id, codigo_legado');
-  const vMap = Object.fromEntries((vendasMap || []).map(v => [v.codigo_legado, v.id]));
-  const { data: prodMap } = await supabase.from('produtos').select('id, codigo_legado');
-  const pMap = Object.fromEntries((prodMap || []).map(p => [p.codigo_legado, p.id]));
+  const vMap = await loadLegacyMap('vendas');
+  const pMap = await loadLegacyMap('produtos');
 
   const rows = readCSV('tbl_VendasItens.csv');
   const mapped = rows
@@ -351,10 +369,8 @@ async function migrarVendasItens() {
 async function migrarContasReceber() {
   console.log('\n💰 Migrando contas a receber...');
 
-  const { data: cliData } = await supabase.from('clientes').select('id, codigo_legado');
-  const cliMap = Object.fromEntries((cliData || []).map(c => [c.codigo_legado, c.id]));
-  const { data: vData } = await supabase.from('vendas').select('id, codigo_legado');
-  const vMap = Object.fromEntries((vData || []).map(v => [v.codigo_legado, v.id]));
+  const cliMap = await loadLegacyMap('clientes');
+  const vMap = await loadLegacyMap('vendas');
 
   const rows = readCSV('tbl_ContasAReceber.csv');
   const mapped = rows.map(r => ({
@@ -414,8 +430,7 @@ async function migrarCompras() {
   console.log('\n🛒 Migrando compras...');
 
   // Map cod_fornecedor (legado) → id novo
-  const { data: fornMap } = await supabase.from('fornecedores').select('id, codigo_legado');
-  const fMap = Object.fromEntries((fornMap || []).map(f => [f.codigo_legado, f.id]));
+  const fMap = await loadLegacyMap('fornecedores');
 
   const rows = readCSV('tbl_Compras.csv');
   // Filtra linhas-fantasma do Access (registros vazios que só têm o Cod_Compra preenchido)
@@ -444,10 +459,8 @@ async function migrarComprasItens() {
   console.log('\n📦 Migrando itens de compras...');
 
   // Maps necessários: cod_compra (legado→novo), cod_produto (legado→novo)
-  const { data: comprasMap } = await supabase.from('compras').select('id, codigo_legado');
-  const cMap = Object.fromEntries((comprasMap || []).map(c => [c.codigo_legado, c.id]));
-  const { data: prodMap } = await supabase.from('produtos').select('id, codigo_legado');
-  const pMap = Object.fromEntries((prodMap || []).map(p => [p.codigo_legado, p.id]));
+  const cMap = await loadLegacyMap('compras');
+  const pMap = await loadLegacyMap('produtos');
 
   const rows = readCSV('tbl_ComprasItens.csv');
   const mapped = rows
@@ -519,6 +532,244 @@ async function migrarFluxoCaixa() {
   console.log(`  ✅ ${count} registros de fluxo de caixa importados`);
 }
 
+// ─── PAGAMENTOS (das contas a pagar) ────────────────────────
+
+async function migrarPagamentos() {
+  console.log('\n💸 Migrando pagamentos (contas a pagar)...');
+  const cMap = await loadLegacyMap('contas_a_pagar');
+
+  const rows = readCSV('tbl_Pagamentos.csv');
+  const mapped = rows
+    .filter(r => cMap[parseInt2(r.Cod_ContaPagar)])  // só se a conta existir
+    .map(r => ({
+      codigo_legado: parseInt2(r.Codigo),
+      cod_conta: cMap[parseInt2(r.Cod_ContaPagar)],
+      data: parseDate(r.Data) || new Date().toISOString().split('T')[0],
+      valor: parseMoney(r.Valor),
+      forma_pgto: r.Forma_Pgto || null,
+      retirada: r.Retirada || null,
+    }));
+
+  let inserted = 0, failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('pagamentos').insert(batch);
+    if (error) {
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('pagamentos').insert(row);
+        if (!e2) inserted++; else failed++;
+      }
+    } else inserted += batch.length;
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} ignorados`);
+  console.log(`  ✅ ${inserted} pagamentos importados`);
+}
+
+// ─── RECEBIMENTOS (das contas a receber) ────────────────────
+
+async function migrarRecebimentos() {
+  console.log('\n💵 Migrando recebimentos (contas a receber)...');
+  const cMap  = await loadLegacyMap('contas_a_receber');
+  const clMap = await loadLegacyMap('clientes');
+  const vMap  = await loadLegacyMap('vendas');
+
+  const rows = readCSV('tbl_Recebimentos.csv');
+  const mapped = rows.map(r => ({
+    codigo_legado: parseInt2(r.Codigo),
+    cod_conta:   cMap[parseInt2(r.Cod_ContaReceber)] || null,
+    cod_cliente: clMap[parseInt2(r.Cod_Cliente)] || null,
+    cod_venda:   vMap[parseInt2(r.Cod_Venda)] || null,
+    data_pgto:   parseDate(r.Data_Pgto) || new Date().toISOString().split('T')[0],
+    forma_pgto:  r.Forma_Pgto || null,
+    valor_recebido: parseMoney(r.Valor_Recebido),
+    entrada:     r.Entrada || null,
+  }));
+
+  let inserted = 0, failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('recebimentos').insert(batch);
+    if (error) {
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('recebimentos').insert(row);
+        if (!e2) inserted++; else failed++;
+      }
+    } else inserted += batch.length;
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} ignorados`);
+  console.log(`  ✅ ${inserted} recebimentos importados`);
+}
+
+// ─── FECHAMENTO DE CAIXA ────────────────────────────────────
+
+async function migrarFechamentoCaixa() {
+  console.log('\n🏧 Migrando fechamentos de caixa...');
+  const rows = readCSV('TB_FechamentoCaixa.csv');
+  const validas = rows.filter(r => r.Data && r.Data.trim() !== '');
+  const puladas = rows.length - validas.length;
+  if (puladas > 0) console.log(`  ⚠️  ${puladas} fechamentos sem data ignorados`);
+
+  const mapped = validas.map(r => ({
+    codigo_legado: parseInt2(r.Codigo),
+    data: parseDate(r.Data),
+    saldo_anterior: parseMoney(r.Saldo_Inicial),
+    saldo_final: parseMoney(r.Saldo_Dia),
+    saidas: parseMoney(r.Saidas),
+    observacao: r.Observacao || null,
+  })).filter(r => r.data); // remove os que ficaram sem data válida
+
+  const count = await upsertBatch('fechamento_caixa', mapped);
+  console.log(`  ✅ ${count} fechamentos de caixa importados`);
+}
+
+// ─── VENDAS PAGAMENTO (formas de pagamento por venda) ───────
+
+async function migrarVendasPagamento() {
+  console.log('\n💳 Migrando formas de pagamento das vendas...');
+  const vMap = await loadLegacyMap('vendas');
+
+  const rows = readCSV('tbl_VendasPagamento.csv');
+  const mapped = rows
+    .filter(r => r.Cod_Venda && vMap[parseInt2(r.Cod_Venda)])  // cod_venda é NOT NULL
+    .map(r => ({
+      codigo_legado: parseInt2(r.Codigo),
+      cod_venda: vMap[parseInt2(r.Cod_Venda)],
+      data: parseDate(r.Data) || new Date().toISOString().split('T')[0],
+      forma: r.Forma || 'Não informado',
+      operadora: r.Operadora || null,
+      conta: r.Conta || null,
+      valor: parseMoney(r.Valor),
+      parcela: r.Parcela || null,
+      conta_a_receber: parseBool(r.ContaAReceber),
+    }));
+  const puladas = rows.length - mapped.length;
+  if (puladas > 0) console.log(`  ⚠️  ${puladas} pagamentos sem venda válida ignorados`);
+
+  let inserted = 0, failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('vendas_pagamento').insert(batch);
+    if (error) {
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('vendas_pagamento').insert(row);
+        if (!e2) inserted++; else failed++;
+      }
+    } else inserted += batch.length;
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} ignorados`);
+  console.log(`  ✅ ${inserted} formas de pagamento importadas`);
+}
+
+// ─── VENDAS TROCAS ──────────────────────────────────────────
+
+async function migrarVendasTrocas() {
+  console.log('\n⇄ Migrando trocas...');
+  // Pagina manualmente porque precisamos do 'nome' (não cabe em loadLegacyMap genérico)
+  const clMap = {};
+  let from = 0;
+  while (true) {
+    const { data } = await supabase.from('clientes')
+      .select('id, codigo_legado, nome')
+      .range(from, from + 999);
+    if (!data || data.length === 0) break;
+    for (const c of data) if (c.codigo_legado != null) clMap[c.codigo_legado] = c;
+    if (data.length < 1000) break;
+    from += 1000;
+  }
+
+  const rows = readCSV('tbl_VendasTrocas.csv');
+  const validas = rows.filter(r => r.Data && r.Data.trim() !== '');
+  const mapped = validas.map(r => {
+    const cli = clMap[parseInt2(r.Cod_Cliente)];
+    const valor_original = parseMoney(r.Valor_Venda);
+    const valor_troca = parseMoney(r.Valor_Troca);
+    return {
+      codigo_legado: parseInt2(r.Cod_Troca),
+      cod_cliente: cli?.id || null,
+      nome_cliente: cli?.nome || 'Cliente',
+      data: parseDate(r.Data) || new Date().toISOString().split('T')[0],
+      valor_original,
+      valor_troca,
+      diferenca: valor_troca - valor_original,
+      status: r.Status || 'Concluída',
+      vendedor: r.Cod_Vendedor ? String(r.Cod_Vendedor) : null,
+    };
+  });
+
+  const count = await upsertBatch('vendas_trocas', mapped);
+  console.log(`  ✅ ${count} trocas importadas`);
+}
+
+// ─── VENDAS TROCAS ITENS ────────────────────────────────────
+
+async function migrarVendasTrocasItens() {
+  console.log('\n📦 Migrando itens das trocas...');
+  const tMap = await loadLegacyMap('vendas_trocas');
+  const pMap = await loadLegacyMap('produtos');
+
+  const rows = readCSV('tbl_VendasTrocas_Itens.csv');
+  const mapped = rows
+    .filter(r => tMap[parseInt2(r.Cod_Troca)])
+    .map(r => ({
+      codigo_legado: parseInt2(r.Codigo),
+      cod_troca: tMap[parseInt2(r.Cod_Troca)],
+      cod_produto: pMap[parseInt2(r.Cod_Produto)] || null,
+      produto: r.Produto || 'Produto',
+      quantidade: parseInt2(r.Quantidade) || 1,
+      valor: parseMoney(r.Valor),
+    }));
+
+  let inserted = 0, failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('vendas_trocas_itens').insert(batch);
+    if (error) {
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('vendas_trocas_itens').insert(row);
+        if (!e2) inserted++; else failed++;
+      }
+    } else inserted += batch.length;
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} ignorados`);
+  console.log(`  ✅ ${inserted} itens de troca importados`);
+}
+
+// ─── LEMBRETES ──────────────────────────────────────────────
+
+async function migrarLembretes() {
+  console.log('\n📌 Migrando lembretes...');
+  const rows = readCSV('tbl_Lembretes.csv');
+
+  // Lembrete vem com HTML <div>...</div>. Tira tags pra ficar texto puro como descrição.
+  function striptags(s) { return s ? s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : null; }
+
+  const mapped = rows.map(r => {
+    const descricao = striptags(r.Lembrete);
+    const titulo = descricao ? descricao.slice(0, 80) : null;
+    return {
+      codigo_legado: parseInt2(r.Codigo),
+      titulo,
+      descricao,
+      data_lembrete: parseDate(r.Data),
+      concluido: parseBool(r.Realizado),
+    };
+  }).filter(r => r.descricao);  // só com algum texto
+
+  let inserted = 0, failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('lembretes').insert(batch);
+    if (error) {
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('lembretes').insert(row);
+        if (!e2) inserted++; else failed++;
+      }
+    } else inserted += batch.length;
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} ignorados`);
+  console.log(`  ✅ ${inserted} lembretes importados`);
+}
+
 // ─── MAIN ────────────────────────────────────────────────────
 
 async function main() {
@@ -540,6 +791,13 @@ async function main() {
   await migrarFluxoCaixa();
   await migrarCompras();
   await migrarComprasItens();
+  await migrarPagamentos();
+  await migrarRecebimentos();
+  await migrarFechamentoCaixa();
+  await migrarVendasPagamento();
+  await migrarVendasTrocas();
+  await migrarVendasTrocasItens();
+  await migrarLembretes();
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
   console.log(`\n✅ Migração concluída em ${elapsed}s`);
