@@ -11,8 +11,10 @@ const NAV = [
   { id: '/produtos',       label: 'Produtos',      icon: '◫', permissao: 'ver_produtos' },
   { id: '/financeiro',     label: 'Financeiro',    icon: '◎', permissao: 'ver_financeiro' },
   { id: '/compras',        label: 'Compras',       icon: '◐', permissao: 'ver_compras' },
+  { id: '/trocas',         label: 'Trocas',        icon: '⇄', permissao: 'ver_vendas' },
   { id: '/relatorios',     label: 'Relatórios',    icon: '▤', permissao: 'ver_relatorios' },
   { id: '/whatsapp',       label: 'WhatsApp',      icon: '◍', permissao: 'ver_whatsapp' },
+  { id: '/usuarios',       label: 'Usuários',      icon: '◇', permissao: '__admin__' },
   { id: '/configuracoes',  label: 'Configurações', icon: '⊛', permissao: 'ver_configuracoes' },
 ]
 
@@ -44,6 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isAdmin = perfil?.perfil === 'admin'
   const navVisivel = NAV.filter(n => {
+    if (n.permissao === '__admin__') return isAdmin // só admins veem
     if (isAdmin) return true
     if (!perfil) return false
     return perfil[n.permissao] === true
@@ -160,6 +163,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* CONTEÚDO PRINCIPAL */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', minWidth: 0 }}>
+        {pathname !== '/' && (
+          <button
+            onClick={() => router.back()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'rgba(212,175,95,0.06)',
+              border: '1px solid var(--border)',
+              color: '#d4af5f',
+              padding: '8px 14px', borderRadius: 8,
+              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', marginBottom: 18,
+              letterSpacing: '0.02em',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,95,0.14)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,95,0.06)' }}
+          >
+            ← Voltar
+          </button>
+        )}
         {children}
       </main>
     </div>
