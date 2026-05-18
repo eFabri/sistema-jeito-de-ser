@@ -408,6 +408,95 @@ async function migrarContasPagar() {
   console.log(`  ✅ ${count} contas a pagar importadas`);
 }
 
+// ─── COMPRAS ─────────────────────────────────────────────────
+
+async function migrarCompras() {
+  console.log('\n🛒 Migrando compras...');
+
+  // Map cod_fornecedor (legado) → id novo
+  const { data: fornMap } = await supabase.from('fornecedores').select('id, codigo_legado');
+  const fMap = Object.fromEntries((fornMap || []).map(f => [f.codigo_legado, f.id]));
+
+  const rows = readCSV('tbl_Compras.csv');
+  // Filtra linhas-fantasma do Access (registros vazios que só têm o Cod_Compra preenchido)
+  const validas = rows.filter(r => (r.Data && r.Data.trim() !== '') || (r.Valor_Total && r.Valor_Total.trim() !== ''));
+  const puladas = rows.length - validas.length;
+  if (puladas > 0) console.log(`  ⚠️  ${puladas} compras-fantasma ignoradas (Data e Valor_Total vazios)`);
+
+  const mapped = validas.map(r => ({
+    codigo_legado: parseInt2(r.Cod_Compra),
+    data: parseDate(r.Data) || new Date().toISOString().split('T')[0],
+    nota_numero: parseInt2(r.Nota_Numero),
+    cod_fornecedor: fMap[parseInt2(r.Cod_Fornecedor)] || null,
+    grupo: r.Grupo || null,
+    evento: r.Evento || null,
+    valor_total: parseMoney(r.Valor_Total),
+    documento: r.Documento || null,
+  }));
+
+  const count = await upsertBatch('compras', mapped);
+  console.log(`  ✅ ${count} compras importadas`);
+}
+
+// ─── COMPRAS ITENS ───────────────────────────────────────────
+
+async function migrarComprasItens() {
+  console.log('\n📦 Migrando itens de compras...');
+
+  // Maps necessários: cod_compra (legado→novo), cod_produto (legado→novo)
+  const { data: comprasMap } = await supabase.from('compras').select('id, codigo_legado');
+  const cMap = Object.fromEntries((comprasMap || []).map(c => [c.codigo_legado, c.id]));
+  const { data: prodMap } = await supabase.from('produtos').select('id, codigo_legado');
+  const pMap = Object.fromEntries((prodMap || []).map(p => [p.codigo_legado, p.id]));
+
+  const rows = readCSV('tbl_ComprasItens.csv');
+  const mapped = rows
+    .filter(r => cMap[parseInt2(r.Cod_Compra)])  // só itens cuja compra foi importada
+    .map(r => ({
+      codigo_legado: parseInt2(r.Codigo),
+      cod_compra: cMap[parseInt2(r.Cod_Compra)],
+      cod_produto: pMap[parseInt2(r.Cod_Produto)] || null,
+      produto: r.Produto || 'Produto',
+      cod_barras: r.Cod_Barras || null,
+      referencia: r.Referencia || null,
+      quantidade: parseInt2(r.Quantidade) || 1,
+      valor_unitario: parseMoney(r.Valor_Unitario),
+      sub_total: parseMoney(r.Sub_Total),
+      preco_venda: parseMoney(r.Preco_Venda) || null,
+      margem_valor: parseMoney(r.Margem_Valor) || null,
+      margem_porcent: parseMoney(r.Margem_Porcent) || null,
+      sub_grupo: r.Sub_Grupo || null,
+      partes: r.Partes || null,
+      tamanho: r.Tamanho || null,
+      cor: r.Cor || null,
+      marca: r.Marca || null,
+      atualiza_estoque: parseBool(r.Atualizar),
+      detalhes: r.Detalhes || null,
+    }));
+
+  // compras_itens não tem codigo_legado como unique — insere direto em batches com fallback
+  let inserted = 0;
+  let failed = 0;
+  for (let i = 0; i < mapped.length; i += 200) {
+    const batch = mapped.slice(i, i + 200);
+    const { error } = await supabase.from('compras_itens').insert(batch);
+    if (error) {
+      // fallback row-by-row pra salvar o que dá
+      let ok = 0;
+      for (const row of batch) {
+        const { error: e2 } = await supabase.from('compras_itens').insert(row);
+        if (!e2) ok++; else failed++;
+      }
+      inserted += ok;
+      console.log(`  🔧 batch ${i}-${i + 200}: ${ok}/${batch.length} via fallback`);
+    } else {
+      inserted += batch.length;
+    }
+  }
+  if (failed > 0) console.log(`  ⚠️  ${failed} itens com dados irrecuperáveis foram pulados`);
+  console.log(`  ✅ ${inserted} itens de compra importados`);
+}
+
 // ─── FLUXO DE CAIXA ──────────────────────────────────────────
 
 async function migrarFluxoCaixa() {
@@ -449,6 +538,8 @@ async function main() {
   await migrarContasReceber();
   await migrarContasPagar();
   await migrarFluxoCaixa();
+  await migrarCompras();
+  await migrarComprasItens();
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
   console.log(`\n✅ Migração concluída em ${elapsed}s`);
