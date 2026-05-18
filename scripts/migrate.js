@@ -42,13 +42,22 @@ function parseDate(str) {
   const match = str.match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
   if (!match) return null;
   const [, mm, dd, yy] = match;
+  // valida dia e mês (Access às vezes exporta "01/00/00" → "2000-01-00" inválido)
+  const mmN = parseInt(mm, 10);
+  const ddN = parseInt(dd, 10);
+  if (mmN < 1 || mmN > 12 || ddN < 1 || ddN > 31) return null;
   const year = yy.length === 2 ? (parseInt(yy) > 30 ? `19${yy}` : `20${yy}`) : yy;
   return `${year}-${mm}-${dd}`;
 }
 
+// Schema usa numeric(10,2) — cap em 99999999.99 evita overflow de dados sujos do Access
+const MONEY_CAP = 99999999.99;
 function parseMoney(str) {
   if (!str || str.trim() === '') return 0;
-  return parseFloat(str.replace(',', '.')) || 0;
+  const n = parseFloat(str.replace(',', '.')) || 0;
+  if (n > MONEY_CAP) return MONEY_CAP;
+  if (n < -MONEY_CAP) return -MONEY_CAP;
+  return n;
 }
 
 function parseBool(str) {
@@ -62,15 +71,30 @@ function parseInt2(str) {
 
 async function upsertBatch(table, rows, batchSize = 100) {
   let inserted = 0;
+  let failed = 0;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize);
     const { error } = await supabase.from(table).upsert(batch, { onConflict: 'codigo_legado' });
     if (error) {
-      console.error(`  ❌ Erro em ${table} (batch ${i}-${i + batchSize}):`, error.message);
+      // batch falhou — uma linha ruim derruba todas. Faz fallback row-by-row
+      // pra salvar as válidas e logar só as defeituosas.
+      let batchOk = 0;
+      for (const row of batch) {
+        const { error: rowErr } = await supabase.from(table).upsert(row, { onConflict: 'codigo_legado' });
+        if (rowErr) {
+          failed++;
+          console.error(`  ⚠️  ${table} linha ${i + batch.indexOf(row)} (codigo_legado=${row.codigo_legado}): ${rowErr.message}`);
+        } else {
+          batchOk++;
+        }
+      }
+      inserted += batchOk;
+      console.log(`  🔧 batch ${i}-${i + batchSize}: salvas ${batchOk}/${batch.length} via fallback row-by-row`);
     } else {
       inserted += batch.length;
     }
   }
+  if (failed > 0) console.log(`  ⚠️  ${table}: ${failed} linhas com dados irrecuperáveis foram puladas`);
   return inserted;
 }
 
