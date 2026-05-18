@@ -16,6 +16,32 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json(compra)
 }
 
+// PATCH — atualiza dados da compra (data, fornecedor, nota, grupo, evento, documento)
+// Não toca em itens (esses têm endpoint próprio em /api/compras/itens/[id])
+// Recalcula valor_total baseado nos itens atuais.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const supabase = await createServerSupabase()
+  const { id } = await params
+  const body = await req.json()
+
+  const updates: any = {}
+  for (const k of ['data', 'nota_numero', 'cod_fornecedor', 'grupo', 'evento', 'documento']) {
+    if (k in body) updates[k] = body[k] === '' ? null : body[k]
+  }
+
+  // Recalcula valor_total se solicitado (ou sempre)
+  if (body.recalcular_total !== false) {
+    const { data: itens } = await supabase
+      .from('compras_itens').select('quantidade, valor_unitario').eq('cod_compra', id)
+    updates.valor_total = (itens || []).reduce((s: number, i: any) => s + Number(i.quantidade) * Number(i.valor_unitario), 0)
+  }
+
+  const { data, error } = await supabase
+    .from('compras').update(updates).eq('id', id).select().single()
+  if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
+
 // DELETE — reverte estoque, deleta itens (cascade), deleta compra
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createServerSupabase()
