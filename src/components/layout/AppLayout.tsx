@@ -21,25 +21,21 @@ const NAV = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   const [perfil, setPerfil] = useState<any>(null)
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
-    async function loadPerfil() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('perfis_usuario')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-      setPerfil(data)
-    }
-    loadPerfil()
+    // /api/perfil roda server-side com o cookie de sessão — mais confiável que
+    // chamar supabase.auth.getUser() no browser logo após o login (race condition
+    // entre o cookie chegar e o client ler).
+    fetch('/api/perfil')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && d.user_id) setPerfil(d) })
+      .catch(() => {})
   }, [])
 
   async function handleLogout() {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
@@ -68,27 +64,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }}>
         {/* Logo */}
         <div style={{
-          padding: collapsed ? '24px 16px' : '28px 24px 22px',
+          padding: collapsed ? '20px 12px' : '24px 20px 20px',
           borderBottom: '1px solid var(--border)',
           marginBottom: 8, overflow: 'hidden',
-          display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between',
+          display: 'flex', alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          gap: 10,
         }}>
-          {!collapsed && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: '#d4af5f', letterSpacing: '0.03em' }}>
-                Jeito de Ser
-              </div>
-              <div style={{ fontSize: 10, color: 'rgba(212,175,95,0.4)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 2 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: collapsed ? 'center' : 'flex-start', gap: collapsed ? 0 : 8 }}>
+            <img
+              src="/logo.png"
+              alt="Jeito de Ser"
+              style={{
+                width: collapsed ? 40 : 72,
+                height: collapsed ? 40 : 72,
+                borderRadius: '50%',
+                border: '1.5px solid rgba(212,175,95,0.35)',
+                boxShadow: '0 2px 12px rgba(212,175,95,0.12)',
+                transition: 'width 0.2s, height 0.2s',
+              }}
+            />
+            {!collapsed && (
+              <div style={{ fontSize: 10, color: 'rgba(212,175,95,0.5)', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600 }}>
                 Gestão & Moda
               </div>
-            </div>
-          )}
-          {collapsed && (
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#d4af5f' }}>JS</span>
-          )}
+            )}
+          </div>
           <button onClick={() => setCollapsed(!collapsed)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'rgba(212,175,95,0.4)', fontSize: 16, padding: 4,
+            position: collapsed ? 'absolute' : 'static',
+            top: collapsed ? 6 : 'auto',
+            right: collapsed ? 6 : 'auto',
           }}>
             {collapsed ? '›' : '‹'}
           </button>
