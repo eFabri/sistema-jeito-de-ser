@@ -1,6 +1,6 @@
 // src/app/api/financeiro/pagar/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase()

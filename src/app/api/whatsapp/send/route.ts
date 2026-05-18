@@ -1,6 +1,6 @@
 // src/app/api/whatsapp/send/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 import { enviarMensagem, processarTemplate } from '@/lib/whatsapp'
 
 // POST — enviar mensagem individual ou em lote

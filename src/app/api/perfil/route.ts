@@ -1,6 +1,6 @@
 // src/app/api/perfil/route.ts
 import { NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 export async function GET() {
   const supabase = await createServerSupabase()

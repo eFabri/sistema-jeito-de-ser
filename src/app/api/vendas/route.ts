@@ -1,6 +1,6 @@
 // src/app/api/vendas/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase()
@@ -105,10 +105,12 @@ export async function POST(req: NextRequest) {
   // 5. Atualizar estoque
   for (const item of itens || []) {
     if (item.cod_produto) {
-      await supabase.rpc('decrementar_estoque', {
-        p_id: item.cod_produto,
-        p_qtd: item.quantidade,
-      }).catch(() => {})
+      try {
+        await supabase.rpc('decrementar_estoque', {
+          p_id: item.cod_produto,
+          p_qtd: item.quantidade,
+        })
+      } catch {}
       // Fallback manual
       const { data: prod } = await supabase
         .from('produtos').select('estoque').eq('id', item.cod_produto).single()

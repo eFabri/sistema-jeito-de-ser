@@ -125,7 +125,7 @@ function StatusConexao({ status, onConectar }: any) {
       <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor, boxShadow: `0 0 8px ${cor}60`, flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600 }}>WhatsApp Business</div>
-        <div style={{ fontSize: 12, color, marginTop: 2 }}>{label}</div>
+        <div style={{ fontSize: 12, color: cor, marginTop: 2 }}>{label}</div>
       </div>
       {!conectado && (
         <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={onConectar}>

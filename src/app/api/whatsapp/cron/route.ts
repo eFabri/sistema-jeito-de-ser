@@ -6,7 +6,7 @@
 // ============================================================
 
 import { NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 import { enviarMensagemAniversario, enviarMensagemCobranca } from '@/lib/whatsapp'
 
 export async function GET(request: Request) {

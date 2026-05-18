@@ -1,6 +1,6 @@
 // src/app/api/produtos/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createServerSupabase()

@@ -247,7 +247,7 @@ export default function ConfiguracoesPage() {
   async function alterarSenha() {
     if (senha.nova !== senha.confirma) { alert('As senhas não coincidem'); return }
     if (senha.nova.length < 6) { alert('Senha deve ter pelo menos 6 caracteres'); return }
-    const { createClient } = await import('@/lib/supabase')
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password: senha.nova })
     if (error) { alert('Erro: ' + error.message); return }

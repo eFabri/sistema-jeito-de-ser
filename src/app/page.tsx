@@ -1,5 +1,5 @@
 // src/app/page.tsx — Dashboard principal
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/components/modules/Dashboard'
 

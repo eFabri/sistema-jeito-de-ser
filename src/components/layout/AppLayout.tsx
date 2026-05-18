@@ -2,7 +2,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV = [
   { id: '/',               label: 'Dashboard',     icon: '⊞', permissao: 'ver_dashboard' },

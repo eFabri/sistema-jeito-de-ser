@@ -1,6 +1,6 @@
 // src/app/api/whatsapp/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 import { verificarInstancia, obterQRCode } from '@/lib/whatsapp'
 
 // GET — status da instância + modelos + logs recentes

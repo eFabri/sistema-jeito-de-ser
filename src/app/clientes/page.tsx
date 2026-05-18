@@ -103,7 +103,7 @@ export default function ClientesPage() {
             {CATEGORIAS.map(cat => (
               <button key={cat} onClick={() => { setCategoria(cat); setPagina(1) }}
                 style={{
-                  padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
                   fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
                   background: categoria === cat ? 'rgba(212,175,95,0.18)' : 'rgba(255,255,255,0.03)',
                   color: categoria === cat ? '#d4af5f' : 'var(--text-muted)',

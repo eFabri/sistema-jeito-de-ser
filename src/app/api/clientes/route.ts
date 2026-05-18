@@ -1,6 +1,6 @@
 // src/app/api/clientes/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 // GET /api/clientes?q=nome&pagina=1&limite=20&categoria=Crediário
 export async function GET(req: NextRequest) {

@@ -1,5 +1,7 @@
 // src/app/vendas/nova/page.tsx
 'use client'
+
+export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
@@ -351,7 +353,7 @@ export default function NovaVendaPage() {
             {[['carrinho', 'Carrinho'], ['pagamento', 'Pagamento']].map(([id, label]) => (
               <button key={id} onClick={() => { if (id === 'pagamento' && carrinho.length === 0) return; setEtapa(id as any) }}
                 style={{
-                  padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  padding: '8px 18px', borderRadius: 10, cursor: 'pointer',
                   fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
                   background: etapa === id ? 'rgba(212,175,95,0.2)' : 'rgba(255,255,255,0.03)',
                   color: etapa === id ? '#d4af5f' : 'var(--text-muted)',

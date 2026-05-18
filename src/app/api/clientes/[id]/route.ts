@@ -1,6 +1,6 @@
 // src/app/api/clientes/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 // GET /api/clientes/:id — ficha completa
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {

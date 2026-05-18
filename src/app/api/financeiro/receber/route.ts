@@ -1,6 +1,6 @@
 // src/app/api/financeiro/receber/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 // POST — dar baixa em conta a receber
 export async function POST(req: NextRequest) {
