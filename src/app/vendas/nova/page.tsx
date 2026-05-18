@@ -60,6 +60,12 @@ export default function NovaVendaPage() {
   const [sugestoesCli, setSugestoesCli] = useState<any[]>([])
   const [mostrarSugestoesCli, setMostrarSugestoesCli] = useState(false)
 
+  // Modal de cadastro rápido de cliente (obrigatório se cliente não existe)
+  const [mostrarModalCli, setMostrarModalCli] = useState(false)
+  const [novoCli, setNovoCli] = useState({ nome: '', celular: '', cpf: '', categoria: 'Avista' })
+  const [salvandoCli, setSalvandoCli] = useState(false)
+  const [erroCli, setErroCli] = useState('')
+
   // Estado dos produtos / carrinho
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([])
   const [buscaProduto, setBuscaProduto] = useState('')
@@ -215,8 +221,43 @@ export default function NovaVendaPage() {
 
   useEffect(() => { if (temCrediario) gerarParcelas() }, [qtdParcelas, diaVencimento, pagamentos])
 
+  // ─── CADASTRO RÁPIDO DE CLIENTE ───────────────────────────
+  async function criarClienteRapido() {
+    setErroCli('')
+    if (!novoCli.nome.trim()) { setErroCli('Nome é obrigatório'); return }
+    if (!novoCli.celular.trim()) { setErroCli('Celular é obrigatório para contato/WhatsApp'); return }
+    setSalvandoCli(true)
+    try {
+      const res = await fetch('/api/clientes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: novoCli.nome.trim(),
+          celular: novoCli.celular.replace(/\D/g, ''),
+          whatsapp: novoCli.celular.replace(/\D/g, ''),
+          cpf: novoCli.cpf.replace(/\D/g, '') || null,
+          categoria: novoCli.categoria,
+          ativo: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar cliente')
+      // Seleciona o cliente recém-criado
+      setCliente(data)
+      setMostrarModalCli(false)
+      setNovoCli({ nome: '', celular: '', cpf: '', categoria: 'Avista' })
+    } catch (e: any) {
+      setErroCli(e.message)
+    } finally {
+      setSalvandoCli(false)
+    }
+  }
+
   // ─── FINALIZAR VENDA ────────────────────────────────────
   async function finalizarVenda() {
+    if (!cliente) {
+      setErro('Cadastro do cliente é obrigatório. Selecione um cliente existente ou cadastre um novo.')
+      return
+    }
     if (carrinho.length === 0) { setErro('Adicione pelo menos um produto'); return }
     if (falta > 0.01) { setErro(`Falta ${BRL(falta)} para cobrir o total`); return }
     if (!vendedor.trim()) { setErro('Informe o nome do vendedor'); return }
@@ -226,8 +267,8 @@ export default function NovaVendaPage() {
 
     const payload = {
       vendedor,
-      cod_cliente: cliente?.id || null,
-      nome_cliente: cliente?.nome || 'Cliente',
+      cod_cliente: cliente.id,
+      nome_cliente: cliente.nome,
       itens: carrinho.map(i => ({
         cod_produto: i.cod_produto,
         produto: i.produto,
@@ -249,7 +290,7 @@ export default function NovaVendaPage() {
       desc_porcentagem: descontoGlobal / 100,
       desc_valor: descontoValor,
       valor_total: totalFinal,
-      situacao: cliente ? 'Venda' : 'Venda Direta',
+      situacao: 'Venda',
       observacao: observacao || null,
     }
 
@@ -340,6 +381,75 @@ export default function NovaVendaPage() {
   // ─── RENDER PRINCIPAL ───────────────────────────────────
   return (
     <AppLayout>
+      {/* MODAL CADASTRO RÁPIDO DE CLIENTE */}
+      {mostrarModalCli && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'silkFade 0.25s ease forwards',
+        }} onClick={(e) => { if (e.target === e.currentTarget) setMostrarModalCli(false) }}>
+          <div className="card" style={{ width: '100%', maxWidth: 480, padding: 28, margin: 16 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>
+              Cadastrar cliente
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
+              Cadastro rápido para esta venda. Você pode completar os dados depois em <strong>Clientes</strong>.
+            </p>
+            {erroCli && (
+              <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
+                {erroCli}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                  Nome *
+                </label>
+                <input className="input" value={novoCli.nome}
+                  onChange={e => setNovoCli(c => ({ ...c, nome: e.target.value }))}
+                  autoFocus required />
+              </div>
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                  Celular / WhatsApp *
+                </label>
+                <input className="input" inputMode="numeric" value={novoCli.celular}
+                  onChange={e => setNovoCli(c => ({ ...c, celular: e.target.value }))}
+                  placeholder="(31) 99999-9999" required />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                    CPF (opcional)
+                  </label>
+                  <input className="input" inputMode="numeric" value={novoCli.cpf}
+                    onChange={e => setNovoCli(c => ({ ...c, cpf: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                    Categoria
+                  </label>
+                  <select className="input" value={novoCli.categoria}
+                    onChange={e => setNovoCli(c => ({ ...c, categoria: e.target.value }))}>
+                    <option value="Avista">Avista</option>
+                    <option value="Crediário">Crediário</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
+              <button className="btn btn-ghost" onClick={() => { setMostrarModalCli(false); setErroCli('') }}>
+                Cancelar
+              </button>
+              <button className="btn btn-primary" onClick={criarClienteRapido} disabled={salvandoCli}>
+                {salvandoCli ? 'Salvando...' : 'Cadastrar e Usar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1100 }}>
 
         {/* HEADER */}
@@ -378,9 +488,18 @@ export default function NovaVendaPage() {
             {/* COLUNA ESQUERDA */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-              {/* CLIENTE */}
+              {/* CLIENTE — obrigatório */}
               <div className="card">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 12 }}>Cliente</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7' }}>
+                    Cliente <span style={{ color: '#ef6b4d', fontSize: 12 }}>*</span>
+                  </h3>
+                  {!cliente && (
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      Obrigatório
+                    </span>
+                  )}
+                </div>
                 {cliente ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(212,175,95,0.2), rgba(212,175,95,0.05))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 16 }}>{cliente.nome?.charAt(0)}</div>
@@ -408,12 +527,20 @@ export default function NovaVendaPage() {
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.celular || c.cpf || '—'}</div>
                           </div>
                         ))}
-                        <div onClick={() => { setMostrarSugestoesCli(false); setBuscaCliente('') }}
-                          style={{ padding: '8px 14px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>
-                          Vender sem cliente (avulso)
-                        </div>
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Se já está digitando algo, usa como nome inicial
+                        setNovoCli(c => ({ ...c, nome: buscaCliente || c.nome }))
+                        setMostrarModalCli(true)
+                      }}
+                      className="btn btn-ghost"
+                      style={{ marginTop: 10, padding: '8px 14px', fontSize: 12, width: '100%', justifyContent: 'center' }}
+                    >
+                      + Cadastrar novo cliente
+                    </button>
                   </div>
                 )}
               </div>

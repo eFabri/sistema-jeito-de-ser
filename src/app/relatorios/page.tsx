@@ -102,7 +102,9 @@ export default function RelatoriosPage() {
 
   // Filtros específicos dos novos relatórios
   const [diasInativo, setDiasInativo] = useState(30)
-  const [tipoRanking, setTipoRanking] = useState<'mes' | 'trimestre'>('mes')
+  const [tipoRanking, setTipoRanking] = useState<'mes' | 'trimestre' | 'custom'>('mes')
+  const [rankIni, setRankIni] = useState('')
+  const [rankFim, setRankFim] = useState('')
 
   const { ini, fim } = periodo === 'custom'
     ? { ini: iniCustom, fim: fimCustom }
@@ -115,7 +117,12 @@ export default function RelatoriosPage() {
     if (relatorio === 'inativos') {
       res = await fetch(`/api/relatorios/clientes-inativos?dias=${diasInativo}&limit=500`)
     } else if (relatorio === 'top-clientes') {
-      res = await fetch(`/api/relatorios/top-clientes?tipo=${tipoRanking}&limit=20`)
+      if (tipoRanking === 'custom') {
+        if (!rankIni || !rankFim) { setLoading(false); return }
+        res = await fetch(`/api/relatorios/top-clientes?tipo=custom&ini=${rankIni}&fim=${rankFim}&limit=20`)
+      } else {
+        res = await fetch(`/api/relatorios/top-clientes?tipo=${tipoRanking}&limit=20`)
+      }
     } else {
       const tipoMap: Record<string, string> = {
         vendas: 'vendas_periodo', produtos: 'produtos',
@@ -126,7 +133,7 @@ export default function RelatoriosPage() {
     const json = await res.json()
     setData(json)
     setLoading(false)
-  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom, diasInativo, tipoRanking])
+  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom, diasInativo, tipoRanking, rankIni, rankFim])
 
   useEffect(() => { carregar() }, [carregar])
 
@@ -207,11 +214,11 @@ export default function RelatoriosPage() {
           </div>
         )}
 
-        {/* FILTRO TOP CLIENTES — mensal ou trimestral */}
+        {/* FILTRO TOP CLIENTES — mensal, trimestral ou período personalizado */}
         {relatorio === 'top-clientes' && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 4 }}>Ranking por:</span>
-            {([['mes', 'Mês atual'], ['trimestre', 'Trimestre atual']] as const).map(([id, label]) => (
+            {([['mes', 'Mês atual'], ['trimestre', 'Trimestre atual'], ['custom', 'Personalizado']] as const).map(([id, label]) => (
               <button key={id} onClick={() => setTipoRanking(id)} style={{
                 padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
                 border: `1px solid ${tipoRanking === id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
@@ -220,6 +227,16 @@ export default function RelatoriosPage() {
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               }}>{label}</button>
             ))}
+            {tipoRanking === 'custom' && (
+              <>
+                <input type="date" className="input" style={{ width: 150 }} value={rankIni} onChange={e => setRankIni(e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>até</span>
+                <input type="date" className="input" style={{ width: 150 }} value={rankFim} onChange={e => setRankFim(e.target.value)} />
+                {(!rankIni || !rankFim) && (
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>selecione as duas datas</span>
+                )}
+              </>
+            )}
           </div>
         )}
 

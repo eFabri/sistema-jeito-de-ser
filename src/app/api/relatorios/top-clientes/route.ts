@@ -24,15 +24,32 @@ function calcularPeriodo(tipo: string, refDate: Date): { ini: string; fim: strin
   return { ini: fmt(ini), fim: fmt(refDate), label: 'Últimos 30 dias' }
 }
 
+function formatarLabelCustom(ini: string, fim: string): string {
+  const f = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
+  return `${f(ini)} — ${f(fim)}`
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase()
   const { searchParams } = new URL(req.url)
-  const tipo  = searchParams.get('tipo') || 'mes'   // mes | trimestre
+  const tipo  = searchParams.get('tipo') || 'mes'   // mes | trimestre | custom
   const ref   = searchParams.get('ref')              // ISO date (default: hoje)
+  const iniQ  = searchParams.get('ini')              // usado quando tipo=custom
+  const fimQ  = searchParams.get('fim')
   const limit = parseInt(searchParams.get('limit') || '20')
 
-  const refDate = ref ? new Date(ref + 'T12:00:00') : new Date()
-  const { ini, fim, label } = calcularPeriodo(tipo, refDate)
+  let ini: string, fim: string, label: string
+  if (tipo === 'custom') {
+    if (!iniQ || !fimQ) {
+      return NextResponse.json({ erro: 'tipo=custom exige parametros ini e fim' }, { status: 400 })
+    }
+    ini = iniQ; fim = fimQ
+    label = formatarLabelCustom(ini, fim)
+  } else {
+    const refDate = ref ? new Date(ref + 'T12:00:00') : new Date()
+    const r = calcularPeriodo(tipo, refDate)
+    ini = r.ini; fim = r.fim; label = r.label
+  }
 
   // Pega todas as vendas do período (precisa de cod_cliente, valor_total)
   // Usa paginação porque pode passar de 1000

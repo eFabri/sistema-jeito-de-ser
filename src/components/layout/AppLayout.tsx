@@ -10,6 +10,7 @@ const NAV = [
   { id: '/clientes',       label: 'Clientes',      icon: '◉', permissao: 'ver_clientes' },
   { id: '/produtos',       label: 'Produtos',      icon: '◫', permissao: 'ver_produtos' },
   { id: '/financeiro',     label: 'Financeiro',    icon: '◎', permissao: 'ver_financeiro' },
+  { id: '/crediario',      label: 'Crediário',     icon: '◈', permissao: 'ver_financeiro' },
   { id: '/compras',        label: 'Compras',       icon: '◐', permissao: 'ver_compras' },
   { id: '/trocas',         label: 'Trocas',        icon: '⇄', permissao: 'ver_vendas' },
   { id: '/relatorios',     label: 'Relatórios',    icon: '▤', permissao: 'ver_relatorios' },

@@ -218,13 +218,51 @@ html, body {
   background-color: rgba(212,175,95,0.022);
 }
 
-/* Botões — easing mais suave + leve scale no press */
-.btn { transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.12s; }
+/* Botões — easing suave + scale no press + shimmer dourado discreto no hover */
+.btn {
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.25s, border-color 0.25s, color 0.25s,
+              transform 0.12s, box-shadow 0.3s;
+  isolation: isolate; /* contém o ::before com o shimmer */
+}
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(245,236,215,0.18) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-position: 200% 0;
+  pointer-events: none;
+  transition: background-position 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: -1;
+}
+.btn:hover::before { background-position: -200% 0; }
+
 .btn:hover { transform: translateY(-1px); }
 .btn:active { transform: translateY(0) scale(0.98); }
+
 .btn-primary:hover {
-  background: linear-gradient(135deg, rgba(212,175,95,0.38), rgba(212,175,95,0.20));
-  box-shadow: 0 6px 20px rgba(212,175,95,0.18);
+  background: linear-gradient(135deg, rgba(212,175,95,0.40), rgba(212,175,95,0.22));
+  box-shadow: 0 6px 22px rgba(212,175,95,0.22), 0 0 0 1px rgba(212,175,95,0.18);
+}
+.btn-ghost:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.btn-danger:hover {
+  background: rgba(239,107,77,0.18);
+  box-shadow: 0 6px 20px rgba(239,107,77,0.18);
+}
+.btn-success:hover {
+  background: rgba(100,200,140,0.18);
+  box-shadow: 0 6px 20px rgba(100,200,140,0.18);
 }
 
 /* Inputs — focus dourado com glow sutil */
