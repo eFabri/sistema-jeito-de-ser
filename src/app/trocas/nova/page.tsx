@@ -173,11 +173,11 @@ export default function NovaTrocaPage() {
                   placeholder="Buscar ou digitar..."
                 />
                 {(sugProd[chave(tipo, item.id)]?.length || 0) > 0 && !item.cod_produto && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#0e0c09', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 200, overflowY: 'auto' }}>
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 200, overflowY: 'auto' }}>
                     {sugProd[chave(tipo, item.id)].map((p: any) => (
                       <div key={p.id} onClick={() => selecionarProduto(tipo, item.id, p)}
-                        style={{ padding: '8px 10px', cursor: 'pointer', fontSize: 12, color: '#f5ecd7', borderBottom: '1px solid rgba(212,175,95,0.05)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.05)')}
+                        style={{ padding: '8px 10px', cursor: 'pointer', fontSize: 12, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <div>{p.descricao}</div>
                         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>R$ {Number(p.preco_venda || 0).toFixed(2)} · est: {p.estoque || 0}</div>
@@ -197,7 +197,7 @@ export default function NovaTrocaPage() {
                   onChange={e => alterarItem(tipo, item.id, 'valor', parseFloat(e.target.value) || 0)} />
               </div>
               <button type="button" onClick={() => removerItem(tipo, item.id)}
-                style={{ background: 'none', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', borderRadius: 8, padding: '7px 10px', fontSize: 11, cursor: 'pointer' }}>
+                style={{ background: 'none', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', borderRadius: 8, padding: '7px 10px', fontSize: 11, cursor: 'pointer' }}>
                 Remover
               </button>
             </div>
@@ -216,12 +216,12 @@ export default function NovaTrocaPage() {
   return (
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
           Nova Troca
         </h1>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 12, borderRadius: 8, fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
             {erro}
           </div>
         )}
@@ -235,8 +235,8 @@ export default function NovaTrocaPage() {
             <div>
               <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Cliente</label>
               {cliente ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(212,175,95,0.06)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                  <span style={{ flex: 1, color: '#f5ecd7', fontSize: 13 }}>{cliente.nome}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(201,168,76,0.06)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                  <span style={{ flex: 1, color: '#F2EBD9', fontSize: 13 }}>{cliente.nome}</span>
                   <button type="button" onClick={() => setCliente(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>×</button>
                 </div>
               ) : (
@@ -244,11 +244,11 @@ export default function NovaTrocaPage() {
                   <input className="input" placeholder="Buscar cliente..." value={buscaCli}
                     onChange={e => setBuscaCli(e.target.value)} onFocus={() => setMostrarSugCli(true)} />
                   {mostrarSugCli && sugCli.length > 0 && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#0e0c09', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 200, overflowY: 'auto' }}>
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 200, overflowY: 'auto' }}>
                       {sugCli.map(c => (
                         <div key={c.id} onClick={() => selecionarCliente(c)}
-                          style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: '#f5ecd7' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.05)')}
+                          style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                           {c.nome}
                         </div>
@@ -271,18 +271,18 @@ export default function NovaTrocaPage() {
 
         {/* DEVOLVIDOS */}
         <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 13, color: '#ef6b4d', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
+          <h2 style={{ fontSize: 13, color: '#E5584A', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
             Itens Devolvidos (saem da loja → estoque)
           </h2>
-          <ListaItens tipo="dev" lista={devolvidos} cor="#ef6b4d" />
+          <ListaItens tipo="dev" lista={devolvidos} cor="#E5584A" />
         </div>
 
         {/* NOVOS */}
         <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 13, color: '#64c88c', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
+          <h2 style={{ fontSize: 13, color: '#4CAF82', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
             Itens Novos (cliente leva → saem do estoque)
           </h2>
-          <ListaItens tipo="nov" lista={novos} cor="#64c88c" />
+          <ListaItens tipo="nov" lista={novos} cor="#4CAF82" />
         </div>
 
         {/* OBSERVAÇÃO */}
@@ -295,18 +295,18 @@ export default function NovaTrocaPage() {
         <div className="card" style={{ padding: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr) auto', gap: 16, alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, color: '#ef6b4d', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total Devolvido</div>
-              <div style={{ fontSize: 20, color: '#ef6b4d', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(totalDev)}</div>
+              <div style={{ fontSize: 10, color: '#E5584A', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total Devolvido</div>
+              <div style={{ fontSize: 20, color: '#E5584A', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(totalDev)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#64c88c', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total Novos</div>
-              <div style={{ fontSize: 20, color: '#64c88c', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(totalNov)}</div>
+              <div style={{ fontSize: 10, color: '#4CAF82', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total Novos</div>
+              <div style={{ fontSize: 20, color: '#4CAF82', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(totalNov)}</div>
             </div>
             <div>
               <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
                 {diferenca > 0 ? 'Cliente paga +' : diferenca < 0 ? 'Crédito p/ cliente' : 'Diferença'}
               </div>
-              <div style={{ fontSize: 24, color: diferenca > 0 ? '#d4af5f' : diferenca < 0 ? '#5eaadf' : '#f5ecd7', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+              <div style={{ fontSize: 24, color: diferenca > 0 ? '#C9A84C' : diferenca < 0 ? '#4D9ECC' : '#F2EBD9', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                 {BRL(Math.abs(diferenca))}
               </div>
             </div>

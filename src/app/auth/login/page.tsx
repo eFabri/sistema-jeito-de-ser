@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0e0c09 0%, #13100c 60%, #0f0d0a 100%)',
+      background: 'linear-gradient(135deg, #080608 0%, #0c0a0d 60%, #0f0d0a 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: 'var(--font-body)',
       overflow: 'hidden', position: 'relative',
@@ -36,11 +36,11 @@ export default function LoginPage() {
       {/* Fundo decorativo — duas elipses douradas com leve movimento (tema 'tecido') */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,95,0.08) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 70%)',
       }} />
       <div className="float" style={{
         position: 'fixed', top: '15%', left: '-10%', width: 320, height: 320,
-        background: 'radial-gradient(circle, rgba(212,175,95,0.05) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%)',
         pointerEvents: 'none', animationDuration: '8s',
       }} />
       <div className="float" style={{
@@ -54,15 +54,15 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div className="float" style={{
             display: 'inline-block', marginBottom: 18,
-            filter: 'drop-shadow(0 8px 24px rgba(212,175,95,0.18))',
+            filter: 'drop-shadow(0 8px 24px rgba(201,168,76,0.18))',
           }}>
             <img
               src="/logo.png"
               alt="Jeito de Ser"
               style={{
                 width: 110, height: 110, borderRadius: '50%',
-                border: '2px solid rgba(212,175,95,0.4)',
-                boxShadow: '0 0 0 6px rgba(212,175,95,0.06), 0 0 28px rgba(212,175,95,0.15)',
+                border: '2px solid rgba(201,168,76,0.4)',
+                boxShadow: '0 0 0 6px rgba(201,168,76,0.06), 0 0 28px rgba(201,168,76,0.15)',
               }}
             />
           </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
           }}>
             Jeito de Ser
           </h1>
-          <p style={{ color: 'rgba(212,175,95,0.55)', fontSize: 11, letterSpacing: '0.32em', textTransform: 'uppercase', marginTop: 10, fontWeight: 600 }}>
+          <p style={{ color: 'rgba(201,168,76,0.55)', fontSize: 11, letterSpacing: '0.32em', textTransform: 'uppercase', marginTop: 10, fontWeight: 600 }}>
             Gestão & Moda
           </p>
         </div>
@@ -80,20 +80,20 @@ export default function LoginPage() {
         {/* Card do formulário */}
         <div style={{
           background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(212,175,95,0.12)',
+          border: '1px solid rgba(201,168,76,0.12)',
           borderRadius: 20, padding: '32px 28px',
           backdropFilter: 'blur(8px)',
         }}>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600,
-            color: '#f5ecd7', marginBottom: 24,
+            color: '#F2EBD9', marginBottom: 24,
           }}>
             Entrar no sistema
           </h2>
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(212,175,95,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, color: 'rgba(201,168,76,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
                 Email
               </label>
               <input
@@ -106,7 +106,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(212,175,95,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, color: 'rgba(201,168,76,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
                 Senha
               </label>
               <input
@@ -120,9 +120,9 @@ export default function LoginPage() {
 
             {erro && (
               <div style={{
-                background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.25)',
+                background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)',
                 borderRadius: 8, padding: '10px 14px',
-                color: '#ef6b4d', fontSize: 13,
+                color: '#E5584A', fontSize: 13,
               }}>
                 {erro}
               </div>
@@ -136,10 +136,10 @@ export default function LoginPage() {
                 padding: '13px',
                 borderRadius: 10,
                 background: loading
-                  ? 'rgba(212,175,95,0.08)'
-                  : 'linear-gradient(135deg, rgba(212,175,95,0.28), rgba(212,175,95,0.12))',
-                border: '1px solid rgba(212,175,95,0.3)',
-                color: loading ? 'rgba(212,175,95,0.4)' : '#d4af5f',
+                  ? 'rgba(201,168,76,0.08)'
+                  : 'linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.12))',
+                border: '1px solid rgba(201,168,76,0.3)',
+                color: loading ? 'rgba(201,168,76,0.4)' : '#C9A84C',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 700,
                 letterSpacing: '0.04em', cursor: loading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
@@ -150,7 +150,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: 'rgba(245,236,215,0.2)' }}>
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: 'rgba(242,235,217,0.2)' }}>
           Jeito de Ser Ltda. · Ouro Branco, MG
         </p>
       </div>

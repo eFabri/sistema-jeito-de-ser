@@ -16,7 +16,7 @@ function Campo({ label, children, span = 1 }: any) {
 function Section({ title, children, cols = 2 }: any) {
   return (
     <div className="card">
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#f5ecd7', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>{title}</h3>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>{title}</h3>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>{children}</div>
     </div>
   )
@@ -86,7 +86,7 @@ export default function NovoProdutoPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <button onClick={() => router.push('/produtos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>‹ Produtos</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>Novo Produto</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Novo Produto</h1>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={() => router.push('/produtos')}>Cancelar</button>
@@ -95,13 +95,13 @@ export default function NovoProdutoPage() {
         </div>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.25)', borderRadius: 10, padding: '12px 16px', color: '#ef6b4d', fontSize: 13 }}>{erro}</div>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 10, padding: '12px 16px', color: '#E5584A', fontSize: 13 }}>{erro}</div>
         )}
 
         <Section title="Identificação" cols={2}>
           <Campo label="Descrição / Nome *" span={2}>
             <input className="input" placeholder="Ex: VESTIDO LONGO FLORAL MANGA CURTA" value={form.descricao} onChange={f('descricao')}
-              style={{ borderColor: !form.descricao ? 'rgba(212,175,95,0.3)' : undefined }} />
+              style={{ borderColor: !form.descricao ? 'rgba(201,168,76,0.3)' : undefined }} />
           </Campo>
           <Campo label="Grupo">
             <select className="input" value={form.grupo} onChange={f('grupo')}>
@@ -129,7 +129,7 @@ export default function NovoProdutoPage() {
           </Campo>
           <Campo label="Preço de Venda (R$) *">
             <input type="number" className="input" placeholder="0,00" step={0.01} min={0} value={form.preco_venda} onChange={f('preco_venda')}
-              style={{ borderColor: !form.preco_venda ? 'rgba(212,175,95,0.3)' : undefined }} />
+              style={{ borderColor: !form.preco_venda ? 'rgba(201,168,76,0.3)' : undefined }} />
           </Campo>
           <Campo label="Estoque Inicial">
             <input type="number" className="input" value={form.estoque} min={0} onChange={f('estoque')} />
@@ -147,17 +147,17 @@ export default function NovoProdutoPage() {
 
         {/* Preview da margem */}
         {parseFloat(form.preco_custo) > 0 && parseFloat(form.preco_venda) > 0 && (
-          <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)', padding: '14px 18px' }}>
+          <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)', padding: '14px 18px' }}>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 10, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Lucro unitário</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#64c88c', marginTop: 4 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#4CAF82', marginTop: 4 }}>
                   {(parseFloat(form.preco_venda) - parseFloat(form.preco_custo)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 10, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Margem real</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#64c88c', marginTop: 4 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#4CAF82', marginTop: 4 }}>
                   {((parseFloat(form.preco_venda) - parseFloat(form.preco_custo)) / parseFloat(form.preco_custo) * 100).toFixed(1)}%
                 </div>
               </div>

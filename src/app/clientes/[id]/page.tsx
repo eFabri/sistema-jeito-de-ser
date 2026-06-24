@@ -10,13 +10,13 @@ const fmtData = (d: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '�
 function SummaryCard({ label, value, sub, alert, success }: any) {
   return (
     <div style={{
-      background: 'var(--bg-card)', border: `1px solid ${alert ? 'rgba(239,107,77,0.25)' : success ? 'rgba(100,200,140,0.2)' : 'var(--border)'}`,
+      background: 'var(--bg-card)', border: `1px solid ${alert ? 'rgba(229,88,74,0.25)' : success ? 'rgba(76,175,130,0.2)' : 'var(--border)'}`,
       borderRadius: 14, padding: '16px 18px',
     }}>
-      <div style={{ fontSize: 10, color: alert ? '#ef6b4d' : success ? '#64c88c' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
+      <div style={{ fontSize: 10, color: alert ? '#E5584A' : success ? '#4CAF82' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: alert ? '#ef6b4d' : '#f5ecd7', lineHeight: 1 }}>
+      <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: alert ? '#E5584A' : '#F2EBD9', lineHeight: 1 }}>
         {value}
       </div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
@@ -27,9 +27,9 @@ function SummaryCard({ label, value, sub, alert, success }: any) {
 function InfoRow({ label, value }: any) {
   if (!value) return null
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
+    <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 160, flexShrink: 0, paddingTop: 1 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#f5ecd7' }}>{value}</span>
+      <span style={{ fontSize: 13, color: '#F2EBD9' }}>{value}</span>
     </div>
   )
 }
@@ -37,7 +37,7 @@ function InfoRow({ label, value }: any) {
 function Section({ title, children }: any) {
   return (
     <div className="card">
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#f5ecd7', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
         {title}
       </h3>
       {children}
@@ -100,15 +100,15 @@ export default function ClienteDetalhePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14,
-                background: 'linear-gradient(135deg, rgba(212,175,95,0.22), rgba(212,175,95,0.06))',
-                border: '1px solid rgba(212,175,95,0.2)',
+                background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))',
+                border: '1px solid rgba(201,168,76,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#d4af5f',
+                fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C',
               }}>
                 {cliente.nome?.charAt(0)}
               </div>
               <div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#f5ecd7', lineHeight: 1 }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2EBD9', lineHeight: 1 }}>
                   {cliente.nome}
                 </h1>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -152,8 +152,8 @@ export default function ClienteDetalhePage() {
             <button key={tab.id} onClick={() => setAba(tab.id as any)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              background: aba === tab.id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: aba === tab.id ? '#d4af5f' : 'var(--text-muted)',
+              background: aba === tab.id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: aba === tab.id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}>{tab.label}</button>
           ))}
@@ -312,7 +312,7 @@ export default function ClienteDetalhePage() {
         {/* ABA: COMPRAS */}
         {aba === 'compras' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px 120px 100px', gap: 12 }}>
                 {['Nº', 'Data', 'Valor', 'Forma', 'Situação'].map(h => (
                   <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
@@ -326,17 +326,17 @@ export default function ClienteDetalhePage() {
                 style={{
                   display: 'grid', gridTemplateColumns: '80px 1fr 120px 120px 100px',
                   gap: 12, padding: '13px 20px', cursor: 'pointer',
-                  borderBottom: i < vendas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                  borderBottom: i < vendas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                   alignItems: 'center',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>#{v.codigo_legado || v.id}</div>
-                <div style={{ fontSize: 13, color: '#f5ecd7' }}>{fmtData(v.data)}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#d4af5f' }}>{BRL(v.valor_total)}</div>
+                <div style={{ fontSize: 13, color: '#F2EBD9' }}>{fmtData(v.data)}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(v.valor_total)}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v.forma_pagamento || '—'}</div>
-                <div style={{ fontSize: 11, color: v.situacao === 'Cancelada' ? '#ef6b4d' : '#64c88c' }}>{v.situacao}</div>
+                <div style={{ fontSize: 11, color: v.situacao === 'Cancelada' ? '#E5584A' : '#4CAF82' }}>{v.situacao}</div>
               </div>
             ))}
           </div>
@@ -345,7 +345,7 @@ export default function ClienteDetalhePage() {
         {/* ABA: CREDIÁRIO */}
         {aba === 'crediario' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '80px 120px 120px 120px 100px', gap: 12 }}>
                 {['Parcela', 'Vencimento', 'Valor', 'Juros', 'Status'].map(h => (
                   <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
@@ -360,20 +360,20 @@ export default function ClienteDetalhePage() {
                 <div key={p.id} style={{
                   display: 'grid', gridTemplateColumns: '80px 120px 120px 120px 100px',
                   gap: 12, padding: '13px 20px', alignItems: 'center',
-                  borderBottom: i < crediario.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
-                  background: atrasado ? 'rgba(239,107,77,0.03)' : 'transparent',
+                  borderBottom: i < crediario.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
+                  background: atrasado ? 'rgba(229,88,74,0.03)' : 'transparent',
                 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.parcela || '—'}</div>
-                  <div style={{ fontSize: 13, color: atrasado ? '#ef6b4d' : '#f5ecd7', fontWeight: atrasado ? 600 : 400 }}>
+                  <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#F2EBD9', fontWeight: atrasado ? 600 : 400 }}>
                     {fmtData(p.data_vencimento)}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: atrasado ? '#ef6b4d' : '#d4af5f' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: atrasado ? '#E5584A' : '#C9A84C' }}>
                     {BRL(p.valor)}
                   </div>
-                  <div style={{ fontSize: 13, color: p.juros > 0 ? '#f5a623' : 'var(--text-muted)' }}>
+                  <div style={{ fontSize: 13, color: p.juros > 0 ? '#E8943A' : 'var(--text-muted)' }}>
                     {p.juros > 0 ? BRL(p.juros) : '—'}
                   </div>
-                  <div style={{ fontSize: 11, color: atrasado ? '#ef6b4d' : '#64c88c', fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: atrasado ? '#E5584A' : '#4CAF82', fontWeight: 600 }}>
                     {atrasado ? 'VENCIDO' : 'EM ABERTO'}
                   </div>
                 </div>
@@ -382,10 +382,10 @@ export default function ClienteDetalhePage() {
             {crediario.length > 0 && (
               <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 24 }}>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Total em aberto: <strong style={{ color: '#f5ecd7', fontFamily: 'var(--font-display)', fontSize: 15 }}>{BRL(resumo.totalAberto)}</strong>
+                  Total em aberto: <strong style={{ color: '#F2EBD9', fontFamily: 'var(--font-display)', fontSize: 15 }}>{BRL(resumo.totalAberto)}</strong>
                 </span>
                 {resumo.totalVencido > 0 && (
-                  <span style={{ fontSize: 12, color: '#ef6b4d' }}>
+                  <span style={{ fontSize: 12, color: '#E5584A' }}>
                     Vencido: <strong style={{ fontFamily: 'var(--font-display)', fontSize: 15 }}>{BRL(resumo.totalVencido)}</strong>
                   </span>
                 )}

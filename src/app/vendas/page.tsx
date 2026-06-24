@@ -9,9 +9,9 @@ const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString(
 
 function Badge({ text }: { text: string }) {
   const cores: any = {
-    'Venda':          { bg: 'rgba(100,200,140,0.1)',  c: '#64c88c', b: 'rgba(100,200,140,0.2)' },
-    'Venda Direta':   { bg: 'rgba(212,175,95,0.1)',   c: '#d4af5f', b: 'rgba(212,175,95,0.2)' },
-    'Cancelada':      { bg: 'rgba(239,107,77,0.1)',   c: '#ef6b4d', b: 'rgba(239,107,77,0.25)' },
+    'Venda':          { bg: 'rgba(76,175,130,0.1)',  c: '#4CAF82', b: 'rgba(76,175,130,0.2)' },
+    'Venda Direta':   { bg: 'rgba(201,168,76,0.1)',   c: '#C9A84C', b: 'rgba(201,168,76,0.2)' },
+    'Cancelada':      { bg: 'rgba(229,88,74,0.1)',   c: '#E5584A', b: 'rgba(229,88,74,0.25)' },
   }
   const s = cores[text] || cores['Venda']
   return (
@@ -53,7 +53,7 @@ export default function VendasPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7' }}>Vendas</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Vendas</h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>{total.toLocaleString('pt-BR')} vendas registradas</p>
           </div>
           <button className="btn btn-primary" onClick={() => router.push('/vendas/nova')}>+ Nova Venda</button>
@@ -71,7 +71,7 @@ export default function VendasPage() {
 
         {/* TABELA */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 140px 120px 130px 80px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 140px 120px 130px 80px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
             {['Nº', 'Cliente', 'Data', 'Forma', 'Total', 'Status'].map(h => (
               <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
             ))}
@@ -86,18 +86,18 @@ export default function VendasPage() {
             </div>
           ) : vendas.map((v, i) => (
             <div key={v.id} onClick={() => router.push(`/vendas/${v.id}`)}
-              style={{ display: 'grid', gridTemplateColumns: '80px 1fr 140px 120px 130px 80px', padding: '13px 20px', borderBottom: i < vendas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', cursor: 'pointer', alignItems: 'center', transition: 'background 0.1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+              style={{ display: 'grid', gridTemplateColumns: '80px 1fr 140px 120px 130px 80px', padding: '13px 20px', borderBottom: i < vendas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', cursor: 'pointer', alignItems: 'center', transition: 'background 0.1s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>#{v.codigo_legado || v.id}</div>
               <div>
-                <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.nome_cliente}</div>
+                <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.nome_cliente}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.vendedor || '—'}</div>
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{fmtData(v.data)}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.forma_pagamento || '—'}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#d4af5f' }}>{BRL(v.valor_total)}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#C9A84C' }}>{BRL(v.valor_total)}</div>
               <Badge text={v.situacao} />
             </div>
           ))}

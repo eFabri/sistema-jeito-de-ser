@@ -18,7 +18,7 @@ function Field({ label, children }: any) {
 function Section({ title, children, cols = 2 }: any) {
   return (
     <div className="card">
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#f5ecd7', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
         {title}
       </h3>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>
@@ -86,7 +86,7 @@ export default function NovoClientePage() {
             <button onClick={() => router.push('/clientes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>
               ‹ Clientes
             </button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>Novo Cliente</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Novo Cliente</h1>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={() => router.push('/clientes')}>Cancelar</button>
@@ -97,14 +97,14 @@ export default function NovoClientePage() {
         </div>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.25)', borderRadius: 10, padding: '12px 16px', color: '#ef6b4d', fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 10, padding: '12px 16px', color: '#E5584A', fontSize: 13 }}>
             {erro}
           </div>
         )}
 
         <Section title="Dados Pessoais">
           <Field label="Nome completo *">
-            <input className="input" placeholder="Nome da cliente" value={form.nome} onChange={f('nome')} style={{ borderColor: !form.nome ? 'rgba(212,175,95,0.3)' : undefined }} />
+            <input className="input" placeholder="Nome da cliente" value={form.nome} onChange={f('nome')} style={{ borderColor: !form.nome ? 'rgba(201,168,76,0.3)' : undefined }} />
           </Field>
           <Field label="Data de nascimento">{inp('data_nascimento', 'date')}</Field>
           <Field label="CPF">{inp('cpf', 'text', '000.000.000-00')}</Field>
@@ -179,7 +179,7 @@ export default function NovoClientePage() {
         </Section>
 
         <div className="card">
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#f5ecd7', marginBottom: 12 }}>Observações</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 12 }}>Observações</h3>
           <textarea className="input" rows={4} placeholder="Anotações sobre a cliente..." value={form.observacao} onChange={f('observacao')} style={{ resize: 'vertical' }} />
         </div>
 

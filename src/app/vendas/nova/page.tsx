@@ -334,19 +334,19 @@ export default function NovaVendaPage() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 20 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20,
-            background: 'linear-gradient(135deg, rgba(100,200,140,0.2), rgba(100,200,140,0.05))',
-            border: '2px solid rgba(100,200,140,0.3)',
+            background: 'linear-gradient(135deg, rgba(76,175,130,0.2), rgba(76,175,130,0.05))',
+            border: '2px solid rgba(76,175,130,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 32,
           }}>✓</div>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: '#64c88c' }}>Venda Registrada!</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: '#4CAF82' }}>Venda Registrada!</h2>
             <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
               Venda #{vendaFinalizada?.codigo_legado || vendaFinalizada?.id} · {BRL(totalFinal)}
             </p>
             {troco > 0 && (
-              <div style={{ marginTop: 12, padding: '12px 20px', background: 'rgba(212,175,95,0.1)', border: '1px solid rgba(212,175,95,0.2)', borderRadius: 10 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#d4af5f', fontWeight: 700 }}>
+              <div style={{ marginTop: 12, padding: '12px 20px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>
                   Troco: {BRL(troco)}
                 </span>
               </div>
@@ -390,14 +390,14 @@ export default function NovaVendaPage() {
           animation: 'silkFade 0.25s ease forwards',
         }} onClick={(e) => { if (e.target === e.currentTarget) setMostrarModalCli(false) }}>
           <div className="card" style={{ width: '100%', maxWidth: 480, padding: 28, margin: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>
               Cadastrar cliente
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
               Cadastro rápido para esta venda. Você pode completar os dados depois em <strong>Clientes</strong>.
             </p>
             {erroCli && (
-              <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
+              <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
                 {erroCli}
               </div>
             )}
@@ -456,7 +456,7 @@ export default function NovaVendaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <button onClick={() => router.push('/vendas')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 4 }}>‹ Vendas</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>Nova Venda</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Nova Venda</h1>
           </div>
           {/* Abas de etapa */}
           <div style={{ display: 'flex', gap: 6 }}>
@@ -465,9 +465,9 @@ export default function NovaVendaPage() {
                 style={{
                   padding: '8px 18px', borderRadius: 10, cursor: 'pointer',
                   fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-                  background: etapa === id ? 'rgba(212,175,95,0.2)' : 'rgba(255,255,255,0.03)',
-                  color: etapa === id ? '#d4af5f' : 'var(--text-muted)',
-                  border: `1px solid ${etapa === id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
+                  background: etapa === id ? 'rgba(201,168,76,0.2)' : 'rgba(255,255,255,0.03)',
+                  color: etapa === id ? '#C9A84C' : 'var(--text-muted)',
+                  border: `1px solid ${etapa === id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
                 }}>
                 {label}
               </button>
@@ -476,7 +476,7 @@ export default function NovaVendaPage() {
         </div>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.25)', borderRadius: 10, padding: '12px 16px', color: '#ef6b4d', fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 10, padding: '12px 16px', color: '#E5584A', fontSize: 13 }}>
             ⚠ {erro}
           </div>
         )}
@@ -491,8 +491,8 @@ export default function NovaVendaPage() {
               {/* CLIENTE — obrigatório */}
               <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7' }}>
-                    Cliente <span style={{ color: '#ef6b4d', fontSize: 12 }}>*</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>
+                    Cliente <span style={{ color: '#E5584A', fontSize: 12 }}>*</span>
                   </h3>
                   {!cliente && (
                     <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -502,9 +502,9 @@ export default function NovaVendaPage() {
                 </div>
                 {cliente ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(212,175,95,0.2), rgba(212,175,95,0.05))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 16 }}>{cliente.nome?.charAt(0)}</div>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 16 }}>{cliente.nome?.charAt(0)}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600 }}>{cliente.nome}</div>
+                      <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{cliente.nome}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{cliente.celular || cliente.whatsapp || '—'} · {cliente.categoria || '—'}</div>
                     </div>
                     <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => { setCliente(null); setBuscaCliente('') }}>✕ Trocar</button>
@@ -519,11 +519,11 @@ export default function NovaVendaPage() {
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
                         {sugestoesCli.map(c => (
                           <div key={c.id} onClick={() => { setCliente(c); setBuscaCliente(''); setMostrarSugestoesCli(false) }}
-                            style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(212,175,95,0.06)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.06)')}
+                            style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.06)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500 }}>{c.nome}</div>
+                            <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{c.nome}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.celular || c.cpf || '—'}</div>
                           </div>
                         ))}
@@ -547,7 +547,7 @@ export default function NovaVendaPage() {
 
               {/* BUSCA PRODUTO */}
               <div className="card">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 12 }}>Adicionar Produto</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 12 }}>Adicionar Produto</h3>
                 <div style={{ position: 'relative' }}>
                   <input ref={inputProdRef} className="input"
                     placeholder="Buscar por nome, código de barras ou referência..."
@@ -561,18 +561,18 @@ export default function NovaVendaPage() {
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
                       {sugestoesProd.map(p => (
                         <div key={p.id} onClick={() => adicionarProduto(p)}
-                          style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(212,175,95,0.06)', display: 'grid', gridTemplateColumns: '1fr auto auto' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.06)')}
+                          style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)', display: 'grid', gridTemplateColumns: '1fr auto auto' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.06)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <div>
-                            <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500 }}>{p.descricao}</div>
+                            <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{p.descricao}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.grupo}{p.cor ? ` · ${p.cor}` : ''}{p.tamanho ? ` · ${p.tamanho}` : ''}</div>
                           </div>
-                          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#d4af5f', padding: '0 12px', alignSelf: 'center' }}>
+                          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#C9A84C', padding: '0 12px', alignSelf: 'center' }}>
                             {BRL(p.preco_venda)}
                           </div>
-                          <div style={{ fontSize: 11, color: p.estoque > 0 ? '#64c88c' : '#ef6b4d', alignSelf: 'center' }}>
+                          <div style={{ fontSize: 11, color: p.estoque > 0 ? '#4CAF82' : '#E5584A', alignSelf: 'center' }}>
                             Estoque: {p.estoque}
                           </div>
                         </div>
@@ -585,7 +585,7 @@ export default function NovaVendaPage() {
               {/* CARRINHO */}
               {carrinho.length > 0 && (
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 90px 120px 44px', gap: 8, background: 'rgba(212,175,95,0.03)' }}>
+                  <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 90px 120px 44px', gap: 8, background: 'rgba(201,168,76,0.03)' }}>
                     {['Produto', 'Qtd', 'Preço unit.', ''].map(h => (
                       <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</div>
                     ))}
@@ -594,20 +594,20 @@ export default function NovaVendaPage() {
                     <div key={item.id} style={{
                       display: 'grid', gridTemplateColumns: '1fr 90px 120px 44px',
                       gap: 8, padding: '11px 18px', alignItems: 'center',
-                      borderBottom: i < carrinho.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                      borderBottom: i < carrinho.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                     }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500 }}>{item.produto}</div>
-                        <div style={{ fontSize: 12, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{item.produto}</div>
+                        <div style={{ fontSize: 12, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                           {BRL(item.sub_total)}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => alterarQtd(item.id, item.quantidade - 1)}
-                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#f5ecd7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>−</button>
-                        <span style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600, minWidth: 22, textAlign: 'center' }}>{item.quantidade}</span>
+                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600, minWidth: 22, textAlign: 'center' }}>{item.quantidade}</span>
                         <button onClick={() => alterarQtd(item.id, item.quantidade + 1)}
-                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#f5ecd7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>+</button>
+                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>+</button>
                       </div>
                       <input type="number" className="input" style={{ padding: '5px 8px', fontSize: 13 }}
                         value={item.preco_venda} min={0} step={0.01}
@@ -635,8 +635,8 @@ export default function NovaVendaPage() {
 
             {/* COLUNA DIREITA — RESUMO */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'sticky', top: 20 }}>
-              <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#f5ecd7', marginBottom: 16 }}>Resumo</h3>
+              <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Resumo</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -650,7 +650,7 @@ export default function NovaVendaPage() {
                         <input type="number" className="input" style={{ width: 80 }} value={descontoGlobal} min={0} max={100} step={0.5}
                           onChange={e => setDescontoGlobal(parseFloat(e.target.value) || 0)} />
                         {descontoValor > 0 && (
-                          <span style={{ fontSize: 12, color: '#ef6b4d' }}>- {BRL(descontoValor)}</span>
+                          <span style={{ fontSize: 12, color: '#E5584A' }}>- {BRL(descontoValor)}</span>
                         )}
                       </div>
                     </Campo>
@@ -658,7 +658,7 @@ export default function NovaVendaPage() {
 
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total</span>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#d4af5f' }}>{BRL(totalFinal)}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#C9A84C' }}>{BRL(totalFinal)}</span>
                   </div>
                 </div>
 
@@ -680,7 +680,7 @@ export default function NovaVendaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#f5ecd7' }}>Formas de Pagamento</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9' }}>Formas de Pagamento</h3>
                   <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={addPagamento}>+ Adicionar</button>
                 </div>
 
@@ -712,8 +712,8 @@ export default function NovaVendaPage() {
 
               {/* CREDIÁRIO — configuração de parcelas */}
               {temCrediario && (
-                <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#f5ecd7', marginBottom: 16 }}>Configurar Crediário</h3>
+                <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Configurar Crediário</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                     <Campo label="Nº de parcelas">
                       <select className="input" value={qtdParcelas} onChange={e => setQtdParcelas(parseInt(e.target.value))}>
@@ -734,9 +734,9 @@ export default function NovaVendaPage() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                         {parcelasCrediario.map((p, i) => (
-                          <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px', gap: 12, padding: '9px 0', borderBottom: i < parcelasCrediario.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
+                          <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px', gap: 12, padding: '9px 0', borderBottom: i < parcelasCrediario.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.parcela}</span>
-                            <span style={{ fontSize: 12, color: '#f5ecd7' }}>{new Date(p.data_vencimento).toLocaleDateString('pt-BR')}</span>
+                            <span style={{ fontSize: 12, color: '#F2EBD9' }}>{new Date(p.data_vencimento).toLocaleDateString('pt-BR')}</span>
                             <input type="number" className="input" style={{ padding: '4px 8px', fontSize: 12 }}
                               value={p.valor} step={0.01}
                               onChange={e => setParcelasCrediario(prev => prev.map((pp, ii) => ii === i ? { ...pp, valor: parseFloat(e.target.value) || 0 } : pp))}
@@ -752,39 +752,39 @@ export default function NovaVendaPage() {
 
             {/* RESUMO FINAL */}
             <div style={{ position: 'sticky', top: 20 }}>
-              <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#f5ecd7', marginBottom: 16 }}>Resumo da Venda</h3>
+              <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Resumo da Venda</h3>
 
                 {/* Itens resumidos */}
                 <div style={{ marginBottom: 16, maxHeight: 160, overflowY: 'auto' }}>
                   {carrinho.map(item => (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{item.produto} x{item.quantidade}</span>
-                      <span style={{ color: '#f5ecd7', flexShrink: 0 }}>{BRL(item.sub_total)}</span>
+                      <span style={{ color: '#F2EBD9', flexShrink: 0 }}>{BRL(item.sub_total)}</span>
                     </div>
                   ))}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {descontoValor > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#ef6b4d' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#E5584A' }}>
                       <span>Desconto ({descontoGlobal}%)</span>
                       <span>- {BRL(descontoValor)}</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#d4af5f', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                     <span>Total</span><span>{BRL(totalFinal)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: totalPago >= totalFinal ? '#64c88c' : '#ef6b4d' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: totalPago >= totalFinal ? '#4CAF82' : '#E5584A' }}>
                     <span>Pago</span><span>{BRL(totalPago)}</span>
                   </div>
                   {troco > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, color: '#64c88c' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, color: '#4CAF82' }}>
                       <span>Troco</span><span>{BRL(troco)}</span>
                     </div>
                   )}
                   {falta > 0.01 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#ef6b4d' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#E5584A' }}>
                       <span>Falta</span><span>{BRL(falta)}</span>
                     </div>
                   )}

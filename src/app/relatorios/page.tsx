@@ -11,7 +11,7 @@ import {
 const BRL    = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const fmtDia = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
 
-const CORES = ['#d4af5f', '#64c88c', '#5eaadf', '#f5a623', '#ef6b4d', '#b08fd4', '#f0e68c', '#87ceeb']
+const CORES = ['#C9A84C', '#4CAF82', '#4D9ECC', '#E8943A', '#E5584A', '#b08fd4', '#f0e68c', '#87ceeb']
 
 const PERIODOS = [
   { id: '7d',    label: 'Últimos 7 dias' },
@@ -56,7 +56,7 @@ function TooltipCustom({ active, payload, label }: any) {
     <div style={{ background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '10px 14px', boxShadow: 'var(--shadow-dropdown)' }}>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ fontSize: 13, color: p.color || '#f5ecd7', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+        <div key={i} style={{ fontSize: 13, color: p.color || '#F2EBD9', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
           {p.name}: {typeof p.value === 'number' && p.name !== 'Qtd' ? BRL(p.value) : p.value}
         </div>
       ))}
@@ -68,8 +68,8 @@ function TooltipCustom({ active, payload, label }: any) {
 function MetricCard({ label, value, sub, gold, alert }: any) {
   return (
     <div className="card">
-      <div style={{ fontSize: 10, color: alert ? '#ef6b4d' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: alert ? '#ef6b4d' : gold ? '#d4af5f' : '#f5ecd7', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 10, color: alert ? '#E5584A' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: alert ? '#E5584A' : gold ? '#C9A84C' : '#F2EBD9', lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
     </div>
   )
@@ -80,8 +80,8 @@ function Section({ title, children, action, onAction }: any) {
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: '#f5ecd7' }}>{title}</h3>
-        {action && <button onClick={onAction} style={{ fontSize: 11, color: '#d4af5f', background: 'none', border: 'none', cursor: 'pointer' }}>{action} →</button>}
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: '#F2EBD9' }}>{title}</h3>
+        {action && <button onClick={onAction} style={{ fontSize: 11, color: '#C9A84C', background: 'none', border: 'none', cursor: 'pointer' }}>{action} →</button>}
       </div>
       {children}
     </div>
@@ -154,7 +154,7 @@ export default function RelatoriosPage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7' }}>Relatórios</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Relatórios</h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
               {ini && fim ? `${new Date(ini+'T12:00:00').toLocaleDateString('pt-BR')} — ${new Date(fim+'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
             </p>
@@ -167,8 +167,8 @@ export default function RelatoriosPage() {
             <button key={tab.id} onClick={() => setRelatorio(tab.id as any)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-              background: relatorio === tab.id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: relatorio === tab.id ? '#d4af5f' : 'var(--text-muted)',
+              background: relatorio === tab.id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: relatorio === tab.id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}>
               <span>{tab.icon}</span>{tab.label}
@@ -182,9 +182,9 @@ export default function RelatoriosPage() {
             {PERIODOS.map(p => (
               <button key={p.id} onClick={() => setPeriodo(p.id)} style={{
                 padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
-                border: `1px solid ${periodo === p.id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
-                background: periodo === p.id ? 'rgba(212,175,95,0.15)' : 'rgba(255,255,255,0.02)',
-                color: periodo === p.id ? '#d4af5f' : 'var(--text-muted)',
+                border: `1px solid ${periodo === p.id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+                background: periodo === p.id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                color: periodo === p.id ? '#C9A84C' : 'var(--text-muted)',
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               }}>{p.label}</button>
             ))}
@@ -205,9 +205,9 @@ export default function RelatoriosPage() {
             {[30, 60, 90, 180, 365].map(d => (
               <button key={d} onClick={() => setDiasInativo(d)} style={{
                 padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
-                border: `1px solid ${diasInativo === d ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
-                background: diasInativo === d ? 'rgba(212,175,95,0.15)' : 'rgba(255,255,255,0.02)',
-                color: diasInativo === d ? '#d4af5f' : 'var(--text-muted)',
+                border: `1px solid ${diasInativo === d ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+                background: diasInativo === d ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                color: diasInativo === d ? '#C9A84C' : 'var(--text-muted)',
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               }}>+{d}d</button>
             ))}
@@ -221,9 +221,9 @@ export default function RelatoriosPage() {
             {([['mes', 'Mês atual'], ['trimestre', 'Trimestre atual'], ['custom', 'Personalizado']] as const).map(([id, label]) => (
               <button key={id} onClick={() => setTipoRanking(id)} style={{
                 padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
-                border: `1px solid ${tipoRanking === id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
-                background: tipoRanking === id ? 'rgba(212,175,95,0.15)' : 'rgba(255,255,255,0.02)',
-                color: tipoRanking === id ? '#d4af5f' : 'var(--text-muted)',
+                border: `1px solid ${tipoRanking === id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+                background: tipoRanking === id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                color: tipoRanking === id ? '#C9A84C' : 'var(--text-muted)',
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               }}>{label}</button>
             ))}
@@ -264,15 +264,15 @@ export default function RelatoriosPage() {
                   <AreaChart data={data.porDia} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <defs>
                       <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"   stopColor="#d4af5f" stopOpacity={0.25} />
-                        <stop offset="95%"  stopColor="#d4af5f" stopOpacity={0} />
+                        <stop offset="5%"   stopColor="#C9A84C" stopOpacity={0.25} />
+                        <stop offset="95%"  stopColor="#C9A84C" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(212,175,95,0.06)" />
-                    <XAxis dataKey="data" tickFormatter={fmtDia} tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.06)" />
+                    <XAxis dataKey="data" tickFormatter={fmtDia} tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip content={<TooltipCustom />} />
-                    <Area type="monotone" dataKey="total" name="Vendas" stroke="#d4af5f" strokeWidth={2} fill="url(#gradGold)" dot={false} activeDot={{ r: 5, fill: '#d4af5f' }} />
+                    <Area type="monotone" dataKey="total" name="Vendas" stroke="#C9A84C" strokeWidth={2} fill="url(#gradGold)" dot={false} activeDot={{ r: 5, fill: '#C9A84C' }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </Section>
@@ -282,11 +282,11 @@ export default function RelatoriosPage() {
                 <Section title="Quantidade de Vendas por Dia">
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={data.porDia} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(212,175,95,0.06)" />
-                      <XAxis dataKey="data" tickFormatter={fmtDia} tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.06)" />
+                      <XAxis dataKey="data" tickFormatter={fmtDia} tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
                       <Tooltip content={<TooltipCustom />} />
-                      <Bar dataKey="qtd" name="Qtd" fill="rgba(94,170,223,0.6)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="qtd" name="Qtd" fill="rgba(77,158,204,0.6)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Section>
@@ -312,7 +312,7 @@ export default function RelatoriosPage() {
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: CORES[i % CORES.length] }} />
                               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{f.forma}</span>
                             </div>
-                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#f5ecd7' }}>{BRL(f.total)}</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#F2EBD9' }}>{BRL(f.total)}</span>
                           </div>
                         ))}
                       </div>
@@ -328,28 +328,28 @@ export default function RelatoriosPage() {
               <Section title="Produtos Mais Vendidos — Receita">
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={data.produtos?.slice(0, 12)} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(212,175,95,0.06)" horizontal={false} />
-                    <XAxis type="number" tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="produto" width={200} tick={{ fill: 'rgba(245,236,215,0.6)', fontSize: 10 }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.06)" horizontal={false} />
+                    <XAxis type="number" tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="produto" width={200} tick={{ fill: 'rgba(242,235,217,0.6)', fontSize: 10 }}
                       tickFormatter={(v: string) => v.length > 26 ? v.substring(0, 26) + '…' : v} axisLine={false} tickLine={false} />
                     <Tooltip content={<TooltipCustom />} />
-                    <Bar dataKey="receita" name="Receita" fill="#d4af5f" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="receita" name="Receita" fill="#C9A84C" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Section>
 
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)', display: 'grid', gridTemplateColumns: '24px 1fr 80px 130px', gap: 12 }}>
+                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)', display: 'grid', gridTemplateColumns: '24px 1fr 80px 130px', gap: 12 }}>
                   {['#', 'Produto', 'Qtd', 'Receita'].map(h => (
                     <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                   ))}
                 </div>
                 {data.produtos?.slice(0, 20).map((p: any, i: number) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 80px 130px', gap: 12, padding: '12px 20px', borderBottom: i < 19 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 80px 130px', gap: 12, padding: '12px 20px', borderBottom: i < 19 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700 }}>{i + 1}</div>
-                    <div style={{ fontSize: 13, color: '#f5ecd7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.produto}</div>
+                    <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.produto}</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{p.qtd} un.</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#d4af5f' }}>{BRL(p.receita)}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(p.receita)}</div>
                   </div>
                 ))}
               </div>
@@ -360,17 +360,17 @@ export default function RelatoriosPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 12 }}>
                 {data.vendedoras?.map((v: any, i: number) => (
-                  <div key={v.vendedor} className="card" style={{ borderColor: i === 0 ? 'rgba(212,175,95,0.3)' : undefined }}>
+                  <div key={v.vendedor} className="card" style={{ borderColor: i === 0 ? 'rgba(201,168,76,0.3)' : undefined }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 600 }}>{v.vendedor}</div>
+                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{v.vendedor}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{v.qtd} vendas</div>
                       </div>
                       {i === 0 && <span style={{ fontSize: 16 }}>🏆</span>}
                       {i === 1 && <span style={{ fontSize: 16 }}>🥈</span>}
                       {i === 2 && <span style={{ fontSize: 16 }}>🥉</span>}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#d4af5f', marginTop: 10 }}>{BRL(v.total)}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C', marginTop: 10 }}>{BRL(v.total)}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Ticket médio: {BRL(v.total / v.qtd)}</div>
                   </div>
                 ))}
@@ -379,9 +379,9 @@ export default function RelatoriosPage() {
               <Section title="Comparativo de Vendas">
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={data.vendedoras} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(212,175,95,0.06)" />
-                    <XAxis dataKey="vendedor" tick={{ fill: 'rgba(245,236,215,0.5)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(245,236,215,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.06)" />
+                    <XAxis dataKey="vendedor" tick={{ fill: 'rgba(242,235,217,0.5)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: 'rgba(242,235,217,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
                     <Tooltip content={<TooltipCustom />} />
                     <Bar dataKey="total" name="Total Vendido" radius={[6, 6, 0, 0]}>
                       {data.vendedoras?.map((_: any, i: number) => (
@@ -402,27 +402,27 @@ export default function RelatoriosPage() {
               </div>
 
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)', display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px 80px' }}>
+                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)', display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px 80px' }}>
                   {['Cliente', 'Parcelas', 'Max. Atraso', 'Total', 'WhatsApp'].map(h => (
                     <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                   ))}
                 </div>
                 {data.inadimplentes?.map((item: any, i: number) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px 80px', padding: '12px 20px', borderBottom: i < data.inadimplentes.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px 80px', padding: '12px 20px', borderBottom: i < data.inadimplentes.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, cursor: 'pointer' }}
+                      <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, cursor: 'pointer' }}
                         onClick={() => router.push(`/clientes/${item.cliente.id}`)}>
                         {item.cliente.nome?.split(' ').slice(0, 3).join(' ')}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.cliente.celular || '—'}</div>
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.parcelas.length}</div>
-                    <div style={{ fontSize: 13, color: '#ef6b4d', fontWeight: 600 }}>{item.maxAtraso}d</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#ef6b4d' }}>{BRL(item.total)}</div>
+                    <div style={{ fontSize: 13, color: '#E5584A', fontWeight: 600 }}>{item.maxAtraso}d</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#E5584A' }}>{BRL(item.total)}</div>
                     <div>
                       {item.cliente.whatsapp && (
                         <a href={`https://wa.me/55${item.cliente.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, color: '#64c88c', textDecoration: 'none' }}>
+                          style={{ fontSize: 11, color: '#4CAF82', textDecoration: 'none' }}>
                           Cobrar ↗
                         </a>
                       )}
@@ -446,10 +446,10 @@ export default function RelatoriosPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))', gap: 10 }}>
                     {data.semEstoque.map((p: any) => (
                       <div key={p.id} onClick={() => router.push(`/produtos/${p.id}`)}
-                        style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(239,107,77,0.06)', border: '1px solid rgba(239,107,77,0.2)', cursor: 'pointer' }}>
-                        <div style={{ fontSize: 12, color: '#f5ecd7', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
+                        style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(229,88,74,0.06)', border: '1px solid rgba(229,88,74,0.2)', cursor: 'pointer' }}>
+                        <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.grupo}{p.cor ? ` · ${p.cor}` : ''}{p.tamanho ? ` · ${p.tamanho}` : ''}</div>
-                        <div style={{ fontSize: 13, color: '#ef6b4d', fontWeight: 700, marginTop: 6 }}>Estoque: 0 un.</div>
+                        <div style={{ fontSize: 13, color: '#E5584A', fontWeight: 700, marginTop: 6 }}>Estoque: 0 un.</div>
                       </div>
                     ))}
                   </div>
@@ -461,11 +461,11 @@ export default function RelatoriosPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))', gap: 10 }}>
                     {data.estoqueBaixo.map((p: any) => (
                       <div key={p.id} onClick={() => router.push(`/produtos/${p.id}`)}
-                        style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,166,35,0.05)', border: '1px solid rgba(245,166,35,0.2)', cursor: 'pointer' }}>
-                        <div style={{ fontSize: 12, color: '#f5ecd7', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
+                        style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(232,148,58,0.05)', border: '1px solid rgba(232,148,58,0.2)', cursor: 'pointer' }}>
+                        <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.grupo}{p.localizacao ? ` · ${p.localizacao}` : ''}</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                          <span style={{ fontSize: 13, color: '#f5a623', fontWeight: 700 }}>Estoque: {p.estoque} un.</span>
+                          <span style={{ fontSize: 13, color: '#E8943A', fontWeight: 700 }}>Estoque: {p.estoque} un.</span>
                           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Mín: {p.estoque_minimo}</span>
                         </div>
                       </div>
@@ -520,7 +520,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
   const pos = cliente.posicao
   const isPodium = pos <= 3
   const medalhas: any = {
-    1: { bg: 'linear-gradient(135deg, #f5d76e, #d4af5f)', glow: 'rgba(245,215,110,0.5)', label: '1' },
+    1: { bg: 'linear-gradient(135deg, #f5d76e, #C9A84C)', glow: 'rgba(245,215,110,0.5)', label: '1' },
     2: { bg: 'linear-gradient(135deg, #d1d1d1, #9a9a9a)', glow: 'rgba(209,209,209,0.4)', label: '2' },
     3: { bg: 'linear-gradient(135deg, #cd9b6a, #a0673b)', glow: 'rgba(205,155,106,0.4)', label: '3' },
   }
@@ -534,19 +534,19 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
         gap: 14, alignItems: 'center',
         padding: '14px 18px',
         background: isPodium
-          ? 'linear-gradient(90deg, rgba(212,175,95,0.06), rgba(212,175,95,0.02))'
+          ? 'linear-gradient(90deg, rgba(201,168,76,0.06), rgba(201,168,76,0.02))'
           : 'rgba(255,255,255,0.02)',
-        border: `1px solid ${isPodium ? 'rgba(212,175,95,0.2)' : 'var(--border)'}`,
+        border: `1px solid ${isPodium ? 'rgba(201,168,76,0.2)' : 'var(--border)'}`,
         borderRadius: 12, cursor: 'pointer',
         transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateX(4px)'
-        e.currentTarget.style.borderColor = 'rgba(212,175,95,0.35)'
+        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = 'translateX(0)'
-        e.currentTarget.style.borderColor = isPodium ? 'rgba(212,175,95,0.2)' : 'var(--border)'
+        e.currentTarget.style.borderColor = isPodium ? 'rgba(201,168,76,0.2)' : 'var(--border)'
       }}
     >
       {/* Medalha ou número */}
@@ -565,8 +565,8 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
         ) : (
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(212,175,95,0.06)',
-            border: '1px solid rgba(212,175,95,0.18)',
+            background: 'rgba(201,168,76,0.06)',
+            border: '1px solid rgba(201,168,76,0.18)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 14, color: 'var(--gold-dim)', fontWeight: 700,
           }}>
@@ -578,14 +578,14 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
       {/* Nome + cidade */}
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, color: '#d4af5f', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+          <span style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
             Top cliente {pos}
           </span>
           {cliente.categoria && (
             <span className="badge badge-gold" style={{ fontSize: 9 }}>{cliente.categoria}</span>
           )}
         </div>
-        <div style={{ fontSize: 15, color: '#f5ecd7', fontWeight: 600, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 15, color: '#F2EBD9', fontWeight: 600, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {cliente.nome}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -596,7 +596,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
       {/* Total comprado */}
       <div style={{ textAlign: 'right' }}>
         <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#d4af5f', marginTop: 2 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#C9A84C', marginTop: 2 }}>
           {BRL(cliente.total)}
         </div>
       </div>
@@ -604,7 +604,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
       {/* Qtd compras */}
       <div style={{ textAlign: 'right' }}>
         <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Compras</div>
-        <div style={{ fontSize: 15, color: '#f5ecd7', fontWeight: 600, marginTop: 2 }}>
+        <div style={{ fontSize: 15, color: '#F2EBD9', fontWeight: 600, marginTop: 2 }}>
           {cliente.qtd_compras}
         </div>
       </div>
@@ -647,7 +647,7 @@ function InativosBlock({ data, router, dias }: { data: any; router: any; dias: n
               display: 'grid',
               gridTemplateColumns: '1fr 140px 130px 110px 130px 44px',
               padding: '12px 18px', borderBottom: '1px solid var(--border)',
-              background: 'rgba(212,175,95,0.03)',
+              background: 'rgba(201,168,76,0.03)',
             }}>
               {['Cliente', 'Telefone', 'Cidade', 'Categoria', 'Última compra', ''].map((h, i) => (
                 <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
@@ -655,7 +655,7 @@ function InativosBlock({ data, router, dias }: { data: any; router: any; dias: n
             </div>
             {clientes.slice(0, 200).map((c, i) => {
               const d = c.dias_sem_comprar
-              const corDias = d === null ? '#5eaadf' : d > 180 ? '#ef6b4d' : d > 90 ? '#f5a623' : 'var(--text-secondary)'
+              const corDias = d === null ? '#4D9ECC' : d > 180 ? '#E5584A' : d > 90 ? '#E8943A' : 'var(--text-secondary)'
               return (
                 <div
                   key={c.id}
@@ -664,24 +664,24 @@ function InativosBlock({ data, router, dias }: { data: any; router: any; dias: n
                     display: 'grid',
                     gridTemplateColumns: '1fr 140px 130px 110px 130px 44px',
                     padding: '12px 18px',
-                    borderBottom: i < clientes.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                    borderBottom: i < clientes.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                     cursor: 'pointer', alignItems: 'center', transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                      background: 'linear-gradient(135deg, rgba(212,175,95,0.18), rgba(212,175,95,0.05))',
+                      background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.05))',
                       border: '1px solid var(--border)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 13,
+                      fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 13,
                     }}>
                       {c.nome?.charAt(0)}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {c.nome}
                       </div>
                     </div>

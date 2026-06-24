@@ -20,7 +20,7 @@ export default function CrediarioDetalhePage() {
       .then(d => { if (d.erro) setErro(d.erro); else setData(d) })
   }, [params.id])
 
-  if (erro) return <AppLayout><div style={{ color: '#ef6b4d', padding: 24 }}>{erro}</div></AppLayout>
+  if (erro) return <AppLayout><div style={{ color: '#E5584A', padding: 24 }}>{erro}</div></AppLayout>
   if (!data) return <AppLayout><div style={{ padding: 24, color: 'var(--text-muted)' }}>Carregando...</div></AppLayout>
 
   const { cliente, totais, vendas, parcelas, pecas_top } = data
@@ -33,7 +33,7 @@ export default function CrediarioDetalhePage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
               {cliente.nome}
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -54,15 +54,15 @@ export default function CrediarioDetalhePage() {
 
         {/* MÉTRICAS DO CLIENTE */}
         <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-          <Metrica label="Em aberto" valor={BRL(totais.em_aberto || 0)} cor="#d4af5f" destaque />
-          <Metrica label="Em atraso" valor={BRL(totais.em_atraso || 0)} cor={totais.em_atraso > 0 ? '#ef6b4d' : 'var(--text-muted)'} />
-          <Metrica label="Já pago" valor={BRL(totais.pago || 0)} cor="#64c88c" />
-          <Metrica label="Compras totais" valor={String(totais.total_compras)} cor="#5eaadf" />
+          <Metrica label="Em aberto" valor={BRL(totais.em_aberto || 0)} cor="#C9A84C" destaque />
+          <Metrica label="Em atraso" valor={BRL(totais.em_atraso || 0)} cor={totais.em_atraso > 0 ? '#E5584A' : 'var(--text-muted)'} />
+          <Metrica label="Já pago" valor={BRL(totais.pago || 0)} cor="#4CAF82" />
+          <Metrica label="Compras totais" valor={String(totais.total_compras)} cor="#4D9ECC" />
           <Metrica
             label="Próxima parcela"
             valor={totais.proxima_parcela ? fmtData(totais.proxima_parcela.data_vencimento) : '—'}
             sub={totais.proxima_parcela ? BRL(Number(totais.proxima_parcela.valor)) : undefined}
-            cor={totais.proxima_parcela?.data_vencimento < hoje ? '#ef6b4d' : '#f5ecd7'}
+            cor={totais.proxima_parcela?.data_vencimento < hoje ? '#E5584A' : '#F2EBD9'}
           />
         </div>
 
@@ -72,8 +72,8 @@ export default function CrediarioDetalhePage() {
             <button key={id} onClick={() => setAba(id)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              background: aba === id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: aba === id ? '#d4af5f' : 'var(--text-muted)',
+              background: aba === id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: aba === id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.2s',
             }}>{label}</button>
           ))}
@@ -90,7 +90,7 @@ export default function CrediarioDetalhePage() {
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 100px 130px',
                 padding: '12px 20px', borderBottom: '1px solid var(--border)',
-                background: 'rgba(212,175,95,0.03)',
+                background: 'rgba(201,168,76,0.03)',
               }}>
                 {['Peça / Produto', 'Quantidade', 'Total Gasto'].map((h, i) => (
                   <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
@@ -103,19 +103,19 @@ export default function CrediarioDetalhePage() {
                   style={{
                     display: 'grid', gridTemplateColumns: '1fr 100px 130px',
                     padding: '13px 20px', alignItems: 'center',
-                    borderBottom: i < pecas_top.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                    borderBottom: i < pecas_top.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                     cursor: p.cod_produto ? 'pointer' : 'default',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => { if (p.cod_produto) e.currentTarget.style.background = 'rgba(212,175,95,0.03)' }}
+                  onMouseEnter={e => { if (p.cod_produto) e.currentTarget.style.background = 'rgba(201,168,76,0.03)' }}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 16 }}>👗</span>
-                    <span style={{ fontSize: 13, color: '#f5ecd7' }}>{p.produto}</span>
+                    <span style={{ fontSize: 13, color: '#F2EBD9' }}>{p.produto}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 600 }}>{p.qtd} un.</div>
-                  <div style={{ fontSize: 13, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(p.valor)}</div>
+                  <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{p.qtd} un.</div>
+                  <div style={{ fontSize: 13, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(p.valor)}</div>
                 </div>
               ))}
             </div>
@@ -135,7 +135,7 @@ export default function CrediarioDetalhePage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 11, color: '#d4af5f', letterSpacing: '0.08em', fontWeight: 700 }}>VENDA #{v.codigo_legado || v.id}</span>
+                        <span style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.08em', fontWeight: 700 }}>VENDA #{v.codigo_legado || v.id}</span>
                         {v.situacao && <span className="badge badge-gold" style={{ fontSize: 9 }}>{v.situacao}</span>}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
@@ -143,18 +143,18 @@ export default function CrediarioDetalhePage() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f' }}>
+                      <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C' }}>
                         {BRL(Number(v.valor_total))}
                       </div>
                     </div>
                   </div>
                   {v.itens && v.itens.length > 0 && (
-                    <div style={{ borderTop: '1px solid rgba(212,175,95,0.05)', paddingTop: 10 }}>
+                    <div style={{ borderTop: '1px solid rgba(201,168,76,0.05)', paddingTop: 10 }}>
                       {v.itens.map((it: any) => (
                         <div key={it.cod_venda + '-' + it.produto} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px', gap: 12, padding: '4px 0', fontSize: 12 }}>
                           <span style={{ color: 'var(--text-secondary)' }}>{it.produto}</span>
                           <span style={{ color: 'var(--text-muted)', textAlign: 'right' }}>{it.quantidade}x</span>
-                          <span style={{ color: '#f5ecd7', textAlign: 'right', fontWeight: 600 }}>{BRL(Number(it.sub_total))}</span>
+                          <span style={{ color: '#F2EBD9', textAlign: 'right', fontWeight: 600 }}>{BRL(Number(it.sub_total))}</span>
                         </div>
                       ))}
                     </div>
@@ -176,7 +176,7 @@ export default function CrediarioDetalhePage() {
               <div style={{
                 display: 'grid', gridTemplateColumns: '90px 1fr 130px 130px 130px',
                 padding: '12px 20px', borderBottom: '1px solid var(--border)',
-                background: 'rgba(212,175,95,0.03)',
+                background: 'rgba(201,168,76,0.03)',
               }}>
                 {['Parcela', 'Vencimento', 'Valor', 'Pago em', 'Status'].map((h, i) => (
                   <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
@@ -185,16 +185,16 @@ export default function CrediarioDetalhePage() {
               {parcelas.map((p: any, i: number) => {
                 const atrasada = !p.pago && p.data_vencimento && p.data_vencimento < hoje
                 const status = p.pago ? 'Pago' : atrasada ? 'Atrasada' : 'Aberta'
-                const cor = p.pago ? '#64c88c' : atrasada ? '#ef6b4d' : '#f5a623'
+                const cor = p.pago ? '#4CAF82' : atrasada ? '#E5584A' : '#E8943A'
                 return (
                   <div key={p.id} style={{
                     display: 'grid', gridTemplateColumns: '90px 1fr 130px 130px 130px',
                     padding: '12px 20px', alignItems: 'center',
-                    borderBottom: i < parcelas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                    borderBottom: i < parcelas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                   }}>
-                    <div style={{ fontSize: 12, color: '#f5ecd7' }}>{p.parcela || '—'}</div>
-                    <div style={{ fontSize: 13, color: '#f5ecd7' }}>{fmtData(p.data_vencimento)}</div>
-                    <div style={{ fontSize: 13, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(Number(p.valor))}</div>
+                    <div style={{ fontSize: 12, color: '#F2EBD9' }}>{p.parcela || '—'}</div>
+                    <div style={{ fontSize: 13, color: '#F2EBD9' }}>{fmtData(p.data_vencimento)}</div>
+                    <div style={{ fontSize: 13, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(Number(p.valor))}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.pago ? fmtData(p.data_cobranca) : '—'}</div>
                     <div>
                       <span style={{

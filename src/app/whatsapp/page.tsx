@@ -51,20 +51,20 @@ function EditorTemplate({ modelo, onSalvo }: any) {
     <div style={{ border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px', background: 'rgba(255,255,255,0.02)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600 }}>{TIPO_LABELS[modelo.tipo] || modelo.nome}</div>
+          <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{TIPO_LABELS[modelo.tipo] || modelo.nome}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{modelo.nome}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)' }}>
             <div onClick={() => setAtivo(!ativo)} style={{
               width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
-              background: ativo ? 'rgba(100,200,140,0.3)' : 'rgba(255,255,255,0.08)',
-              border: `1px solid ${ativo ? 'rgba(100,200,140,0.4)' : 'var(--border)'}`,
+              background: ativo ? 'rgba(76,175,130,0.3)' : 'rgba(255,255,255,0.08)',
+              border: `1px solid ${ativo ? 'rgba(76,175,130,0.4)' : 'var(--border)'}`,
               transition: 'all 0.2s',
             }}>
               <div style={{
                 width: 14, height: 14, borderRadius: '50%',
-                background: ativo ? '#64c88c' : 'rgba(255,255,255,0.3)',
+                background: ativo ? '#4CAF82' : 'rgba(255,255,255,0.3)',
                 position: 'absolute', top: 2,
                 left: ativo ? 18 : 2,
                 transition: 'all 0.2s',
@@ -82,8 +82,8 @@ function EditorTemplate({ modelo, onSalvo }: any) {
           {vars.map(v => (
             <button key={v} onClick={() => inserirVar(v)} style={{
               fontSize: 11, padding: '3px 8px', borderRadius: 6,
-              background: 'rgba(212,175,95,0.08)', border: '1px solid rgba(212,175,95,0.15)',
-              color: '#d4af5f', cursor: 'pointer', fontFamily: 'monospace',
+              background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.15)',
+              color: '#C9A84C', cursor: 'pointer', fontFamily: 'monospace',
             }}>{v}</button>
           ))}
         </div>
@@ -98,9 +98,9 @@ function EditorTemplate({ modelo, onSalvo }: any) {
       />
 
       {/* Preview */}
-      <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(212,175,95,0.04)', borderRadius: 8, borderLeft: '3px solid rgba(212,175,95,0.25)' }}>
+      <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(201,168,76,0.04)', borderRadius: 8, borderLeft: '3px solid rgba(201,168,76,0.25)' }}>
         <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Preview</div>
-        <div style={{ fontSize: 12, color: 'rgba(245,236,215,0.7)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        <div style={{ fontSize: 12, color: 'rgba(242,235,217,0.7)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
           {msg.replace(/\{nome\}/g, 'Maria').replace(/\{parcela\}/g, '2/4').replace(/\{valor\}/g, 'R$ 154,00').replace(/\{data_vencimento\}/g, '25/01/2026').replace(/\{dias\}/g, '5').replace(/\{nome_completo\}/g, 'Maria da Silva')}
         </div>
       </div>
@@ -117,14 +117,14 @@ function EditorTemplate({ modelo, onSalvo }: any) {
 // ─── PAINEL DE STATUS ─────────────────────────────────────
 function StatusConexao({ status, onConectar }: any) {
   const conectado = status?.state === 'open' || status?.state === 'connected'
-  const cor = conectado ? '#64c88c' : status?.state === 'sem_conexao' ? '#ef6b4d' : '#f5a623'
+  const cor = conectado ? '#4CAF82' : status?.state === 'sem_conexao' ? '#E5584A' : '#E8943A'
   const label = conectado ? 'Conectado' : status?.state === 'sem_conexao' ? 'Evolution API não encontrada' : 'Desconectado'
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${cor}30` }}>
       <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor, boxShadow: `0 0 8px ${cor}60`, flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600 }}>WhatsApp Business</div>
+        <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>WhatsApp Business</div>
         <div style={{ fontSize: 12, color: cor, marginTop: 2 }}>{label}</div>
       </div>
       {!conectado && (
@@ -133,7 +133,7 @@ function StatusConexao({ status, onConectar }: any) {
         </button>
       )}
       {conectado && (
-        <span style={{ fontSize: 12, color: '#64c88c', padding: '5px 12px', background: 'rgba(100,200,140,0.1)', borderRadius: 8, border: '1px solid rgba(100,200,140,0.2)' }}>
+        <span style={{ fontSize: 12, color: '#4CAF82', padding: '5px 12px', background: 'rgba(76,175,130,0.1)', borderRadius: 8, border: '1px solid rgba(76,175,130,0.2)' }}>
           ✓ Linha ativa
         </span>
       )}
@@ -158,9 +158,9 @@ function ModalQR({ onClose }: any) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
       <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 380, textAlign: 'center' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 8 }}>Conectar WhatsApp</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Conectar WhatsApp</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
-          Abra o WhatsApp no celular da loja → toque nos três pontinhos → <strong style={{ color: '#f5ecd7' }}>Dispositivos conectados</strong> → <strong style={{ color: '#f5ecd7' }}>Conectar dispositivo</strong> → escaneie o QR Code
+          Abra o WhatsApp no celular da loja → toque nos três pontinhos → <strong style={{ color: '#F2EBD9' }}>Dispositivos conectados</strong> → <strong style={{ color: '#F2EBD9' }}>Conectar dispositivo</strong> → escaneie o QR Code
         </p>
 
         {loading ? (
@@ -172,7 +172,7 @@ function ModalQR({ onClose }: any) {
             <div style={{ fontSize: 10, fontFamily: 'monospace', wordBreak: 'break-all', color: '#000', maxWidth: 220 }}>{qrString.substring(0, 100)}...</div>
           </div>
         ) : (
-          <div style={{ padding: '20px', color: '#ef6b4d', fontSize: 13 }}>
+          <div style={{ padding: '20px', color: '#E5584A', fontSize: 13 }}>
             Não foi possível gerar o QR Code.<br/>Verifique se a Evolution API está online.
           </div>
         )}
@@ -261,12 +261,12 @@ export default function WhatsAppPage() {
 
         {/* HEADER */}
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7' }}>WhatsApp</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>WhatsApp</h1>
           <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Mensagens automáticas e manuais</p>
         </div>
 
         {feedback && (
-          <div style={{ background: 'rgba(100,200,140,0.1)', border: '1px solid rgba(100,200,140,0.25)', borderRadius: 10, padding: '12px 16px', color: '#64c88c', fontSize: 13 }}>
+          <div style={{ background: 'rgba(76,175,130,0.1)', border: '1px solid rgba(76,175,130,0.25)', borderRadius: 10, padding: '12px 16px', color: '#4CAF82', fontSize: 13 }}>
             {feedback}
           </div>
         )}
@@ -278,8 +278,8 @@ export default function WhatsAppPage() {
               padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: 6,
-              background: aba === tab.id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: aba === tab.id ? '#d4af5f' : 'var(--text-muted)',
+              background: aba === tab.id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: aba === tab.id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}><span>{tab.icon}</span>{tab.label}</button>
           ))}
@@ -295,7 +295,7 @@ export default function WhatsAppPage() {
               <StatusConexao status={data?.status} onConectar={() => setMostrarQR(true)} />
 
               <div className="card">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14 }}>Como funciona</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>Como funciona</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[
                     ['Todo dia às 9h', 'O sistema verifica automaticamente aniversariantes e parcelas que vencem em 5 dias e envia as mensagens configuradas'],
@@ -303,10 +303,10 @@ export default function WhatsAppPage() {
                     ['Modelos editáveis', 'Os textos das mensagens são editáveis na aba Modelos — use {nome}, {valor} etc. para personalizar'],
                     ['Histórico completo', 'Todos os envios ficam registrados na aba Histórico com data, destinatário e status'],
                   ].map(([titulo, desc]) => (
-                    <div key={titulo} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#d4af5f', marginTop: 6, flexShrink: 0 }} />
+                    <div key={titulo} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C9A84C', marginTop: 6, flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 600 }}>{titulo}</div>
+                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{titulo}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.5 }}>{desc}</div>
                       </div>
                     </div>
@@ -314,13 +314,13 @@ export default function WhatsAppPage() {
                 </div>
               </div>
 
-              <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>Configuração do Vercel Cron</h3>
+              <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Configuração do Vercel Cron</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
-                  Para os disparos automáticos funcionarem, o arquivo <code style={{ color: '#d4af5f', background: 'rgba(212,175,95,0.08)', padding: '1px 5px', borderRadius: 4 }}>vercel.json</code> já está configurado. Adicione a variável abaixo no Vercel:
+                  Para os disparos automáticos funcionarem, o arquivo <code style={{ color: '#C9A84C', background: 'rgba(201,168,76,0.08)', padding: '1px 5px', borderRadius: 4 }}>vercel.json</code> já está configurado. Adicione a variável abaixo no Vercel:
                 </p>
-                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: '#64c88c' }}>
-                  CRON_SECRET=<span style={{ color: '#d4af5f' }}>sua_senha_secreta_aqui</span>
+                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: '#4CAF82' }}>
+                  CRON_SECRET=<span style={{ color: '#C9A84C' }}>sua_senha_secreta_aqui</span>
                 </div>
               </div>
             </div>
@@ -344,10 +344,10 @@ export default function WhatsAppPage() {
 
               {/* Disparos em lote */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="card" style={{ borderColor: 'rgba(212,175,95,0.2)' }}>
+                <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#f5ecd7' }}>🎂 Aniversariantes Hoje</div>
+                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#F2EBD9' }}>🎂 Aniversariantes Hoje</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
                         {pendentes?.aniversariantes?.length || 0} com WhatsApp cadastrado
                       </div>
@@ -363,9 +363,9 @@ export default function WhatsAppPage() {
                   {pendentes?.aniversariantes?.length === 0 ? (
                     <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nenhum aniversariante hoje</p>
                   ) : pendentes?.aniversariantes?.map((a: any) => (
-                    <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
+                    <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7' }}>{a.nome?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{a.nome?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.whatsapp || a.celular}</div>
                       </div>
                       <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
@@ -377,10 +377,10 @@ export default function WhatsAppPage() {
                   ))}
                 </div>
 
-                <div className="card" style={{ borderColor: 'rgba(239,107,77,0.15)' }}>
+                <div className="card" style={{ borderColor: 'rgba(229,88,74,0.15)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#f5ecd7' }}>💰 Vencimentos em 5 dias</div>
+                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#F2EBD9' }}>💰 Vencimentos em 5 dias</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
                         {pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer === 5).length || 0} parcelas
                       </div>
@@ -396,9 +396,9 @@ export default function WhatsAppPage() {
                   {pendentes?.vencimentos?.length === 0 ? (
                     <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nenhum vencimento em 5 dias</p>
                   ) : pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer === 5).map((v: any, i: number) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{BRL(v.valor)} · {fmtData(v.data_vencimento)}</div>
                       </div>
                       <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
@@ -414,19 +414,19 @@ export default function WhatsAppPage() {
               {/* Todos os vencimentos dos próximos 7 dias */}
               {(pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer !== 5)?.length || 0) > 0 && (
                 <div className="card">
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>
                     Outros Vencimentos (próximos 7 dias)
                   </h3>
                   {pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer !== 5).map((v: any, i: number) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 100px auto', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(212,175,95,0.05)', alignItems: 'center' }}>
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 100px auto', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(201,168,76,0.05)', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#f5ecd7' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Parcela {v.parcela}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: v.dias_para_vencer === 0 ? '#ef6b4d' : '#f5a623' }}>
+                      <div style={{ fontSize: 12, color: v.dias_para_vencer === 0 ? '#E5584A' : '#E8943A' }}>
                         {v.dias_para_vencer === 0 ? 'Hoje' : `${v.dias_para_vencer}d`}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#d4af5f' }}>{BRL(v.valor)}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#C9A84C' }}>{BRL(v.valor)}</div>
                       <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
                         onClick={() => enviarIndividual(v.dias_para_vencer === 0 ? 'cobranca_vencimento' : 'cobranca_5d',
                           { id: v.cod_cliente, nome: v.nome_cliente, whatsapp: v.whatsapp })}>
@@ -441,7 +441,7 @@ export default function WhatsAppPage() {
           /* ── HISTÓRICO / LOGS ─────────────────────────── */
           ) : aba === 'logs' ? (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 80px 80px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 80px 80px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
                 {['Data/Hora', 'Cliente / Mensagem', 'Tipo', 'Número', 'Status'].map(h => (
                   <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                 ))}
@@ -449,10 +449,10 @@ export default function WhatsAppPage() {
               {(data?.logs?.length === 0) ? (
                 <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma mensagem enviada ainda</div>
               ) : data?.logs?.map((log: any, i: number) => (
-                <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 80px 80px', padding: '12px 20px', borderBottom: i < data.logs.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
+                <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 80px 80px', padding: '12px 20px', borderBottom: i < data.logs.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtDT(log.enviado_em)}</div>
                   <div>
-                    <div style={{ fontSize: 13, color: '#f5ecd7' }}>{log.clientes?.nome || 'Sem cliente'}</div>
+                    <div style={{ fontSize: 13, color: '#F2EBD9' }}>{log.clientes?.nome || 'Sem cliente'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340 }}>
                       {log.mensagem?.substring(0, 60)}...
                     </div>
@@ -464,11 +464,11 @@ export default function WhatsAppPage() {
                   <div>
                     <span style={{
                       fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                      color: log.status === 'enviado' ? '#64c88c' : '#ef6b4d',
+                      color: log.status === 'enviado' ? '#4CAF82' : '#E5584A',
                     }}>
                       {log.status === 'enviado' ? '✓ OK' : '✕ ERRO'}
                     </span>
-                    {log.erro && <div style={{ fontSize: 10, color: '#ef6b4d', marginTop: 2 }}>{log.erro}</div>}
+                    {log.erro && <div style={{ fontSize: 10, color: '#E5584A', marginTop: 2 }}>{log.erro}</div>}
                   </div>
                 </div>
               ))}

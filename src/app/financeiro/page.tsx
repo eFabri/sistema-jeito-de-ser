@@ -35,13 +35,13 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
       <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 420, boxShadow: 'var(--shadow-dropdown)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>Registrar Recebimento</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Registrar Recebimento</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
           {conta.clientes?.nome || 'Cliente'} · Parcela {conta.parcela || '—'} · Vence {fmtData(conta.data_vencimento)}
         </p>
 
         {vencida && (
-          <div style={{ background: 'rgba(239,107,77,0.08)', border: '1px solid rgba(239,107,77,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#ef6b4d' }}>
+          <div style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#E5584A' }}>
             ⚠ Conta vencida há {dias} dias. Você pode adicionar juros abaixo.
           </div>
         )}
@@ -71,9 +71,9 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
           </div>
 
           {juros > 0 && (
-            <div style={{ padding: '10px 14px', background: 'rgba(212,175,95,0.06)', borderRadius: 8, display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ padding: '10px 14px', background: 'rgba(201,168,76,0.06)', borderRadius: 8, display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total a receber:</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#d4af5f' }}>{BRL(valor + juros)}</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#C9A84C' }}>{BRL(valor + juros)}</span>
             </div>
           )}
         </div>
@@ -112,7 +112,7 @@ function ModalPagar({ conta, onClose, onSalvo }: any) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
       <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 420, boxShadow: 'var(--shadow-dropdown)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>Registrar Pagamento</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Registrar Pagamento</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
           {conta.descricao || conta.despesa} · Vence {fmtData(conta.data_vencimento)}
         </p>
@@ -134,9 +134,9 @@ function ModalPagar({ conta, onClose, onSalvo }: any) {
             <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Data do pagamento</label>
             <input type="date" className="input" value={data} onChange={e => setData(e.target.value)} />
           </div>
-          <div style={{ padding: '10px 14px', background: 'rgba(212,175,95,0.06)', borderRadius: 8, display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ padding: '10px 14px', background: 'rgba(201,168,76,0.06)', borderRadius: 8, display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total a pagar:</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#d4af5f' }}>{BRL(valor + juros - desconto)}</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#C9A84C' }}>{BRL(valor + juros - desconto)}</span>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ function ModalNovaContaPagar({ onClose, onSalvo }: any) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
       <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 460, boxShadow: 'var(--shadow-dropdown)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 20 }}>Nova Conta a Pagar</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 20 }}>Nova Conta a Pagar</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           {[['Despesa / Categoria', 'despesa', 'text'], ['Descrição', 'descricao', 'text'], ['Vencimento', 'data_vencimento', 'date'], ['Valor (R$)', 'valor', 'number'], ['Parcela', 'parcela', 'text'], ['Documento', 'documento', 'text'], ['Plano de Contas', 'plano_contas', 'text']].map(([label, key, type]) => (
             <div key={key} style={key === 'descricao' ? { gridColumn: '1 / span 2' } : {}}>
@@ -269,7 +269,7 @@ export default function FinanceiroPage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7' }}>Financeiro</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Financeiro</h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Crediário, contas e fluxo de caixa</p>
           </div>
           {aba === 'pagar' && (
@@ -285,9 +285,9 @@ export default function FinanceiroPage() {
             { label: 'A Pagar',         value: resumo.a_pagar,          alert: false },
             { label: 'Vencido (Pagar)', value: resumo.vencido_pagar,    alert: resumo.vencido_pagar > 0 },
           ].map(card => (
-            <div key={card.label} className="card" style={{ borderColor: card.alert && card.value > 0 ? 'rgba(239,107,77,0.25)' : undefined }}>
-              <div style={{ fontSize: 10, color: card.alert && card.value > 0 ? '#ef6b4d' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{card.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: card.alert && card.value > 0 ? '#ef6b4d' : '#f5ecd7' }}>{BRL(card.value || 0)}</div>
+            <div key={card.label} className="card" style={{ borderColor: card.alert && card.value > 0 ? 'rgba(229,88,74,0.25)' : undefined }}>
+              <div style={{ fontSize: 10, color: card.alert && card.value > 0 ? '#E5584A' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{card.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: card.alert && card.value > 0 ? '#E5584A' : '#F2EBD9' }}>{BRL(card.value || 0)}</div>
             </div>
           ))}
         </div>
@@ -298,8 +298,8 @@ export default function FinanceiroPage() {
             <button key={tab.id} onClick={() => setAba(tab.id as any)} style={{
               padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              background: aba === tab.id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: aba === tab.id ? '#d4af5f' : 'var(--text-muted)',
+              background: aba === tab.id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: aba === tab.id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}>{tab.label}</button>
           ))}
@@ -313,9 +313,9 @@ export default function FinanceiroPage() {
               <div style={{ display: 'flex', gap: 6 }}>
                 {FILTROS_RECEBER.filter(f => aba === 'pagar' ? f.id !== 'todos' : true).map(f => (
                   <button key={f.id} onClick={() => setFiltro(f.id)} style={{
-                    padding: '7px 14px', borderRadius: 8, border: `1px solid ${filtro === f.id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
-                    background: filtro === f.id ? 'rgba(212,175,95,0.18)' : 'rgba(255,255,255,0.03)',
-                    color: filtro === f.id ? '#d4af5f' : 'var(--text-muted)',
+                    padding: '7px 14px', borderRadius: 8, border: `1px solid ${filtro === f.id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+                    background: filtro === f.id ? 'rgba(201,168,76,0.18)' : 'rgba(255,255,255,0.03)',
+                    color: filtro === f.id ? '#C9A84C' : 'var(--text-muted)',
                     fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                   }}>{f.label}</button>
                 ))}
@@ -332,7 +332,7 @@ export default function FinanceiroPage() {
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {aba === 'receber' ? (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
                     {['Cliente', 'Parcela', 'Vencimento', 'Valor', 'Status', ''].map(h => (
                       <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                     ))}
@@ -351,29 +351,29 @@ export default function FinanceiroPage() {
                       <div key={c.id} style={{
                         display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px',
                         padding: '13px 20px', alignItems: 'center',
-                        borderBottom: i < contas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
-                        background: atrasado ? 'rgba(239,107,77,0.02)' : 'transparent',
+                        borderBottom: i < contas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
+                        background: atrasado ? 'rgba(229,88,74,0.02)' : 'transparent',
                       }}>
                         <div>
-                          <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, cursor: 'pointer' }}
+                          <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, cursor: 'pointer' }}
                             onClick={() => router.push(`/clientes/${c.cod_cliente}`)}>
                             {c.clientes?.nome?.split(' ').slice(0, 3).join(' ') || '—'}
                           </div>
                           {c.historico && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.historico}</div>}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.parcela || '—'}</div>
-                        <div style={{ fontSize: 13, color: atrasado ? '#ef6b4d' : '#f5ecd7', fontWeight: atrasado ? 600 : 400 }}>
+                        <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#F2EBD9', fontWeight: atrasado ? 600 : 400 }}>
                           {fmtData(c.data_vencimento)}
-                          {atrasado && <div style={{ fontSize: 10, color: '#ef6b4d' }}>{diasAtraso}d atraso</div>}
+                          {atrasado && <div style={{ fontSize: 10, color: '#E5584A' }}>{diasAtraso}d atraso</div>}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: atrasado ? '#ef6b4d' : '#d4af5f' }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: atrasado ? '#E5584A' : '#C9A84C' }}>
                           {BRL(c.valor)}
-                          {c.juros > 0 && <div style={{ fontSize: 11, color: '#f5a623' }}>+{BRL(c.juros)} juros</div>}
+                          {c.juros > 0 && <div style={{ fontSize: 11, color: '#E8943A' }}>+{BRL(c.juros)} juros</div>}
                         </div>
                         <div>
                           <span style={{
                             fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                            color: c.pago ? '#64c88c' : atrasado ? '#ef6b4d' : '#f5a623',
+                            color: c.pago ? '#4CAF82' : atrasado ? '#E5584A' : '#E8943A',
                           }}>
                             {c.pago ? 'PAGO' : atrasado ? 'VENCIDO' : 'EM ABERTO'}
                           </span>
@@ -393,7 +393,7 @@ export default function FinanceiroPage() {
               ) : (
                 /* CONTAS A PAGAR */
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
                     {['Descrição', 'Parcela', 'Vencimento', 'Valor', 'Status', ''].map(h => (
                       <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                     ))}
@@ -410,21 +410,21 @@ export default function FinanceiroPage() {
                       <div key={c.id} style={{
                         display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px',
                         padding: '13px 20px', alignItems: 'center',
-                        borderBottom: i < contas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
-                        background: atrasado ? 'rgba(239,107,77,0.02)' : 'transparent',
+                        borderBottom: i < contas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
+                        background: atrasado ? 'rgba(229,88,74,0.02)' : 'transparent',
                       }}>
                         <div>
-                          <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500 }}>{c.descricao || c.despesa || '—'}</div>
+                          <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{c.descricao || c.despesa || '—'}</div>
                           {c.plano_contas && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.plano_contas}</div>}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.parcela || '—'}</div>
-                        <div style={{ fontSize: 13, color: atrasado ? '#ef6b4d' : '#f5ecd7', fontWeight: atrasado ? 600 : 400 }}>
+                        <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#F2EBD9', fontWeight: atrasado ? 600 : 400 }}>
                           {fmtData(c.data_vencimento)}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: atrasado ? '#ef6b4d' : '#d4af5f' }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: atrasado ? '#E5584A' : '#C9A84C' }}>
                           {BRL(c.valor)}
                         </div>
-                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: c.pago ? '#64c88c' : atrasado ? '#ef6b4d' : '#f5a623' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: c.pago ? '#4CAF82' : atrasado ? '#E5584A' : '#E8943A' }}>
                           {c.pago ? 'PAGO' : atrasado ? 'VENCIDO' : 'EM ABERTO'}
                         </div>
                         <div>
@@ -458,22 +458,22 @@ export default function FinanceiroPage() {
                 onChange={e => setMesFluxo(e.target.value)} />
               <div style={{ display: 'flex', gap: 12 }}>
                 <div className="card" style={{ padding: '12px 18px', display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: '#64c88c', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Entradas</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#64c88c' }}>{BRL(fluxo.totalCredito)}</span>
+                  <span style={{ fontSize: 11, color: '#4CAF82', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Entradas</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#4CAF82' }}>{BRL(fluxo.totalCredito)}</span>
                 </div>
                 <div className="card" style={{ padding: '12px 18px', display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: '#ef6b4d', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Saídas</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#ef6b4d' }}>{BRL(fluxo.totalDebito)}</span>
+                  <span style={{ fontSize: 11, color: '#E5584A', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Saídas</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#E5584A' }}>{BRL(fluxo.totalDebito)}</span>
                 </div>
-                <div className="card" style={{ padding: '12px 18px', display: 'flex', gap: 10, alignItems: 'center', borderColor: fluxo.saldo >= 0 ? 'rgba(100,200,140,0.2)' : 'rgba(239,107,77,0.25)' }}>
+                <div className="card" style={{ padding: '12px 18px', display: 'flex', gap: 10, alignItems: 'center', borderColor: fluxo.saldo >= 0 ? 'rgba(76,175,130,0.2)' : 'rgba(229,88,74,0.25)' }}>
                   <span style={{ fontSize: 11, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Saldo</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: fluxo.saldo >= 0 ? '#64c88c' : '#ef6b4d' }}>{BRL(fluxo.saldo)}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: fluxo.saldo >= 0 ? '#4CAF82' : '#E5584A' }}>{BRL(fluxo.saldo)}</span>
                 </div>
               </div>
             </div>
 
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 120px 100px 100px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 120px 100px 100px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
                 {['Data', 'Descrição', 'Forma', 'Entrada', 'Saída'].map(h => (
                   <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                 ))}
@@ -486,18 +486,18 @@ export default function FinanceiroPage() {
                 <div key={f.id} style={{
                   display: 'grid', gridTemplateColumns: '100px 1fr 120px 100px 100px',
                   padding: '11px 20px', alignItems: 'center',
-                  borderBottom: i < fluxo.fluxo.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                  borderBottom: i < fluxo.fluxo.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtData(f.data)}</div>
                   <div>
-                    <div style={{ fontSize: 13, color: '#f5ecd7' }}>{f.descricao || f.despesa || '—'}</div>
+                    <div style={{ fontSize: 13, color: '#F2EBD9' }}>{f.descricao || f.despesa || '—'}</div>
                     {f.historico && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.historico}</div>}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{f.condicao || '—'}</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#64c88c' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#4CAF82' }}>
                     {f.credito > 0 ? BRL(f.credito) : ''}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#ef6b4d' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#E5584A' }}>
                     {f.debito > 0 ? BRL(f.debito) : ''}
                   </div>
                 </div>

@@ -29,7 +29,7 @@ export default function TrocasPage() {
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
               Trocas
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -47,7 +47,7 @@ export default function TrocasPage() {
             gridTemplateColumns: '120px 1fr 130px 130px 130px 130px 44px',
             padding: '12px 20px',
             borderBottom: '1px solid var(--border)',
-            background: 'rgba(212,175,95,0.03)',
+            background: 'rgba(201,168,76,0.03)',
           }}>
             {['Data', 'Cliente', 'Venda Orig.', 'Devolvido', 'Novo', 'Diferença', ''].map((h, i) => (
               <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -73,20 +73,20 @@ export default function TrocasPage() {
                   display: 'grid',
                   gridTemplateColumns: '120px 1fr 130px 130px 130px 130px 44px',
                   padding: '13px 20px',
-                  borderBottom: i < trocas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                  borderBottom: i < trocas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                   cursor: 'pointer', alignItems: 'center', transition: 'background 0.1s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <div style={{ fontSize: 12, color: '#f5ecd7' }}>{formatarData(t.data)}</div>
-                <div style={{ fontSize: 13, color: '#f5ecd7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 12, color: '#F2EBD9' }}>{formatarData(t.data)}</div>
+                <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.nome_cliente || '—'}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.cod_venda_orig ? `#${t.cod_venda_orig}` : '—'}</div>
-                <div style={{ fontSize: 12, color: '#ef6b4d' }}>{BRL(Number(t.valor_original || 0))}</div>
-                <div style={{ fontSize: 12, color: '#64c88c' }}>{BRL(Number(t.valor_troca || 0))}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: diff > 0 ? '#d4af5f' : diff < 0 ? '#5eaadf' : 'var(--text-muted)' }}>
+                <div style={{ fontSize: 12, color: '#E5584A' }}>{BRL(Number(t.valor_original || 0))}</div>
+                <div style={{ fontSize: 12, color: '#4CAF82' }}>{BRL(Number(t.valor_troca || 0))}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: diff > 0 ? '#C9A84C' : diff < 0 ? '#4D9ECC' : 'var(--text-muted)' }}>
                   {diff > 0 ? '+' : ''}{BRL(diff)}
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>

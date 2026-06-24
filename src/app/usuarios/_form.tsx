@@ -96,7 +96,7 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
   return (
     <form onSubmit={submeter} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {erro && (
-        <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 12, borderRadius: 8, fontSize: 13 }}>
+        <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
           {erro}
         </div>
       )}
@@ -149,7 +149,7 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
           </Campo>
         </div>
         <div style={{ marginTop: 14 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#f5ecd7' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#F2EBD9' }}>
             <input type="checkbox" checked={dados.ativo} onChange={e => set('ativo', e.target.checked)} />
             Usuário ativo (pode fazer login)
           </label>
@@ -174,7 +174,7 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
               border: '1px solid var(--border)',
               background: 'rgba(255,255,255,0.02)',
               cursor: dados.perfil === 'admin' ? 'not-allowed' : 'pointer',
-              fontSize: 12, color: '#f5ecd7',
+              fontSize: 12, color: '#F2EBD9',
             }}>
               <input
                 type="checkbox"
@@ -198,9 +198,9 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
               try { await onDeletar() } catch (e: any) { setErro(e.message) }
             }}
             style={{
-              background: 'rgba(239,107,77,0.08)',
-              border: '1px solid rgba(239,107,77,0.3)',
-              color: '#ef6b4d',
+              background: 'rgba(229,88,74,0.08)',
+              border: '1px solid rgba(229,88,74,0.3)',
+              color: '#E5584A',
               padding: '10px 18px', borderRadius: 8,
               fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}

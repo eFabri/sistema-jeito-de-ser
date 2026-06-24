@@ -62,9 +62,9 @@ export default function VendaDetalhePage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <button onClick={() => router.push('/vendas')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>‹ Vendas</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: cancelada ? '#ef6b4d' : '#f5ecd7', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: cancelada ? '#E5584A' : '#F2EBD9', letterSpacing: '-0.01em' }}>
               Venda #{venda.codigo_legado || venda.id}
-              {cancelada && <span style={{ fontSize: 16, marginLeft: 12, padding: '3px 10px', background: 'rgba(239,107,77,0.12)', borderRadius: 6, border: '1px solid rgba(239,107,77,0.25)' }}>CANCELADA</span>}
+              {cancelada && <span style={{ fontSize: 16, marginLeft: 12, padding: '3px 10px', background: 'rgba(229,88,74,0.12)', borderRadius: 6, border: '1px solid rgba(229,88,74,0.25)' }}>CANCELADA</span>}
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
               {fmtData(venda.data)} · {venda.vendedor || '—'} · {venda.situacao}
@@ -84,27 +84,27 @@ export default function VendaDetalhePage() {
 
           {/* ITENS */}
           <div className="card" style={{ padding: 0, overflow: 'hidden', gridColumn: '1 / span 2' }}>
-            <div style={{ padding: '14px 20px', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ padding: '14px 20px', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', borderBottom: '1px solid var(--border)' }}>
               Itens
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px 100px', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px 100px', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
               {['Produto', 'Qtd', 'Preço Unit.', 'Subtotal'].map(h => (
                 <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
               ))}
             </div>
             {itens.map((item: any, i: number) => (
-              <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px 100px', padding: '12px 20px', borderBottom: i < itens.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
-                <div style={{ fontSize: 13, color: '#f5ecd7' }}>{item.produto}</div>
+              <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px 100px', padding: '12px 20px', borderBottom: i < itens.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
+                <div style={{ fontSize: 13, color: '#F2EBD9' }}>{item.produto}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.quantidade}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{BRL(item.preco_venda)}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#d4af5f' }}>{BRL(item.sub_total)}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(item.sub_total)}</div>
               </div>
             ))}
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
               {venda.desc_valor > 0 && (
-                <div style={{ fontSize: 13, color: '#ef6b4d' }}>Desconto: - {BRL(venda.desc_valor)}</div>
+                <div style={{ fontSize: 13, color: '#E5584A' }}>Desconto: - {BRL(venda.desc_valor)}</div>
               )}
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#d4af5f' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#C9A84C' }}>
                 Total: {BRL(venda.valor_total)}
               </div>
             </div>
@@ -112,21 +112,21 @@ export default function VendaDetalhePage() {
 
           {/* PAGAMENTOS */}
           <div className="card">
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14 }}>Pagamentos</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>Pagamentos</h3>
             {pagamentos.map((p: any, i: number) => (
-              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < pagamentos.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none' }}>
+              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < pagamentos.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{p.forma}{p.operadora ? ` (${p.operadora})` : ''}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#f5ecd7' }}>{BRL(p.valor)}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#F2EBD9' }}>{BRL(p.valor)}</span>
               </div>
             ))}
           </div>
 
           {/* CLIENTE */}
           <div className="card">
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14 }}>Cliente</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>Cliente</h3>
             {cliente ? (
               <div>
-                <div style={{ fontSize: 14, color: '#f5ecd7', fontWeight: 600, marginBottom: 4 }}>{cliente.nome}</div>
+                <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600, marginBottom: 4 }}>{cliente.nome}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{cliente.celular || '—'}</div>
                 <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11, marginTop: 8 }} onClick={() => router.push(`/clientes/${cliente.id}`)}>
                   Ver ficha →
@@ -146,7 +146,7 @@ export default function VendaDetalhePage() {
           {/* CREDIÁRIO */}
           {crediario?.length > 0 && (
             <div className="card" style={{ gridColumn: '1 / span 2' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14 }}>Crediário</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>Crediário</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
                 {crediario.map((p: any) => {
                   const venc = new Date(p.data_vencimento)
@@ -154,15 +154,15 @@ export default function VendaDetalhePage() {
                   return (
                     <div key={p.id} style={{
                       padding: '12px 14px', borderRadius: 10,
-                      background: p.pago ? 'rgba(100,200,140,0.06)' : atrasado ? 'rgba(239,107,77,0.06)' : 'rgba(255,255,255,0.02)',
-                      border: `1px solid ${p.pago ? 'rgba(100,200,140,0.2)' : atrasado ? 'rgba(239,107,77,0.2)' : 'var(--border)'}`,
+                      background: p.pago ? 'rgba(76,175,130,0.06)' : atrasado ? 'rgba(229,88,74,0.06)' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${p.pago ? 'rgba(76,175,130,0.2)' : atrasado ? 'rgba(229,88,74,0.2)' : 'var(--border)'}`,
                     }}>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{p.parcela}</div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: p.pago ? '#64c88c' : atrasado ? '#ef6b4d' : '#f5ecd7' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: p.pago ? '#4CAF82' : atrasado ? '#E5584A' : '#F2EBD9' }}>
                         {BRL(p.valor)}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{fmtData(p.data_vencimento)}</div>
-                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 6, color: p.pago ? '#64c88c' : atrasado ? '#ef6b4d' : 'var(--text-muted)' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 6, color: p.pago ? '#4CAF82' : atrasado ? '#E5584A' : 'var(--text-muted)' }}>
                         {p.pago ? 'PAGO' : atrasado ? 'VENCIDO' : 'EM ABERTO'}
                       </div>
                     </div>

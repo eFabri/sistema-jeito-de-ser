@@ -178,7 +178,7 @@ export default function EditarCompraPage() {
   }
 
   if (loading) return <AppLayout><div style={{ padding: 32, color: 'var(--text-muted)' }}>Carregando...</div></AppLayout>
-  if (!compra) return <AppLayout><div style={{ padding: 32, color: '#ef6b4d' }}>Compra não encontrada</div></AppLayout>
+  if (!compra) return <AppLayout><div style={{ padding: 32, color: '#E5584A' }}>Compra não encontrada</div></AppLayout>
 
   const total = itens.reduce((s, i) => s + i.quantidade * i.valor_unitario, 0)
 
@@ -192,21 +192,21 @@ export default function EditarCompraPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
         }} onClick={e => { if (e.target === e.currentTarget) setNovoOpen(false) }}>
           <div className="card" style={{ width: '100%', maxWidth: 600, padding: 28 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#f5ecd7', marginBottom: 18 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 18 }}>
               + Adicionar item
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ position: 'relative' }}>
-                <Label>Produto {novoItem.cod_produto && <span style={{ color: '#64c88c', textTransform: 'none' }}>(vinculado)</span>}</Label>
+                <Label>Produto {novoItem.cod_produto && <span style={{ color: '#4CAF82', textTransform: 'none' }}>(vinculado)</span>}</Label>
                 <input className="input" value={novoItem.produto || novoBusca}
                   onChange={e => { setNovoBusca(e.target.value); setNovoItem(n => ({ ...n, produto: e.target.value, cod_produto: null })) }}
                   placeholder="Buscar ou digitar..." autoFocus />
                 {novoSug.length > 0 && !novoItem.cod_produto && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#0e0c09', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
                     {novoSug.map(p => (
                       <div key={p.id} onClick={() => selecionarProdutoModal(p)}
-                        style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#f5ecd7', borderBottom: '1px solid rgba(212,175,95,0.05)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.05)')}
+                        style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <div>{p.descricao}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>estoque: {p.estoque || 0} · venda: {BRL(Number(p.preco_venda || 0))}</div>
@@ -223,12 +223,12 @@ export default function EditarCompraPage() {
                 <div><Label>Preço venda (R$)</Label><input className="input" type="number" step="0.01" value={novoItem.preco_venda}
                   onChange={e => setNovoItem(n => ({ ...n, preco_venda: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#f5ecd7', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#F2EBD9', cursor: 'pointer' }}>
                 <input type="checkbox" checked={novoItem.atualiza_estoque}
                   onChange={e => setNovoItem(n => ({ ...n, atualiza_estoque: e.target.checked }))} />
                 Atualizar estoque ao adicionar
               </label>
-              <div style={{ fontSize: 13, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+              <div style={{ fontSize: 13, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                 Subtotal: {BRL(novoItem.quantidade * novoItem.valor_unitario)}
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function EditarCompraPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
               Compra #{compra.codigo_legado || compra.id}
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -252,8 +252,8 @@ export default function EditarCompraPage() {
             </p>
           </div>
           <button onClick={excluirCompra} style={{
-            background: 'rgba(239,107,77,0.08)', border: '1px solid rgba(239,107,77,0.3)',
-            color: '#ef6b4d', padding: '10px 18px', borderRadius: 8,
+            background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.3)',
+            color: '#E5584A', padding: '10px 18px', borderRadius: 8,
             fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
             Excluir Compra
@@ -262,9 +262,9 @@ export default function EditarCompraPage() {
 
         {msg && (
           <div style={{
-            background: msg.tipo === 'ok' ? 'rgba(100,200,140,0.1)' : 'rgba(239,107,77,0.1)',
-            border: `1px solid ${msg.tipo === 'ok' ? 'rgba(100,200,140,0.3)' : 'rgba(239,107,77,0.3)'}`,
-            color: msg.tipo === 'ok' ? '#64c88c' : '#ef6b4d',
+            background: msg.tipo === 'ok' ? 'rgba(76,175,130,0.1)' : 'rgba(229,88,74,0.1)',
+            border: `1px solid ${msg.tipo === 'ok' ? 'rgba(76,175,130,0.3)' : 'rgba(229,88,74,0.3)'}`,
+            color: msg.tipo === 'ok' ? '#4CAF82' : '#E5584A',
             padding: 12, borderRadius: 8, fontSize: 13,
           }}>
             {msg.texto}
@@ -309,7 +309,7 @@ export default function EditarCompraPage() {
           </div>
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 80px 130px 130px 120px 80px',
-            padding: '10px 20px', background: 'rgba(212,175,95,0.03)',
+            padding: '10px 20px', background: 'rgba(201,168,76,0.03)',
             borderBottom: '1px solid var(--border)',
           }}>
             {['Produto', 'Qtd', 'Custo Unit.', 'Subtotal', 'Atualiza estoque', ''].map((h, i) => (
@@ -332,10 +332,10 @@ export default function EditarCompraPage() {
           <div style={{
             display: 'flex', justifyContent: 'flex-end', gap: 16,
             padding: '14px 20px', borderTop: '1px solid var(--border)',
-            background: 'rgba(212,175,95,0.02)',
+            background: 'rgba(201,168,76,0.02)',
           }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Total da Compra:</span>
-            <span style={{ fontSize: 18, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(total)}</span>
+            <span style={{ fontSize: 18, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(total)}</span>
           </div>
         </div>
 
@@ -355,8 +355,8 @@ function LinhaItem({ item, onChange, onSalvar, onDeletar, isLast }: {
     <div style={{
       display: 'grid', gridTemplateColumns: '1fr 80px 130px 130px 120px 80px', gap: 8,
       padding: '12px 20px', alignItems: 'center',
-      borderBottom: isLast ? 'none' : '1px solid rgba(212,175,95,0.05)',
-      background: editando ? 'rgba(212,175,95,0.04)' : 'transparent',
+      borderBottom: isLast ? 'none' : '1px solid rgba(201,168,76,0.05)',
+      background: editando ? 'rgba(201,168,76,0.04)' : 'transparent',
       transition: 'background 0.2s',
     }}>
       {editando ? (
@@ -364,14 +364,14 @@ function LinhaItem({ item, onChange, onSalvar, onDeletar, isLast }: {
           <input className="input" value={item.produto} onChange={e => alterar('produto', e.target.value)} style={{ fontSize: 12 }} />
           <input className="input" type="number" min="1" value={item.quantidade} onChange={e => alterar('quantidade', parseInt(e.target.value) || 1)} style={{ fontSize: 12 }} />
           <input className="input" type="number" step="0.01" value={item.valor_unitario} onChange={e => alterar('valor_unitario', parseFloat(e.target.value) || 0)} style={{ fontSize: 12 }} />
-          <div style={{ fontSize: 13, color: '#d4af5f', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#f5ecd7', cursor: 'pointer' }}>
+          <div style={{ fontSize: 13, color: '#C9A84C', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#F2EBD9', cursor: 'pointer' }}>
             <input type="checkbox" checked={item.atualiza_estoque} onChange={e => alterar('atualiza_estoque', e.target.checked)} />
             estoque
           </label>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => { onSalvar(); setEditando(false) }}
-              style={{ background: 'rgba(100,200,140,0.12)', border: '1px solid rgba(100,200,140,0.3)', color: '#64c88c', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}>
+              style={{ background: 'rgba(76,175,130,0.12)', border: '1px solid rgba(76,175,130,0.3)', color: '#4CAF82', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}>
               ✓
             </button>
             <button onClick={() => setEditando(false)}
@@ -382,20 +382,20 @@ function LinhaItem({ item, onChange, onSalvar, onDeletar, isLast }: {
         </>
       ) : (
         <>
-          <div style={{ fontSize: 13, color: '#f5ecd7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.produto}</div>
-          <div style={{ fontSize: 13, color: '#f5ecd7' }}>{item.quantidade}</div>
+          <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.produto}</div>
+          <div style={{ fontSize: 13, color: '#F2EBD9' }}>{item.quantidade}</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>R$ {item.valor_unitario.toFixed(2).replace('.', ',')}</div>
-          <div style={{ fontSize: 13, color: '#d4af5f', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
-          <div style={{ fontSize: 11, color: item.atualiza_estoque ? '#64c88c' : 'var(--text-muted)' }}>
+          <div style={{ fontSize: 13, color: '#C9A84C', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
+          <div style={{ fontSize: 11, color: item.atualiza_estoque ? '#4CAF82' : 'var(--text-muted)' }}>
             {item.atualiza_estoque ? '✓ sim' : '— não'}
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => setEditando(true)} title="Editar"
-              style={{ background: 'rgba(212,175,95,0.08)', border: '1px solid var(--border)', color: '#d4af5f', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
+              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--border)', color: '#C9A84C', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
               ✎
             </button>
             <button onClick={onDeletar} title="Excluir"
-              style={{ background: 'rgba(239,107,77,0.08)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
+              style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
               🗑
             </button>
           </div>

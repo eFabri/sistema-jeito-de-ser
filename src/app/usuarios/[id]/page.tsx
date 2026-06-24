@@ -46,7 +46,7 @@ export default function EditarUsuarioPage() {
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 920 }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
             {inicial?.nome || 'Editar Usuário'}
           </h1>
           {inicial?.email && (
@@ -54,7 +54,7 @@ export default function EditarUsuarioPage() {
           )}
         </div>
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 12, borderRadius: 8, fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
             {erro}
           </div>
         )}

@@ -19,9 +19,9 @@ function Campo({ label, children, span = 1 }: any) {
 function InfoRow({ label, value }: any) {
   if (!value && value !== 0) return null
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(212,175,95,0.05)' }}>
+    <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 140, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#f5ecd7' }}>{value}</span>
+      <span style={{ fontSize: 13, color: '#F2EBD9' }}>{value}</span>
     </div>
   )
 }
@@ -50,17 +50,17 @@ function ModalAjuste({ produto, onClose, onSalvo }: any) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
       <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 400 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#f5ecd7', marginBottom: 6 }}>Ajuste de Estoque</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Ajuste de Estoque</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
-          {produto.descricao} · Estoque atual: <strong style={{ color: '#f5ecd7' }}>{produto.estoque}</strong>
+          {produto.descricao} · Estoque atual: <strong style={{ color: '#F2EBD9' }}>{produto.estoque}</strong>
         </p>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
           {[['add', '+ Entrada'], ['sub', '− Saída'], ['set', '= Definir']].map(([id, label]) => (
             <button key={id} onClick={() => setTipo(id as any)} style={{
-              flex: 1, padding: '8px 0', borderRadius: 8, border: `1px solid ${tipo === id ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
-              background: tipo === id ? 'rgba(212,175,95,0.15)' : 'transparent',
-              color: tipo === id ? '#d4af5f' : 'var(--text-muted)',
+              flex: 1, padding: '8px 0', borderRadius: 8, border: `1px solid ${tipo === id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+              background: tipo === id ? 'rgba(201,168,76,0.15)' : 'transparent',
+              color: tipo === id ? '#C9A84C' : 'var(--text-muted)',
               fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}>{label}</button>
           ))}
@@ -78,9 +78,9 @@ function ModalAjuste({ produto, onClose, onSalvo }: any) {
             <input className="input" value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ex: inventário, devolução, perda..." />
           </div>
 
-          <div style={{ padding: '12px', background: 'rgba(212,175,95,0.05)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '12px', background: 'rgba(201,168,76,0.05)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Estoque resultante:</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: novoEstoque <= 0 ? '#ef6b4d' : '#64c88c' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: novoEstoque <= 0 ? '#E5584A' : '#4CAF82' }}>
               {novoEstoque}
             </span>
           </div>
@@ -152,7 +152,7 @@ export default function ProdutoDetalhePage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <button onClick={() => router.push('/produtos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>‹ Produtos</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#f5ecd7', lineHeight: 1.1 }}>{produto.descricao}</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2EBD9', lineHeight: 1.1 }}>{produto.descricao}</h1>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
               {produto.grupo}{produto.sub_grupo ? ` · ${produto.sub_grupo}` : ''}{produto.marca ? ` · ${produto.marca}` : ''}
             </p>
@@ -180,9 +180,9 @@ export default function ProdutoDetalhePage() {
             { label: 'Total Vendido',   value: `${totalVendido} un.` },
             { label: 'Receita Total',   value: BRL(receitaTotal) },
           ].map(card => (
-            <div key={card.label} className="card" style={{ borderColor: card.alert ? 'rgba(245,166,35,0.25)' : undefined }}>
-              <div style={{ fontSize: 10, color: card.alert ? '#f5a623' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{card.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: card.alert ? '#f5a623' : card.highlight ? '#d4af5f' : '#f5ecd7' }}>{card.value}</div>
+            <div key={card.label} className="card" style={{ borderColor: card.alert ? 'rgba(232,148,58,0.25)' : undefined }}>
+              <div style={{ fontSize: 10, color: card.alert ? '#E8943A' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{card.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: card.alert ? '#E8943A' : card.highlight ? '#C9A84C' : '#F2EBD9' }}>{card.value}</div>
             </div>
           ))}
         </div>
@@ -193,8 +193,8 @@ export default function ProdutoDetalhePage() {
             <button key={id} onClick={() => setAba(id as any)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              background: aba === id ? 'rgba(212,175,95,0.18)' : 'transparent',
-              color: aba === id ? '#d4af5f' : 'var(--text-muted)',
+              background: aba === id ? 'rgba(201,168,76,0.18)' : 'transparent',
+              color: aba === id ? '#C9A84C' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}>{label}</button>
           ))}
@@ -204,7 +204,7 @@ export default function ProdutoDetalhePage() {
         {aba === 'info' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
                 Identificação
               </h3>
               {editando ? (
@@ -237,7 +237,7 @@ export default function ProdutoDetalhePage() {
             </div>
 
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#f5ecd7', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
                 Preço & Estoque
               </h3>
               {editando ? (
@@ -279,7 +279,7 @@ export default function ProdutoDetalhePage() {
         {/* ABA VENDAS */}
         {aba === 'vendas' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
               {['Cliente', 'Qtd', 'Preço', 'Subtotal'].map(h => (
                 <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
               ))}
@@ -287,14 +287,14 @@ export default function ProdutoDetalhePage() {
             {vendas.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma venda registrada</div>
             ) : vendas.map((v: any, i: number) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', padding: '11px 20px', borderBottom: i < vendas.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', padding: '11px 20px', borderBottom: i < vendas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 13, color: '#f5ecd7' }}>{v.vendas?.nome_cliente || '—'}</div>
+                  <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.vendas?.nome_cliente || '—'}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtData(v.vendas?.data)}</div>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{v.quantidade}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{BRL(v.preco_venda)}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#d4af5f' }}>{BRL(v.sub_total)}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(v.sub_total)}</div>
               </div>
             ))}
           </div>
@@ -303,7 +303,7 @@ export default function ProdutoDetalhePage() {
         {/* ABA COMPRAS */}
         {aba === 'compras' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '140px 80px 120px 120px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(212,175,95,0.03)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 80px 120px 120px', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)' }}>
               {['Data', 'Qtd', 'Vlr. Unit.', 'Subtotal'].map(h => (
                 <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
               ))}
@@ -311,11 +311,11 @@ export default function ProdutoDetalhePage() {
             {compras.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma compra registrada</div>
             ) : compras.map((c: any, i: number) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 80px 120px 120px', padding: '11px 20px', borderBottom: i < compras.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none', alignItems: 'center' }}>
-                <div style={{ fontSize: 13, color: '#f5ecd7' }}>{fmtData(c.compras?.data)}</div>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 80px 120px 120px', padding: '11px 20px', borderBottom: i < compras.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
+                <div style={{ fontSize: 13, color: '#F2EBD9' }}>{fmtData(c.compras?.data)}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.quantidade}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{BRL(c.valor_unitario)}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#d4af5f' }}>{BRL(c.sub_total)}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(c.sub_total)}</div>
               </div>
             ))}
           </div>

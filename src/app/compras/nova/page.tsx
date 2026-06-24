@@ -188,12 +188,12 @@ export default function NovaCompraPage() {
   return (
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#f5ecd7' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
           Nova Compra
         </h1>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 12, borderRadius: 8, fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
             {erro}
           </div>
         )}
@@ -210,8 +210,8 @@ export default function NovaCompraPage() {
             <Campo label="Fornecedor">
               <div style={{ position: 'relative' }}>
                 {forn ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(212,175,95,0.06)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                    <span style={{ flex: 1, color: '#f5ecd7', fontSize: 13 }}>{forn.nome}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(201,168,76,0.06)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                    <span style={{ flex: 1, color: '#F2EBD9', fontSize: 13 }}>{forn.nome}</span>
                     <button type="button" onClick={() => { setForn(null); setBuscaForn('') }}
                       style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>×</button>
                   </div>
@@ -225,11 +225,11 @@ export default function NovaCompraPage() {
                       onFocus={() => setMostrarSugForn(true)}
                     />
                     {mostrarSugForn && sugestoesForn.length > 0 && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#0e0c09', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
                         {sugestoesForn.map(f => (
                           <div key={f.id} onClick={() => selecionarFornecedor(f)}
-                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#f5ecd7', borderBottom: '1px solid rgba(212,175,95,0.05)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.05)')}
+                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             <div>{f.nome}</div>
                             {f.cidade && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.cidade}/{f.uf}</div>}
@@ -270,7 +270,7 @@ export default function NovaCompraPage() {
                   </span>
                   {itens.length > 1 && (
                     <button type="button" onClick={() => removerItem(item.id)}
-                      style={{ background: 'none', border: 'none', color: '#ef6b4d', cursor: 'pointer', fontSize: 12 }}>
+                      style={{ background: 'none', border: 'none', color: '#E5584A', cursor: 'pointer', fontSize: 12 }}>
                       Remover
                     </button>
                   )}
@@ -280,8 +280,8 @@ export default function NovaCompraPage() {
                   {/* Produto */}
                   <div style={{ position: 'relative' }}>
                     <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                      Produto {item.cod_produto && <span style={{ color: '#64c88c', textTransform: 'none', letterSpacing: 0 }}>(já cadastrado)</span>}
-                      {!item.cod_produto && item.produto && <span style={{ color: '#f5a623', textTransform: 'none', letterSpacing: 0 }}>(será criado se digitado um novo)</span>}
+                      Produto {item.cod_produto && <span style={{ color: '#4CAF82', textTransform: 'none', letterSpacing: 0 }}>(já cadastrado)</span>}
+                      {!item.cod_produto && item.produto && <span style={{ color: '#E8943A', textTransform: 'none', letterSpacing: 0 }}>(será criado se digitado um novo)</span>}
                     </label>
                     <input
                       className="input"
@@ -290,11 +290,11 @@ export default function NovaCompraPage() {
                       placeholder="Descrição do produto"
                     />
                     {(sugestoesProd[item.id]?.length || 0) > 0 && !item.cod_produto && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#0e0c09', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
                         {sugestoesProd[item.id].map((p: any) => (
                           <div key={p.id} onClick={() => selecionarProduto(item.id, p)}
-                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#f5ecd7', borderBottom: '1px solid rgba(212,175,95,0.05)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.05)')}
+                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             <div>{p.descricao}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -321,18 +321,18 @@ export default function NovaCompraPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
                   <div style={{ display: 'flex', gap: 14, fontSize: 11 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#f5ecd7', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#F2EBD9', cursor: 'pointer' }}>
                       <input type="checkbox" checked={item.atualiza_estoque}
                         onChange={e => alterarItem(item.id, 'atualiza_estoque', e.target.checked)} />
                       Atualizar estoque
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#f5ecd7', cursor: 'pointer', opacity: item.cod_produto ? 1 : 0.4 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#F2EBD9', cursor: 'pointer', opacity: item.cod_produto ? 1 : 0.4 }}>
                       <input type="checkbox" checked={item.atualiza_preco} disabled={!item.cod_produto}
                         onChange={e => alterarItem(item.id, 'atualiza_preco', e.target.checked)} />
                       Atualizar preço de venda
                     </label>
                   </div>
-                  <div style={{ fontSize: 14, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                  <div style={{ fontSize: 14, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                     Subtotal: {BRL(item.quantidade * item.valor_unitario)}
                   </div>
                 </div>
@@ -343,7 +343,7 @@ export default function NovaCompraPage() {
 
         {/* PARCELAS */}
         <div className="card" style={{ padding: 24 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#f5ecd7' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#F2EBD9' }}>
             <input type="checkbox" checked={gerarParcelas} onChange={e => setGerarParcelas(e.target.checked)} />
             <span style={{ fontWeight: 700, letterSpacing: '0.05em' }}>Gerar parcelas em CONTAS A PAGAR</span>
           </label>
@@ -365,7 +365,7 @@ export default function NovaCompraPage() {
                   {parcelas.map((p, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                       <span>Parcela {idx + 1}/{parcelas.length} — vence {new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
-                      <span style={{ color: '#d4af5f' }}>{BRL(p.valor)}</span>
+                      <span style={{ color: '#C9A84C' }}>{BRL(p.valor)}</span>
                     </div>
                   ))}
                 </div>
@@ -378,7 +378,7 @@ export default function NovaCompraPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total da Compra</div>
-            <div style={{ fontSize: 28, color: '#d4af5f', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+            <div style={{ fontSize: 28, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
               {BRL(total)}
             </div>
           </div>

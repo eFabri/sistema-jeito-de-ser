@@ -10,11 +10,11 @@ const CATEGORIAS = ['Todos', 'Crediário', 'Avista', 'Pendente']
 
 function Badge({ text, type }: any) {
   const cores: any = {
-    'Crediário': { bg: 'rgba(100,200,140,0.1)', c: '#64c88c', b: 'rgba(100,200,140,0.2)' },
-    'Avista':    { bg: 'rgba(94,170,223,0.1)',  c: '#5eaadf', b: 'rgba(94,170,223,0.2)' },
-    'Pendente':  { bg: 'rgba(245,166,35,0.1)',  c: '#f5a623', b: 'rgba(245,166,35,0.2)' },
+    'Crediário': { bg: 'rgba(76,175,130,0.1)', c: '#4CAF82', b: 'rgba(76,175,130,0.2)' },
+    'Avista':    { bg: 'rgba(77,158,204,0.1)',  c: '#4D9ECC', b: 'rgba(77,158,204,0.2)' },
+    'Pendente':  { bg: 'rgba(232,148,58,0.1)',  c: '#E8943A', b: 'rgba(232,148,58,0.2)' },
   }
-  const s = cores[text] || { bg: 'rgba(212,175,95,0.1)', c: '#d4af5f', b: 'rgba(212,175,95,0.2)' }
+  const s = cores[text] || { bg: 'rgba(201,168,76,0.1)', c: '#C9A84C', b: 'rgba(201,168,76,0.2)' }
   return (
     <span style={{
       background: s.bg, color: s.c, border: `1px solid ${s.b}`,
@@ -72,7 +72,7 @@ export default function ClientesPage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
               Clientes
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -105,9 +105,9 @@ export default function ClientesPage() {
                 style={{
                   padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
                   fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-                  background: categoria === cat ? 'rgba(212,175,95,0.18)' : 'rgba(255,255,255,0.03)',
-                  color: categoria === cat ? '#d4af5f' : 'var(--text-muted)',
-                  border: `1px solid ${categoria === cat ? 'rgba(212,175,95,0.3)' : 'var(--border)'}`,
+                  background: categoria === cat ? 'rgba(201,168,76,0.18)' : 'rgba(255,255,255,0.03)',
+                  color: categoria === cat ? '#C9A84C' : 'var(--text-muted)',
+                  border: `1px solid ${categoria === cat ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
                   transition: 'all 0.15s',
                 }}>
                 {cat}
@@ -124,7 +124,7 @@ export default function ClientesPage() {
             gridTemplateColumns: '1fr 140px 140px 110px 130px 44px',
             padding: '12px 20px',
             borderBottom: '1px solid var(--border)',
-            background: 'rgba(212,175,95,0.03)',
+            background: 'rgba(201,168,76,0.03)',
           }}>
             {['Cliente', 'Telefone', 'Cidade', 'Categoria', 'Limite', ''].map((h, i) => (
               <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -151,27 +151,27 @@ export default function ClientesPage() {
                 display: 'grid',
                 gridTemplateColumns: '1fr 140px 140px 110px 130px 44px',
                 padding: '13px 20px',
-                borderBottom: i < clientes.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                borderBottom: i < clientes.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                 cursor: 'pointer',
                 transition: 'background 0.1s',
                 alignItems: 'center',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               {/* Nome + info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: 'linear-gradient(135deg, rgba(212,175,95,0.18), rgba(212,175,95,0.05))',
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.05))',
                   border: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 15,
+                  fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 15,
                 }}>
                   {c.nome?.charAt(0)}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.nome}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -193,7 +193,7 @@ export default function ClientesPage() {
                 {c.categoria ? <Badge text={c.categoria} /> : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
               </div>
 
-              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: c.limite_credito > 0 ? '#d4af5f' : 'var(--text-muted)' }}>
+              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: c.limite_credito > 0 ? '#C9A84C' : 'var(--text-muted)' }}>
                 {c.limite_credito > 0 ? BRL(c.limite_credito) : '—'}
               </div>
 

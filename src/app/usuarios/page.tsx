@@ -26,7 +26,7 @@ export default function UsuariosPage() {
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
               Usuários
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -39,7 +39,7 @@ export default function UsuariosPage() {
         </div>
 
         {erro && (
-          <div style={{ background: 'rgba(239,107,77,0.1)', border: '1px solid rgba(239,107,77,0.3)', color: '#ef6b4d', padding: 12, borderRadius: 8, fontSize: 13 }}>
+          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
             {erro === 'Apenas admin'
               ? 'Apenas administradores podem ver/gerenciar usuários.'
               : erro}
@@ -52,7 +52,7 @@ export default function UsuariosPage() {
             gridTemplateColumns: '1fr 1.2fr 140px 120px 90px 44px',
             padding: '12px 20px',
             borderBottom: '1px solid var(--border)',
-            background: 'rgba(212,175,95,0.03)',
+            background: 'rgba(201,168,76,0.03)',
           }}>
             {['Nome', 'Email', 'Cargo', 'Perfil', 'Status', ''].map((h, i) => (
               <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -76,25 +76,25 @@ export default function UsuariosPage() {
                 display: 'grid',
                 gridTemplateColumns: '1fr 1.2fr 140px 120px 90px 44px',
                 padding: '13px 20px',
-                borderBottom: i < usuarios.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                borderBottom: i < usuarios.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                 cursor: 'pointer',
                 transition: 'background 0.1s',
                 alignItems: 'center',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: 'linear-gradient(135deg, rgba(212,175,95,0.18), rgba(212,175,95,0.05))',
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.05))',
                   border: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f', fontSize: 15,
+                  fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 15,
                 }}>
                   {u.nome?.charAt(0) || '?'}
                 </div>
-                <div style={{ fontSize: 13, color: '#f5ecd7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {u.nome || '—'}
                 </div>
               </div>
@@ -104,9 +104,9 @@ export default function UsuariosPage() {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.cargo || '—'}</div>
               <div>
                 <span style={{
-                  background: u.perfil === 'admin' ? 'rgba(212,175,95,0.15)' : 'rgba(94,170,223,0.1)',
-                  color: u.perfil === 'admin' ? '#d4af5f' : '#5eaadf',
-                  border: `1px solid ${u.perfil === 'admin' ? 'rgba(212,175,95,0.3)' : 'rgba(94,170,223,0.2)'}`,
+                  background: u.perfil === 'admin' ? 'rgba(201,168,76,0.15)' : 'rgba(77,158,204,0.1)',
+                  color: u.perfil === 'admin' ? '#C9A84C' : '#4D9ECC',
+                  border: `1px solid ${u.perfil === 'admin' ? 'rgba(201,168,76,0.3)' : 'rgba(77,158,204,0.2)'}`,
                   borderRadius: 6, padding: '2px 8px', fontSize: 10,
                   fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
                 }}>
@@ -115,9 +115,9 @@ export default function UsuariosPage() {
               </div>
               <div>
                 <span style={{
-                  background: u.ativo ? 'rgba(100,200,140,0.1)' : 'rgba(239,107,77,0.08)',
-                  color: u.ativo ? '#64c88c' : '#ef6b4d',
-                  border: `1px solid ${u.ativo ? 'rgba(100,200,140,0.2)' : 'rgba(239,107,77,0.2)'}`,
+                  background: u.ativo ? 'rgba(76,175,130,0.1)' : 'rgba(229,88,74,0.08)',
+                  color: u.ativo ? '#4CAF82' : '#E5584A',
+                  border: `1px solid ${u.ativo ? 'rgba(76,175,130,0.2)' : 'rgba(229,88,74,0.2)'}`,
                   borderRadius: 6, padding: '2px 8px', fontSize: 10,
                   fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
                 }}>

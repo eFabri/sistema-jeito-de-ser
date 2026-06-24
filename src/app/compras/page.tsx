@@ -47,7 +47,7 @@ export default function ComprasPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#f5ecd7', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
               Compras
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -76,7 +76,7 @@ export default function ComprasPage() {
             gridTemplateColumns: '120px 1fr 120px 140px 130px 44px',
             padding: '12px 20px',
             borderBottom: '1px solid var(--border)',
-            background: 'rgba(212,175,95,0.03)',
+            background: 'rgba(201,168,76,0.03)',
           }}>
             {['Data', 'Fornecedor', 'Nota', 'Grupo / Evento', 'Valor', ''].map((h, i) => (
               <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -100,21 +100,21 @@ export default function ComprasPage() {
                 display: 'grid',
                 gridTemplateColumns: '120px 1fr 120px 140px 130px 44px',
                 padding: '13px 20px',
-                borderBottom: i < compras.length - 1 ? '1px solid rgba(212,175,95,0.05)' : 'none',
+                borderBottom: i < compras.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                 cursor: 'pointer', alignItems: 'center', transition: 'background 0.1s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,95,0.03)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div style={{ fontSize: 12, color: '#f5ecd7' }}>{formatarData(c.data)}</div>
-              <div style={{ fontSize: 13, color: '#f5ecd7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 12, color: '#F2EBD9' }}>{formatarData(c.data)}</div>
+              <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {c.fornecedor_nome || <span style={{ color: 'var(--text-muted)' }}>—</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {c.nota_numero ? `NF ${c.nota_numero}` : '—'}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.grupo || c.evento || '—'}</div>
-              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#d4af5f' }}>
+              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C' }}>
                 {BRL(Number(c.valor_total))}
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
