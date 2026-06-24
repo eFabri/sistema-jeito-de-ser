@@ -1,6 +1,6 @@
 // src/app/api/dashboard/route.ts — agrega tudo que o Dashboard precisa numa só chamada
 import { NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase/server'
+import { createServerSupabaseAdmin } from '@/lib/supabase/server'
 
 function fmt(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0')
@@ -8,7 +8,7 @@ function fmt(d: Date) {
 }
 
 export async function GET() {
-  const supabase = await createServerSupabase()
+  const supabase = createServerSupabaseAdmin()
   const hoje = new Date()
   const hojeStr = fmt(hoje)
   const ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1)

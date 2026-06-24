@@ -83,17 +83,48 @@ export default function Dashboard() {
   const greeting = saudacao(agora.getHours())
   const isAdmin = perfil?.perfil === 'admin'
 
-  // ─── Dashboard Colaboradora ──────────────────────────────
+  // ─── Métricas derivadas (computadas sempre — hooks não podem vir após early return) ──
+  const vendasMes      = d?.vendas_mes?.total || 0
+  const qtdVendasMes   = d?.vendas_mes?.qtd   || 0
+  const diaAtual       = agora.getDate()
+  const totalDias      = diasNoMes(agora)
+  const projecaoMes    = diaAtual > 0 ? (vendasMes / diaAtual) * totalDias : 0
+  const ticketDiaAtual = d?.ticket_medio_dia || 0
+  const topVendedora   = d?.vendedoras_mes?.[0]?.total || 1
+
+  // ─── useMemo DEVE ficar antes de qualquer early return (regra dos hooks) ────────
+  const serieGrafico = useMemo(() => {
+    if (!d) return []
+    if (periodo === '7d')  return d.vendas_7d  || []
+    if (periodo === '14d') return d.vendas_14d || []
+    if (periodo === '30d') return d.vendas_30d || []
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1)
+    const inicioStr = inicioMes.toISOString().split('T')[0]
+    return (d.vendas_30d || []).filter((x: any) => x.data >= inicioStr)
+  }, [d, periodo])
+
+  const mediaDiaria = useMemo(() => {
+    if (!serieGrafico.length) return 0
+    const comVenda = serieGrafico.filter((x: any) => x.qtd > 0)
+    if (comVenda.length === 0) return 0
+    return comVenda.reduce((s: number, x: any) => s + x.total, 0) / comVenda.length
+  }, [serieGrafico])
+
+  // ─── Dashboard Colaboradora (early return só depois de todos os hooks) ──────────
   if (!loading && perfil && !isAdmin) {
     const nomeCompleto = perfil?.nome || ''
-    // Achar dados da vendedora no ranking
-    const ranking = d?.vendedoras_mes || []
+    const ranking  = d?.vendedoras_mes || []
     const minhaPos = ranking.findIndex((v: any) => v.vendedor === nomeCompleto) + 1
     const meusDados = ranking.find((v: any) => v.vendedor === nomeCompleto)
     const metaIndividualKey = `meta_vendedora_${nomeCompleto}`
-    const metaInd = typeof window !== 'undefined' ? Number(localStorage.getItem(metaIndividualKey) || 5000) : 5000
+    const metaInd = typeof window !== 'undefined'
+      ? (Number(localStorage.getItem(metaIndividualKey)) || 5000)
+      : 5000
     const pctMeta = metaInd > 0 ? Math.min(100, ((meusDados?.total || 0) / metaInd) * 100) : 0
-    const ultimasVendas = d?.ultimas_vendas?.filter((v: any) => v.vendedor === nomeCompleto).slice(0, 5) || []
+    // Chave correta: vendas_recentes (não ultimas_vendas)
+    const ultimasVendas = (d?.vendas_recentes || [])
+      .filter((v: any) => v.vendedor === nomeCompleto)
+      .slice(0, 5)
 
     return (
       <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -182,41 +213,12 @@ export default function Dashboard() {
     )
   }
 
-  // ─── Métricas derivadas (ADMIN) ──────────────────────────
-  const vendasMes = d?.vendas_mes?.total || 0
-  const qtdVendasMes = d?.vendas_mes?.qtd || 0
+  // ─── Variáveis admin derivadas (não são hooks, podem ficar após o early return) ──
   const restanteMeta = Math.max(0, metaMes - vendasMes)
-  const metaBatida = vendasMes >= metaMes
-  const diaAtual = agora.getDate()
-  const totalDias = diasNoMes(agora)
-  const projecaoMes = diaAtual > 0 ? (vendasMes / diaAtual) * totalDias : 0
-  const projecaoPct = metaMes > 0 ? (projecaoMes / metaMes) * 100 : 0
-  const noRitmo = projecaoMes >= metaMes
-
-  const ticketDiaAtual = d?.ticket_medio_dia || 0
+  const metaBatida   = vendasMes >= metaMes
+  const projecaoPct  = metaMes > 0 ? (projecaoMes / metaMes) * 100 : 0
+  const noRitmo      = projecaoMes >= metaMes
   const ticketMetaOk = ticketDiaAtual >= metaTicket
-
-  // Dados gráfico conforme período
-  const serieGrafico = useMemo(() => {
-    if (!d) return []
-    if (periodo === '7d') return d.vendas_7d || []
-    if (periodo === '14d') return d.vendas_14d || []
-    if (periodo === '30d') return d.vendas_30d || []
-    // 'mes': filtra do início do mês
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1)
-    const inicioStr = inicioMes.toISOString().split('T')[0]
-    return (d.vendas_30d || []).filter((x: any) => x.data >= inicioStr)
-  }, [d, periodo])
-
-  const mediaDiaria = useMemo(() => {
-    if (!serieGrafico.length) return 0
-    const comVenda = serieGrafico.filter((x: any) => x.qtd > 0)
-    if (comVenda.length === 0) return 0
-    return comVenda.reduce((s: number, x: any) => s + x.total, 0) / comVenda.length
-  }, [serieGrafico])
-
-  // Top vendedora (pra normalizar barras)
-  const topVendedora = d?.vendedoras_mes?.[0]?.total || 1
 
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
