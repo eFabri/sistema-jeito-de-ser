@@ -86,10 +86,13 @@ export default function LoginPage() {
         }}>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600,
-            color: '#F2EBD9', marginBottom: 24,
+            color: '#F2EBD9', marginBottom: 4,
           }}>
-            Entrar no sistema
+            Bem-vinda ao sistema Jeito de Ser
           </h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 24 }}>
+            Entre com suas credenciais para continuar
+          </p>
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>

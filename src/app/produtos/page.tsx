@@ -64,6 +64,7 @@ export default function ProdutosPage() {
             <button className="btn btn-ghost" onClick={() => setVista(v => v === 'tabela' ? 'grade' : 'tabela')} style={{ padding: '9px 12px' }}>
               {vista === 'tabela' ? '⊞' : '▤'}
             </button>
+            <button className="btn btn-ghost" onClick={() => router.push('/produtos/importar')}>↑ Importar</button>
             <button className="btn btn-primary" onClick={() => router.push('/produtos/novo')}>+ Novo Produto</button>
           </div>
         </div>
@@ -159,14 +160,22 @@ export default function ProdutosPage() {
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
               >
-                {/* Placeholder imagem */}
-                <div style={{
-                  width: '100%', aspectRatio: '1', borderRadius: 10,
-                  background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.02))',
-                  border: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontSize: 28, color: 'rgba(201,168,76,0.25)',
-                }}>◫</div>
+                {/* Foto do produto */}
+                {p.fotos?.[0] ? (
+                  <img src={p.fotos[0]} alt={p.descricao}
+                    style={{ width: '100%', aspectRatio: '1', borderRadius: 10, objectFit: 'cover', border: '1px solid var(--border)' }} />
+                ) : (
+                  <div style={{
+                    width: '100%', aspectRatio: '1', borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.02))',
+                    border: '1px solid var(--border)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    fontFamily: 'var(--font-display)', color: 'rgba(201,168,76,0.3)',
+                  }}>
+                    <span style={{ fontSize: 24 }}>◫</span>
+                    <span style={{ fontSize: 11, letterSpacing: '0.06em' }}>{(p.grupo || 'PRODUTO').charAt(0)}</span>
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {p.descricao}
                 </div>

@@ -61,6 +61,8 @@ export interface DadosRecibo {
   nomeCliente: string
   codVenda: number | string
   data: string
+  hora?: string
+  nomeVendedora?: string
   itens: { produto: string; quantidade: number; preco: number; subtotal: number }[]
   pagamentos: { forma: string; valor: number }[]
   desconto?: number
@@ -104,8 +106,9 @@ export function montarTextoRecibo(d: DadosRecibo): string {
 
   // Dados da venda
   txt += `CLIENTE  : ${d.nomeCliente}\n`
+  if (d.nomeVendedora) txt += `VENDEDORA: ${d.nomeVendedora}\n`
   txt += `VENDA Nº : ${d.codVenda}\n`
-  txt += `DATA     : ${d.data}\n`
+  txt += `DATA     : ${d.data}${d.hora ? ` ${d.hora}` : ''}\n`
   txt += linha()
 
   // Itens

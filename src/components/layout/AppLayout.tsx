@@ -1,7 +1,7 @@
 // src/components/layout/AppLayout.tsx — Layout principal com sidebar premium
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavItem { id: string; label: string; icon: string; permissao: string; grupo: 'principal' | 'operacao' | 'admin' }
@@ -26,8 +26,10 @@ const NAV: NavItem[] = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [perfil, setPerfil] = useState<any>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [toastMsg, setToastMsg] = useState('')
 
   useEffect(() => {
     fetch('/api/perfil')
@@ -35,6 +37,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .then(d => { if (d && d.user_id) setPerfil(d) })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('acesso_negado') === '1') {
+      setToastMsg('Acesso restrito a administradores')
+      setTimeout(() => setToastMsg(''), 4000)
+    }
+  }, [searchParams])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -56,6 +65,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const grupos: Record<NavItem['grupo'], NavItem[]> = { principal: [], operacao: [], admin: [] }
   for (const it of navVisivel) grupos[it.grupo].push(it)
 
+  const nomeExibido = perfil?.apelido || perfil?.nome?.split(' ')[0] || ''
   const initialUser = perfil?.nome?.charAt(0) || 'A'
 
   return (
@@ -255,7 +265,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 fontSize: 12, color: 'var(--text-primary)', fontWeight: 600,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
-                {perfil?.nome || 'Carregando...'}
+                {nomeExibido || 'Carregando...'}
               </div>
               <button onClick={handleLogout} style={{
                 fontSize: 10, color: 'rgba(201,168,76,0.55)',
@@ -276,6 +286,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ─── CONTEÚDO PRINCIPAL ────────────────────────────── */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', minWidth: 0, position: 'relative', zIndex: 1 }}>
+        {toastMsg && (
+          <div style={{
+            position: 'fixed', top: 20, right: 24, zIndex: 9999,
+            background: 'rgba(229,88,74,0.12)', border: '1px solid rgba(229,88,74,0.3)',
+            borderRadius: 10, padding: '12px 18px',
+            color: '#E5584A', fontSize: 13, fontWeight: 600,
+            backdropFilter: 'blur(8px)',
+            animation: 'silkFade 0.3s ease forwards',
+          }}>
+            ⚠ {toastMsg}
+          </div>
+        )}
         {pathname !== '/' && (
           <button
             onClick={() => router.back()}

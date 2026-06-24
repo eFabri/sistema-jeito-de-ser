@@ -26,27 +26,86 @@ function Section({ title, subtitle, children }: any) {
   )
 }
 
-const PERMISSOES = [
-  { key: 'ver_dashboard',     label: 'Ver Dashboard' },
-  { key: 'ver_vendas',        label: 'Ver Vendas' },
-  { key: 'fazer_vendas',      label: 'Fazer Vendas (PDV)' },
-  { key: 'ver_clientes',      label: 'Ver Clientes' },
-  { key: 'editar_clientes',   label: 'Editar Clientes' },
-  { key: 'ver_produtos',      label: 'Ver Produtos' },
-  { key: 'editar_produtos',   label: 'Editar Produtos' },
-  { key: 'ver_financeiro',    label: 'Ver Financeiro' },
-  { key: 'ver_compras',       label: 'Ver Compras' },
-  { key: 'ver_relatorios',    label: 'Ver Relatórios' },
-  { key: 'ver_whatsapp',      label: 'Ver WhatsApp' },
-  { key: 'ver_configuracoes', label: 'Ver Configurações' },
+// ─── PERMISSÕES AGRUPADAS ─────────────────────────────────
+const GRUPOS_PERMISSOES = [
+  {
+    grupo: 'VENDAS',
+    items: [
+      { key: 'fazer_vendas',       label: 'Fazer Vendas (PDV)' },
+      { key: 'cancelar_vendas',    label: 'Cancelar Venda' },
+      { key: 'alterar_preco_pdv',  label: 'Alterar Preço no PDV' },
+      { key: 'ver_vendas',         label: 'Ver Vendas' },
+    ],
+  },
+  {
+    grupo: 'CLIENTES',
+    items: [
+      { key: 'ver_clientes',   label: 'Ver Clientes' },
+      { key: 'editar_clientes', label: 'Editar Clientes' },
+      { key: 'ver_crediario',  label: 'Ver Crediário' },
+    ],
+  },
+  {
+    grupo: 'PRODUTOS',
+    items: [
+      { key: 'ver_produtos',    label: 'Ver Produtos' },
+      { key: 'editar_produtos', label: 'Editar Produtos' },
+    ],
+  },
+  {
+    grupo: 'FINANCEIRO',
+    items: [
+      { key: 'ver_financeiro', label: 'Ver Financeiro' },
+      { key: 'ver_compras',    label: 'Ver Compras' },
+    ],
+  },
+  {
+    grupo: 'RELATÓRIOS',
+    items: [
+      { key: 'ver_relatorios',         label: 'Ver Relatórios' },
+      { key: 'ver_proprio_desempenho', label: 'Ver Próprio Desempenho' },
+    ],
+  },
+  {
+    grupo: 'SISTEMA',
+    items: [
+      { key: 'ver_dashboard',     label: 'Ver Dashboard' },
+      { key: 'ver_whatsapp',      label: 'Ver WhatsApp' },
+      { key: 'ver_configuracoes', label: 'Ver Configurações' },
+      { key: 'fazer_trocas',      label: 'Registrar Troca' },
+    ],
+  },
 ]
+
+// flat list for toggleAll
+const TODAS_PERMISSOES = GRUPOS_PERMISSOES.flatMap(g => g.items)
 
 // ─── MODAL NOVO USUÁRIO ───────────────────────────────────
 function ModalNovoUsuario({ onClose, onSalvo }: any) {
-  const [form, setForm] = useState({ nome: '', cargo: '', email: '', senha: '', perfil: 'funcionario' })
+  const [form, setForm] = useState({ nome: '', apelido: '', cargo: '', email: '', senha: '', perfil: 'funcionario', avatar_url: '' })
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const f = (k: string) => (e: any) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  async function handleAvatarUpload(e: any) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const path = `avatares/${form.email || 'novo'}-${Date.now()}`
+      const { error } = await supabase.storage.from('avatares').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatares').getPublicUrl(path)
+      setForm(p => ({ ...p, avatar_url: data.publicUrl }))
+    } catch (err: any) {
+      setErro('Erro ao fazer upload da foto: ' + err.message)
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   async function salvar() {
     if (!form.nome || !form.email || !form.senha) { setErro('Nome, email e senha são obrigatórios'); return }
@@ -61,47 +120,87 @@ function ModalNovoUsuario({ onClose, onSalvo }: any) {
     else { const e = await res.json(); setErro(e.erro || 'Erro ao criar usuário'); setSalvando(false) }
   }
 
+  const labelStyle = { fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5, fontWeight: 700 }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 460 }}>
+      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 20 }}>Novo Usuário</h3>
 
         {erro && <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 8, padding: '10px 14px', color: '#E5584A', fontSize: 13, marginBottom: 14 }}>{erro}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          {[
-            ['Nome completo', 'nome', 'text', '1 / span 2'],
-            ['Cargo', 'cargo', 'text', ''],
-            ['Nível de acesso', '', '', ''],
-            ['Email', 'email', 'email', '1 / span 2'],
-            ['Senha inicial', 'senha', 'password', '1 / span 2'],
-          ].map(([label, key, type, col]) => key ? (
-            <div key={key} style={col ? { gridColumn: col } : {}}>
-              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
-              <input type={type || 'text'} className="input" value={(form as any)[key]} onChange={f(key)} />
+          {/* Nome completo */}
+          <div style={{ gridColumn: '1 / span 2' }}>
+            <label style={labelStyle}>Nome completo</label>
+            <input type="text" className="input" value={form.nome} onChange={f('nome')} />
+          </div>
+
+          {/* Apelido */}
+          <div style={{ gridColumn: '1 / span 2' }}>
+            <label style={labelStyle}>Apelido (como quer ser chamada no sistema)</label>
+            <input type="text" className="input" value={form.apelido} onChange={f('apelido')} placeholder="Ex: Mari, Ju, Duda..." />
+          </div>
+
+          {/* Cargo */}
+          <div>
+            <label style={labelStyle}>Cargo</label>
+            <input type="text" className="input" value={form.cargo} onChange={f('cargo')} />
+          </div>
+
+          {/* Nível de acesso */}
+          <div>
+            <label style={labelStyle}>Nível de acesso</label>
+            <select className="input" value={form.perfil} onChange={f('perfil')}>
+              <option value="funcionario">Colaboradora</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+
+          {/* Email */}
+          <div style={{ gridColumn: '1 / span 2' }}>
+            <label style={labelStyle}>Email</label>
+            <input type="email" className="input" value={form.email} onChange={f('email')} />
+          </div>
+
+          {/* Senha */}
+          <div style={{ gridColumn: '1 / span 2' }}>
+            <label style={labelStyle}>Senha inicial</label>
+            <input type="password" className="input" value={form.senha} onChange={f('senha')} />
+          </div>
+
+          {/* Foto */}
+          <div style={{ gridColumn: '1 / span 2' }}>
+            <label style={labelStyle}>Foto (opcional)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {form.avatar_url ? (
+                <img src={form.avatar_url} alt="Avatar" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(201,168,76,0.3)' }} />
+              ) : (
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))', border: '1px solid rgba(201,168,76,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C9A84C', fontWeight: 700, fontSize: 18 }}>
+                  {form.nome?.charAt(0) || '?'}
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} id="avatar-upload-modal" />
+                <label htmlFor="avatar-upload-modal" className="btn btn-ghost" style={{ cursor: 'pointer', fontSize: 12, padding: '7px 14px', display: 'inline-block' }}>
+                  {uploadingAvatar ? 'Enviando...' : 'Escolher foto'}
+                </label>
+              </div>
             </div>
-          ) : (
-            <div key={label}>
-              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
-              <select className="input" value={form.perfil} onChange={f('perfil')}>
-                <option value="funcionario">Funcionário</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-          ))}
+          </div>
         </div>
 
         <div style={{ marginTop: 14, padding: '10px 14px', background: form.perfil === 'admin' ? 'rgba(201,168,76,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 8, border: `1px solid ${form.perfil === 'admin' ? 'rgba(201,168,76,0.2)' : 'var(--border)'}` }}>
           <div style={{ fontSize: 12, color: form.perfil === 'admin' ? '#C9A84C' : 'var(--text-muted)' }}>
             {form.perfil === 'admin'
               ? '⊛ Administrador — acesso completo a todos os módulos'
-              : '◉ Funcionário — acesso básico (vendas, clientes, produtos). Admin pode personalizar depois.'}
+              : '◉ Colaboradora — acesso básico (vendas, clientes, produtos). Admin pode personalizar depois.'}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
           <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', padding: '11px' }} onClick={salvar} disabled={salvando}>
+          <button className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', padding: '11px' }} onClick={salvar} disabled={salvando || uploadingAvatar}>
             {salvando ? 'Criando...' : '✓ Criar Usuário'}
           </button>
         </div>
@@ -115,6 +214,7 @@ function PainelPermissoes({ usuario, onSalvo }: any) {
   const [perms, setPerms] = useState({ ...usuario })
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+  const [editando, setEditando] = useState(false)
 
   async function salvar() {
     setSalvando(true)
@@ -126,70 +226,364 @@ function PainelPermissoes({ usuario, onSalvo }: any) {
     setSalvando(false); setSalvo(true)
     setTimeout(() => setSalvo(false), 2000)
     onSalvo(perms)
+    setEditando(false)
+  }
+
+  async function desativarAtivar() {
+    const novoAtivo = !usuario.ativo
+    await fetch(`/api/usuarios/${usuario.id || usuario.user_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: novoAtivo }),
+    })
+    onSalvo({ ...perms, ativo: novoAtivo })
+  }
+
+  function redefinirSenha() {
+    alert('Feature em breve')
   }
 
   function toggleAll(val: boolean) {
     const update: any = {}
-    PERMISSOES.forEach(p => { update[p.key] = val })
+    TODAS_PERMISSOES.forEach(p => { update[p.key] = val })
     setPerms((prev: any) => ({ ...prev, ...update }))
   }
 
+  const inicialNome = usuario.nome?.charAt(0) || '?'
+  const isAdmin = perms.perfil === 'admin'
+  const isAtivo = usuario.ativo !== false
+
+  function formatUltimoAcesso(val: any) {
+    if (!val) return 'nunca'
+    try {
+      return new Date(val).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return 'nunca' }
+  }
+
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+    <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px', opacity: isAtivo ? 1 : 0.5 }}>
+      {/* Cabeçalho */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: editando ? 16 : 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10,
-            background: perms.perfil === 'admin' ? 'linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.06))' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${perms.perfil === 'admin' ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-display)', fontWeight: 700,
-            color: perms.perfil === 'admin' ? '#C9A84C' : 'var(--text-secondary)', fontSize: 16,
-          }}>
-            {usuario.nome?.charAt(0)}
-          </div>
+          {/* Avatar */}
+          {usuario.avatar_url ? (
+            <img src={usuario.avatar_url} alt={usuario.nome} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${isAdmin ? 'rgba(201,168,76,0.4)' : 'var(--border)'}` }} />
+          ) : (
+            <div style={{
+              width: 42, height: 42, borderRadius: '50%',
+              background: isAdmin ? 'linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.06))' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${isAdmin ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: isAdmin ? '#C9A84C' : 'var(--text-secondary)', fontSize: 17, flexShrink: 0,
+            }}>
+              {inicialNome}
+            </div>
+          )}
+
           <div>
-            <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{usuario.nome}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {usuario.email} · {usuario.cargo || '—'}
-              <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: usuario.perfil === 'admin' ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.05)', color: usuario.perfil === 'admin' ? '#C9A84C' : 'var(--text-muted)' }}>
-                {usuario.perfil === 'admin' ? 'Admin' : 'Funcionário'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{usuario.nome}</span>
+              <span style={{ padding: '1px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: isAdmin ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.05)', color: isAdmin ? '#C9A84C' : 'var(--text-muted)' }}>
+                {isAdmin ? 'Admin' : 'Colaboradora'}
               </span>
+              {!isAtivo && <span style={{ padding: '1px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: 'rgba(229,88,74,0.1)', color: '#E5584A' }}>Inativa</span>}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              {usuario.email} {usuario.cargo ? `· ${usuario.cargo}` : ''}
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+              Último acesso: {formatUltimoAcesso(usuario.ultimo_acesso)}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => toggleAll(true)}>Tudo</button>
-          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => toggleAll(false)}>Nada</button>
-          <button className="btn btn-primary" style={{ padding: '5px 14px', fontSize: 11 }} onClick={salvar} disabled={salvando}>
-            {salvo ? '✓ Salvo' : salvando ? '...' : 'Salvar'}
+
+        {/* Botões de ação */}
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => setEditando(e => !e)}>
+            {editando ? '✕ Fechar' : 'Editar permissões'}
+          </button>
+          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={redefinirSenha}>
+            Redefinir senha
+          </button>
+          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11, color: isAtivo ? '#E5584A' : '#4CAF82', borderColor: isAtivo ? 'rgba(229,88,74,0.25)' : 'rgba(76,175,130,0.25)' }} onClick={desativarAtivar}>
+            {isAtivo ? 'Desativar' : 'Ativar'}
           </button>
         </div>
       </div>
 
-      {/* Admin sempre tem tudo */}
-      {usuario.perfil === 'admin' ? (
-        <div style={{ fontSize: 12, color: '#C9A84C', padding: '10px 0' }}>
-          ⊛ Administrador tem acesso completo a todos os módulos automaticamente.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
-          {PERMISSOES.map(p => (
-            <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '7px 10px', borderRadius: 8, background: perms[p.key] ? 'rgba(201,168,76,0.06)' : 'transparent', transition: 'background 0.15s' }}>
-              <div
-                onClick={() => setPerms((prev: any) => ({ ...prev, [p.key]: !prev[p.key] }))}
-                style={{
-                  width: 18, height: 18, borderRadius: 5, flexShrink: 0, cursor: 'pointer',
-                  background: perms[p.key] ? 'linear-gradient(135deg, #C9A84C, #a07830)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${perms[p.key] ? '#C9A84C' : 'var(--border)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
-                }}>
-                {perms[p.key] && <span style={{ fontSize: 11, color: '#080608', fontWeight: 900 }}>✓</span>}
+      {/* Permissões — só mostra quando editando */}
+      {editando && (
+        <div style={{ marginTop: 4 }}>
+          {isAdmin ? (
+            <div style={{ fontSize: 12, color: '#C9A84C', padding: '10px 0' }}>
+              ⊛ Administrador tem acesso completo a todos os módulos automaticamente.
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => toggleAll(true)}>Tudo</button>
+                <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => toggleAll(false)}>Nada</button>
               </div>
-              <span style={{ fontSize: 12, color: perms[p.key] ? '#F2EBD9' : 'var(--text-muted)', transition: 'color 0.15s' }}>{p.label}</span>
-            </label>
-          ))}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {GRUPOS_PERMISSOES.map(grupo => (
+                  <div key={grupo.grupo}>
+                    <div style={{ fontSize: 9, color: 'var(--gold-dim)', letterSpacing: '0.12em', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>
+                      {grupo.grupo}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 6 }}>
+                      {grupo.items.map(p => (
+                        <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '7px 10px', borderRadius: 8, background: perms[p.key] ? 'rgba(201,168,76,0.06)' : 'transparent', transition: 'background 0.15s' }}>
+                          <div
+                            onClick={() => setPerms((prev: any) => ({ ...prev, [p.key]: !prev[p.key] }))}
+                            style={{
+                              width: 18, height: 18, borderRadius: 5, flexShrink: 0, cursor: 'pointer',
+                              background: perms[p.key] ? 'linear-gradient(135deg, #C9A84C, #a07830)' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${perms[p.key] ? '#C9A84C' : 'var(--border)'}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.15s',
+                            }}>
+                            {perms[p.key] && <span style={{ fontSize: 11, color: '#080608', fontWeight: 900 }}>✓</span>}
+                          </div>
+                          <span style={{ fontSize: 12, color: perms[p.key] ? '#F2EBD9' : 'var(--text-muted)', transition: 'color 0.15s' }}>{p.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
+                <button className="btn btn-primary" style={{ padding: '7px 20px', fontSize: 12 }} onClick={salvar} disabled={salvando}>
+                  {salvo ? '✓ Salvo' : salvando ? '...' : 'Salvar permissões'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── ABA METAS ────────────────────────────────────────────
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+function AbaMetas({ usuarios }: { usuarios: any[] }) {
+  const hoje = new Date()
+  const [mesAtual, setMesAtual] = useState(hoje.getMonth() + 1)
+  const [anoAtual, setAnoAtual] = useState(hoje.getFullYear())
+  const [metas, setMetas] = useState<Record<string, number>>({})
+  const [salvando, setSalvando] = useState<Record<string, boolean>>({})
+  const [salvo, setSalvo] = useState<Record<string, boolean>>({})
+  const [historico, setHistorico] = useState<any[]>([])
+
+  // Navegar mês
+  function navMes(dir: number) {
+    let m = mesAtual + dir
+    let a = anoAtual
+    if (m < 1) { m = 12; a-- }
+    if (m > 12) { m = 1; a++ }
+    setMesAtual(m)
+    setAnoAtual(a)
+  }
+
+  // Carregar metas do mês atual
+  const carregarMetas = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/metas?tipo=all&mes=${mesAtual}&ano=${anoAtual}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const map: Record<string, number> = {}
+      if (Array.isArray(data.metas)) {
+        data.metas.forEach((m: any) => {
+          const key = m.tipo === 'global' ? 'global' : String(m.user_id)
+          map[key] = Number(m.valor) || 0
+        })
+      }
+      setMetas(map)
+    } catch {}
+  }, [mesAtual, anoAtual])
+
+  // Carregar histórico (3 meses anteriores)
+  const carregarHistorico = useCallback(async () => {
+    const meses3: { mes: number; ano: number }[] = []
+    let m = mesAtual - 1
+    let a = anoAtual
+    for (let i = 0; i < 3; i++) {
+      if (m < 1) { m = 12; a-- }
+      meses3.push({ mes: m, ano: a })
+      m--
+    }
+    try {
+      const results = await Promise.all(
+        meses3.map(async ({ mes, ano }) => {
+          const res = await fetch(`/api/metas?tipo=all&mes=${mes}&ano=${ano}`)
+          if (!res.ok) return { mes, ano, metas: [] }
+          const data = await res.json()
+          return { mes, ano, metas: data.metas || [] }
+        })
+      )
+      setHistorico(results)
+    } catch {}
+  }, [mesAtual, anoAtual])
+
+  useEffect(() => {
+    carregarMetas()
+    carregarHistorico()
+  }, [carregarMetas, carregarHistorico])
+
+  async function salvarMeta(key: string, tipo: 'global' | 'individual', user_id: string | null) {
+    setSalvando(p => ({ ...p, [key]: true }))
+    try {
+      await fetch('/api/metas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, user_id, mes: mesAtual, ano: anoAtual, valor: metas[key] || 0 }),
+      })
+      setSalvo(p => ({ ...p, [key]: true }))
+      setTimeout(() => setSalvo(p => ({ ...p, [key]: false })), 2000)
+    } catch {}
+    setSalvando(p => ({ ...p, [key]: false }))
+  }
+
+  function formatBRL(val: number) {
+    return val ? val.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'
+  }
+
+  const inputMeta = (key: string) => (
+    <input
+      type="number"
+      className="input"
+      placeholder="0,00"
+      value={metas[key] || ''}
+      onChange={e => setMetas(p => ({ ...p, [key]: Number(e.target.value) }))}
+      style={{ maxWidth: 180 }}
+    />
+  )
+
+  const colaboradores = usuarios.filter(u => u.ativo !== false)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 820 }}>
+
+      {/* Navegação mês/ano */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button className="btn btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navMes(-1)}>←</button>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#F2EBD9', minWidth: 180, textAlign: 'center' }}>
+          {MESES[mesAtual - 1]} {anoAtual}
+        </span>
+        <button className="btn btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navMes(1)}>→</button>
+      </div>
+
+      {/* Meta Global */}
+      <Section title="Meta Global do Mês" subtitle="Objetivo total de vendas da equipe">
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14 }}>
+          <Campo label="Valor R$">
+            {inputMeta('global')}
+          </Campo>
+          <button
+            className="btn btn-primary"
+            style={{ padding: '9px 20px', alignSelf: 'flex-end' }}
+            onClick={() => salvarMeta('global', 'global', null)}
+            disabled={salvando['global']}
+          >
+            {salvo['global'] ? '✓ Salvo' : salvando['global'] ? 'Salvando...' : 'Salvar Meta Global'}
+          </button>
+        </div>
+      </Section>
+
+      {/* Metas Individuais */}
+      <Section title="Metas Individuais" subtitle="Objetivo de vendas por colaboradora">
+        {colaboradores.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nenhuma colaboradora cadastrada.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {colaboradores.map(u => {
+              const uid = String(u.user_id || u.id)
+              return (
+                <div key={uid} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  {/* Avatar */}
+                  {u.avatar_url ? (
+                    <img src={u.avatar_url} alt={u.nome} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(201,168,76,0.2)', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))', border: '1px solid rgba(201,168,76,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#C9A84C', fontSize: 16, flexShrink: 0 }}>
+                      {u.nome?.charAt(0)}
+                    </div>
+                  )}
+
+                  {/* Nome e cargo */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{u.apelido || u.nome}</div>
+                    {u.cargo && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{u.cargo}</div>}
+                  </div>
+
+                  {/* Input + botão */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>R$</span>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="0,00"
+                      value={metas[uid] || ''}
+                      onChange={e => setMetas(p => ({ ...p, [uid]: Number(e.target.value) }))}
+                      style={{ width: 140 }}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '7px 16px', fontSize: 12 }}
+                      onClick={() => salvarMeta(uid, 'individual', uid)}
+                      disabled={salvando[uid]}
+                    >
+                      {salvo[uid] ? '✓' : salvando[uid] ? '...' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Section>
+
+      {/* Histórico */}
+      {historico.length > 0 && (
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--gold-dim)', marginBottom: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            Histórico — Últimos 3 meses
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {historico.map(({ mes, ano, metas: metasList }) => {
+              const global = metasList.find((m: any) => m.tipo === 'global')
+              const individuais = metasList.filter((m: any) => m.tipo === 'individual')
+              return (
+                <div key={`${mes}-${ano}`} className="card" style={{ padding: '14px 16px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#F2EBD9', marginBottom: 10 }}>{MESES[mes - 1]} {ano}</div>
+                  {global && (
+                    <div style={{ fontSize: 12, color: '#C9A84C', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Global: </span>
+                      R$ {formatBRL(Number(global.valor))}
+                    </div>
+                  )}
+                  {individuais.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {individuais.map((m: any) => {
+                        const u = usuarios.find(uu => String(uu.user_id || uu.id) === String(m.user_id))
+                        return (
+                          <div key={m.user_id} style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {u?.apelido || u?.nome || 'Colaboradora'}: R$ {formatBRL(Number(m.valor))}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {!global && individuais.length === 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Sem metas registradas</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -198,7 +592,7 @@ function PainelPermissoes({ usuario, onSalvo }: any) {
 
 // ─── CONFIGURAÇÕES PRINCIPAL ──────────────────────────────
 export default function ConfiguracoesPage() {
-  const [aba, setAba]             = useState<'empresa' | 'usuarios' | 'impressora' | 'conta'>('empresa')
+  const [aba, setAba]             = useState<'empresa' | 'usuarios' | 'metas' | 'impressora' | 'conta'>('empresa')
   const [empresa, setEmpresa]     = useState<any>({})
   const [usuarios, setUsuarios]   = useState<any[]>([])
   const [impressoras, setImpressoras] = useState<string[]>([])
@@ -209,6 +603,7 @@ export default function ConfiguracoesPage() {
   const [modalUsuario, setModalUsuario] = useState(false)
   const [perfil, setPerfil]       = useState<any>(null)
   const [senha, setSenha]         = useState({ atual: '', nova: '', confirma: '' })
+  const [apelido, setApelido]     = useState('')
 
   useEffect(() => {
     async function init() {
@@ -220,9 +615,9 @@ export default function ConfiguracoesPage() {
       setEmpresa(empRes.empresa || {})
       setUsuarios(usrRes.usuarios || [])
       setPerfil(pRes)
+      setApelido(pRes?.apelido || '')
       setLoading(false)
 
-      // Carregar impressoras em background
       listarImpressoras().then(lista => {
         setImpressoras(lista)
         const salva = localStorage.getItem('impressora_padrao')
@@ -256,6 +651,16 @@ export default function ConfiguracoesPage() {
     setTimeout(() => setSalvo(''), 2500)
   }
 
+  async function salvarApelido() {
+    await fetch('/api/configuracoes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aba: 'conta', apelido }),
+    })
+    setSalvo('apelido')
+    setTimeout(() => setSalvo(''), 2500)
+  }
+
   function salvarImpressora() {
     localStorage.setItem('impressora_padrao', impressoraSel)
     setSalvo('impressora')
@@ -267,6 +672,7 @@ export default function ConfiguracoesPage() {
   const ABAS = [
     { id: 'empresa',    label: 'Minha Empresa', icon: '◈' },
     { id: 'usuarios',   label: 'Usuários',      icon: '◉' },
+    { id: 'metas',      label: 'Metas',         icon: '◎' },
     { id: 'impressora', label: 'Impressora',    icon: '◫' },
     { id: 'conta',      label: 'Minha Conta',   icon: '⊛' },
   ]
@@ -304,7 +710,7 @@ export default function ConfiguracoesPage() {
 
         {salvo && (
           <div style={{ background: 'rgba(76,175,130,0.1)', border: '1px solid rgba(76,175,130,0.25)', borderRadius: 10, padding: '12px 16px', color: '#4CAF82', fontSize: 13 }}>
-            ✓ {salvo === 'empresa' ? 'Dados da empresa salvos' : salvo === 'senha' ? 'Senha alterada com sucesso' : salvo === 'impressora' ? 'Impressora padrão salva' : 'Salvo'}
+            ✓ {salvo === 'empresa' ? 'Dados da empresa salvos' : salvo === 'senha' ? 'Senha alterada com sucesso' : salvo === 'impressora' ? 'Impressora padrão salva' : salvo === 'apelido' ? 'Apelido salvo' : 'Salvo'}
           </div>
         )}
 
@@ -377,13 +783,28 @@ export default function ConfiguracoesPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {usuarios.filter(u => u.ativo !== false).map(u => (
-                    <PainelPermissoes key={u.id} usuario={u} onSalvo={(updated: any) => {
-                      setUsuarios(prev => prev.map(uu => uu.id === u.id ? { ...uu, ...updated } : uu))
+                    <PainelPermissoes key={u.id || u.user_id} usuario={u} onSalvo={(updated: any) => {
+                      setUsuarios(prev => prev.map(uu => (uu.id === u.id || uu.user_id === u.user_id) ? { ...uu, ...updated } : uu))
                     }} />
                   ))}
+                  {/* Inativos */}
+                  {usuarios.filter(u => u.ativo === false).length > 0 && (
+                    <>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Inativas</div>
+                      {usuarios.filter(u => u.ativo === false).map(u => (
+                        <PainelPermissoes key={u.id || u.user_id} usuario={u} onSalvo={(updated: any) => {
+                          setUsuarios(prev => prev.map(uu => (uu.id === u.id || uu.user_id === u.user_id) ? { ...uu, ...updated } : uu))
+                        }} />
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
+
+          /* ── METAS ───────────────────────────────────── */
+          ) : aba === 'metas' ? (
+            <AbaMetas usuarios={usuarios} />
 
           /* ── IMPRESSORA ──────────────────────────────── */
           ) : aba === 'impressora' ? (
@@ -456,25 +877,48 @@ export default function ConfiguracoesPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 500 }}>
               <Section title="Minha Conta" subtitle="Suas informações de acesso">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 14,
-                    background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))',
-                    border: '1px solid rgba(201,168,76,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C',
-                  }}>
-                    {perfil?.nome?.charAt(0)}
-                  </div>
+                  {perfil?.avatar_url ? (
+                    <img src={perfil.avatar_url} alt={perfil?.nome} style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', border: '1px solid rgba(201,168,76,0.2)' }} />
+                  ) : (
+                    <div style={{
+                      width: 52, height: 52, borderRadius: 14,
+                      background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C',
+                    }}>
+                      {perfil?.nome?.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <div style={{ fontSize: 16, color: '#F2EBD9', fontWeight: 600 }}>{perfil?.nome}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{perfil?.email}</div>
                     <div style={{ fontSize: 11, marginTop: 3 }}>
                       <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: perfil?.perfil === 'admin' ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.05)', color: perfil?.perfil === 'admin' ? '#C9A84C' : 'var(--text-muted)' }}>
-                        {perfil?.perfil === 'admin' ? 'Administrador' : 'Funcionário'}
+                        {perfil?.perfil === 'admin' ? 'Administrador' : 'Colaboradora'}
                       </span>
                       {perfil?.cargo && <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>{perfil.cargo}</span>}
                     </div>
                   </div>
+                </div>
+
+                {/* Apelido */}
+                <div style={{ marginTop: 4 }}>
+                  <Campo label="Como quer ser chamada no sistema">
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <input
+                        type="text"
+                        className="input"
+                        value={apelido}
+                        onChange={e => setApelido(e.target.value)}
+                        placeholder="Ex: Mari, Ju, Duda..."
+                        style={{ flex: 1 }}
+                      />
+                      <button className="btn btn-primary" style={{ padding: '9px 18px', flexShrink: 0 }} onClick={salvarApelido}>
+                        Salvar
+                      </button>
+                    </div>
+                  </Campo>
                 </div>
               </Section>
 

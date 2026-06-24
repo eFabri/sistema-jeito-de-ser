@@ -86,20 +86,51 @@ export default function NovaVendaPage() {
   const [erro, setErro] = useState('')
   const [etapa, setEtapa] = useState<'carrinho' | 'pagamento' | 'confirmado'>('carrinho')
   const [vendaFinalizada, setVendaFinalizada] = useState<any>(null)
+  const [perfilUsuario, setPerfilUsuario] = useState<any>(null)
+  const [vendedoras, setVendedoras] = useState<any[]>([])
+  const [impressoraStatus, setImpressoraStatus] = useState<'conectada' | 'offline' | 'verificando'>('verificando')
+  const [modalImprimir, setModalImprimir] = useState(false)
   const inputProdRef = useRef<HTMLInputElement>(null)
 
-  // Pré-carregar cliente da URL
+  const isAdmin = perfilUsuario?.perfil === 'admin'
+  const podeAlterarDesconto = isAdmin || perfilUsuario?.alterar_preco_pdv
+
+  // Pré-carregar cliente da URL e perfil
   useEffect(() => {
     if (clientePreId) {
       fetch(`/api/clientes/${clientePreId}`)
         .then(r => r.json())
         .then(d => { if (d.cliente) setCliente(d.cliente) })
     }
-    // Carregar nome do vendedor do perfil
     fetch('/api/perfil').then(r => r.json()).then(d => {
-      if (d?.nome) setVendedor(d.nome)
+      setPerfilUsuario(d)
+      if (d?.nome) setVendedor(d.apelido || d.nome)
     }).catch(() => {})
+
+    // Verificar QZ Tray
+    import('@/lib/impressora').then(({ listarImpressoras }) => {
+      listarImpressoras().then(lista => {
+        setImpressoraStatus(lista.length > 0 ? 'conectada' : 'offline')
+      }).catch(() => setImpressoraStatus('offline'))
+    })
+
+    // F2 para focar campo produto
+    const handleF2 = (e: KeyboardEvent) => {
+      if (e.key === 'F2') { e.preventDefault(); inputProdRef.current?.focus() }
+    }
+    window.addEventListener('keydown', handleF2)
+    return () => window.removeEventListener('keydown', handleF2)
   }, [clientePreId])
+
+  // Carregar lista de vendedoras (para admin selecionar)
+  useEffect(() => {
+    if (isAdmin) {
+      fetch('/api/configuracoes?aba=usuarios')
+        .then(r => r.json())
+        .then(d => setVendedoras((d.usuarios || []).filter((u: any) => u.ativo !== false)))
+        .catch(() => {})
+    }
+  }, [isAdmin])
 
   // ─── BUSCA CLIENTE ──────────────────────────────────────
   useEffect(() => {
@@ -252,6 +283,17 @@ export default function NovaVendaPage() {
     }
   }
 
+  // ─── BUSCA POR CÓDIGO DE BARRAS EXATO ────────────────────
+  async function buscarPorCodigoBarras(codigo: string) {
+    if (!codigo.trim()) return
+    const res = await fetch(`/api/produtos?q=${encodeURIComponent(codigo)}&limite=1`)
+    const data = await res.json()
+    const prod = (data.produtos || [])[0]
+    if (prod && (prod.cod_barras === codigo || prod.cod_referencia === codigo)) {
+      adicionarProduto(prod)
+    }
+  }
+
   // ─── FINALIZAR VENDA ────────────────────────────────────
   async function finalizarVenda() {
     if (!cliente) {
@@ -311,13 +353,18 @@ export default function NovaVendaPage() {
     setVendaFinalizada(venda)
     setEtapa('confirmado')
     setSalvando(false)
+    setModalImprimir(true)
+  }
 
-    // Imprimir automaticamente
+  async function imprimirVendaAtual() {
+    if (!vendaFinalizada) return
     await imprimirRecibo({
-      empresa: 'Jeito de Ser Ltda.',
+      empresa: 'Jeito de Ser — (31) 3741-3668',
       nomeCliente: cliente?.nome || 'Cliente',
-      codVenda: venda.codigo_legado || venda.id,
+      nomeVendedora: vendedor,
+      codVenda: vendaFinalizada.codigo_legado || vendaFinalizada.id,
       data: new Date().toLocaleDateString('pt-BR'),
+      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       itens: carrinho.map(i => ({ produto: i.produto, quantidade: i.quantidade, preco: i.preco_venda, subtotal: i.sub_total })),
       pagamentos: pagamentos.map(p => ({ forma: p.forma, valor: p.valor })),
       desconto: descontoValor > 0 ? descontoValor : undefined,
@@ -327,51 +374,47 @@ export default function NovaVendaPage() {
     })
   }
 
+  function resetarPDV() {
+    setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoGlobal(0)
+    setPagamentos([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
+    setParcelasCrediario([]); setObservacao(''); setEtapa('carrinho'); setVendaFinalizada(null)
+    setModalImprimir(false)
+  }
+
   // ─── RENDER: CONFIRMADO ─────────────────────────────────
   if (etapa === 'confirmado') {
     return (
       <AppLayout>
+        {/* MODAL: Deseja imprimir? */}
+        {modalImprimir && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 380, textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🖨</div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Imprimir recibo?</h3>
+              {troco > 0 && (
+                <div style={{ margin: '12px 0', padding: '12px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#C9A84C', fontWeight: 700 }}>Troco: {BRL(troco)}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModalImprimir(false)}>Não imprimir</button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={async () => { await imprimirVendaAtual(); setModalImprimir(false) }}>Imprimir</button>
+              </div>
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 20 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 20,
-            background: 'linear-gradient(135deg, rgba(76,175,130,0.2), rgba(76,175,130,0.05))',
-            border: '2px solid rgba(76,175,130,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32,
-          }}>✓</div>
+          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, rgba(76,175,130,0.2), rgba(76,175,130,0.05))', border: '2px solid rgba(76,175,130,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>✓</div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: '#4CAF82' }}>Venda Registrada!</h2>
             <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
               Venda #{vendaFinalizada?.codigo_legado || vendaFinalizada?.id} · {BRL(totalFinal)}
             </p>
-            {troco > 0 && (
-              <div style={{ marginTop: 12, padding: '12px 20px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>
-                  Troco: {BRL(troco)}
-                </span>
-              </div>
-            )}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-ghost" onClick={() => {
-              imprimirRecibo({
-                empresa: 'Jeito de Ser Ltda.',
-                nomeCliente: cliente?.nome || 'Cliente',
-                codVenda: vendaFinalizada?.codigo_legado || vendaFinalizada?.id,
-                data: new Date().toLocaleDateString('pt-BR'),
-                itens: carrinho.map(i => ({ produto: i.produto, quantidade: i.quantidade, preco: i.preco_venda, subtotal: i.sub_total })),
-                pagamentos: pagamentos.map(p => ({ forma: p.forma, valor: p.valor })),
-                desconto: descontoValor > 0 ? descontoValor : undefined,
-                valorTotal: totalFinal,
-                crediario: temCrediario ? parcelasCrediario.map(p => ({ parcela: p.parcela, vencimento: p.data_vencimento, valor: p.valor })) : undefined,
-              })
-            }}>🖨 Reimprimir</button>
+            <button className="btn btn-ghost" onClick={imprimirVendaAtual}>🖨 Reimprimir</button>
             <button className="btn btn-ghost" onClick={() => router.push(`/clientes/${cliente?.id}`)}>Ver Cliente</button>
-            <button className="btn btn-primary" onClick={() => {
-              setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoGlobal(0)
-              setPagamentos([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
-              setParcelasCrediario([]); setObservacao(''); setEtapa('carrinho'); setVendaFinalizada(null)
-            }}>+ Nova Venda</button>
+            <button className="btn btn-primary" onClick={resetarPDV}>+ Nova Venda</button>
           </div>
         </div>
       </AppLayout>
@@ -457,6 +500,11 @@ export default function NovaVendaPage() {
           <div>
             <button onClick={() => router.push('/vendas')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 4 }}>‹ Vendas</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Nova Venda</h1>
+          </div>
+          {/* Status impressora */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: impressoraStatus === 'conectada' ? '#4CAF82' : impressoraStatus === 'offline' ? '#E5584A' : 'var(--text-muted)' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: impressoraStatus === 'conectada' ? '#4CAF82' : impressoraStatus === 'offline' ? '#E5584A' : 'var(--text-muted)', display: 'inline-block' }} />
+            {impressoraStatus === 'conectada' ? 'Impressora conectada' : impressoraStatus === 'offline' ? 'Impressora offline' : 'Verificando...'}
           </div>
           {/* Abas de etapa */}
           <div style={{ display: 'flex', gap: 6 }}>
@@ -547,14 +595,20 @@ export default function NovaVendaPage() {
 
               {/* BUSCA PRODUTO */}
               <div className="card">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 12 }}>Adicionar Produto</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>Adicionar Produto</h3>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>F2 para focar · Enter no cód. barras</span>
+                </div>
                 <div style={{ position: 'relative' }}>
                   <input ref={inputProdRef} className="input"
                     placeholder="Buscar por nome, código de barras ou referência..."
                     value={buscaProduto}
                     onChange={e => setBuscaProduto(e.target.value)}
                     onFocus={() => sugestoesProd.length > 0 && setMostrarSugestoesProd(true)}
-                    onKeyDown={e => { if (e.key === 'Escape') { setMostrarSugestoesProd(false); setBuscaProduto('') } }}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') { setMostrarSugestoesProd(false); setBuscaProduto('') }
+                      if (e.key === 'Enter') { setMostrarSugestoesProd(false); buscarPorCodigoBarras(buscaProduto) }
+                    }}
                     autoFocus
                   />
                   {mostrarSugestoesProd && sugestoesProd.length > 0 && (
@@ -572,8 +626,8 @@ export default function NovaVendaPage() {
                           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#C9A84C', padding: '0 12px', alignSelf: 'center' }}>
                             {BRL(p.preco_venda)}
                           </div>
-                          <div style={{ fontSize: 11, color: p.estoque > 0 ? '#4CAF82' : '#E5584A', alignSelf: 'center' }}>
-                            Estoque: {p.estoque}
+                          <div style={{ fontSize: 11, color: p.estoque > 0 ? '#4CAF82' : '#E5584A', alignSelf: 'center', fontWeight: p.estoque <= 0 ? 700 : 400 }}>
+                            {p.estoque <= 0 ? '⚠ Sem estoque' : `Estoque: ${p.estoque}`}
                           </div>
                         </div>
                       ))}
@@ -624,7 +678,16 @@ export default function NovaVendaPage() {
               <div className="card">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Campo label="Vendedor(a) *">
-                    <input className="input" value={vendedor} onChange={e => setVendedor(e.target.value)} placeholder="Nome da vendedora" />
+                    {isAdmin && vendedoras.length > 0 ? (
+                      <select className="input" value={vendedor} onChange={e => setVendedor(e.target.value)}>
+                        <option value="">Selecionar vendedora...</option>
+                        {vendedoras.map((v: any) => (
+                          <option key={v.id} value={v.nome}>{v.apelido || v.nome}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className="input" value={vendedor} readOnly={!isAdmin} onChange={e => isAdmin && setVendedor(e.target.value)} placeholder="Nome da vendedora" />
+                    )}
                   </Campo>
                   <Campo label="Observação">
                     <input className="input" value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Opcional..." />
@@ -644,17 +707,19 @@ export default function NovaVendaPage() {
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{BRL(subtotalBruto)}</span>
                   </div>
 
-                  <div>
-                    <Campo label="Desconto (%)">
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="number" className="input" style={{ width: 80 }} value={descontoGlobal} min={0} max={100} step={0.5}
-                          onChange={e => setDescontoGlobal(parseFloat(e.target.value) || 0)} />
-                        {descontoValor > 0 && (
-                          <span style={{ fontSize: 12, color: '#E5584A' }}>- {BRL(descontoValor)}</span>
-                        )}
-                      </div>
-                    </Campo>
-                  </div>
+                  {podeAlterarDesconto && (
+                    <div>
+                      <Campo label="Desconto (%)">
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input type="number" className="input" style={{ width: 80 }} value={descontoGlobal} min={0} max={100} step={0.5}
+                            onChange={e => setDescontoGlobal(parseFloat(e.target.value) || 0)} />
+                          {descontoValor > 0 && (
+                            <span style={{ fontSize: 12, color: '#E5584A' }}>- {BRL(descontoValor)}</span>
+                          )}
+                        </div>
+                      </Campo>
+                    </div>
+                  )}
 
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total</span>

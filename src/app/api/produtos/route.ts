@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('produtos')
-    .select('id, codigo_legado, descricao, grupo, sub_grupo, preco_venda, preco_custo, estoque, estoque_minimo, cod_barras, cod_referencia, marca, cor, tamanho, permite_desconto', { count: 'exact' })
+    .select('id, codigo_legado, descricao, grupo, sub_grupo, preco_venda, preco_custo, estoque, estoque_minimo, cod_barras, cod_referencia, marca, cor, tamanho, permite_desconto, fotos', { count: 'exact' })
     .eq('ativo', true)
     .order('descricao', { ascending: true })
     .range(offset, offset + limite - 1)

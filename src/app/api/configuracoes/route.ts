@@ -54,12 +54,22 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(data)
   }
 
+  if (aba === 'conta') {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
+    const { apelido } = body
+    const { data, error } = await supabase
+      .from('perfis_usuario').update({ apelido }).eq('user_id', user.id).select().single()
+    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+    return NextResponse.json(data)
+  }
+
   return NextResponse.json({ erro: 'Aba inválida' }, { status: 400 })
 }
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase()
-  const { email, senha, nome, cargo, perfil } = await req.json()
+  const { email, senha, nome, cargo, perfil, apelido, avatar_url } = await req.json()
 
   // Criar usuário no Supabase Auth
   const { data: { user }, error: errAuth } = await supabase.auth.admin.createUser({
@@ -68,19 +78,28 @@ export async function POST(req: NextRequest) {
 
   if (errAuth || !user) return NextResponse.json({ erro: errAuth?.message || 'Erro ao criar usuário' }, { status: 500 })
 
+  const isAdmin = perfil === 'admin'
+
   // Criar perfil
   const { data, error } = await supabase.from('perfis_usuario').insert({
     user_id: user.id, nome, cargo,
+    apelido: apelido || null,
+    avatar_url: avatar_url || null,
     perfil: perfil || 'funcionario',
     ver_dashboard: true, ver_vendas: true, fazer_vendas: true,
     ver_clientes: true, ver_produtos: true,
-    editar_clientes: perfil === 'admin',
-    editar_produtos: perfil === 'admin',
-    ver_financeiro: perfil === 'admin',
-    ver_compras: perfil === 'admin',
-    ver_relatorios: perfil === 'admin',
-    ver_whatsapp: perfil === 'admin',
-    ver_configuracoes: perfil === 'admin',
+    editar_clientes: isAdmin,
+    editar_produtos: isAdmin,
+    ver_financeiro: isAdmin,
+    ver_compras: isAdmin,
+    ver_relatorios: isAdmin,
+    ver_whatsapp: isAdmin,
+    ver_configuracoes: isAdmin,
+    cancelar_vendas: isAdmin,
+    alterar_preco_pdv: isAdmin,
+    ver_crediario: isAdmin,
+    fazer_trocas: true,
+    ver_proprio_desempenho: true,
   }).select().single()
 
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 })

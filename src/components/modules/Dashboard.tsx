@@ -79,10 +79,110 @@ export default function Dashboard() {
   const agora = new Date()
   const dataExtenso = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-  const nome = perfil?.nome?.split(' ')[0] || ''
+  const nome = perfil?.apelido || perfil?.nome?.split(' ')[0] || ''
   const greeting = saudacao(agora.getHours())
+  const isAdmin = perfil?.perfil === 'admin'
 
-  // ─── Métricas derivadas ──────────────────────────────────
+  // ─── Dashboard Colaboradora ──────────────────────────────
+  if (!loading && perfil && !isAdmin) {
+    const nomeCompleto = perfil?.nome || ''
+    // Achar dados da vendedora no ranking
+    const ranking = d?.vendedoras_mes || []
+    const minhaPos = ranking.findIndex((v: any) => v.vendedor === nomeCompleto) + 1
+    const meusDados = ranking.find((v: any) => v.vendedor === nomeCompleto)
+    const metaIndividualKey = `meta_vendedora_${nomeCompleto}`
+    const metaInd = typeof window !== 'undefined' ? Number(localStorage.getItem(metaIndividualKey) || 5000) : 5000
+    const pctMeta = metaInd > 0 ? Math.min(100, ((meusDados?.total || 0) / metaInd) * 100) : 0
+    const ultimasVendas = d?.ultimas_vendas?.filter((v: any) => v.vendedor === nomeCompleto).slice(0, 5) || []
+
+    return (
+      <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Saudação */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 500, color: 'var(--gold-light)', lineHeight: 1.1 }}>
+              {greeting}{nome ? `, ${nome}` : ''} ·
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8, textTransform: 'capitalize' }}>
+              {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+          <button className="btn btn-primary" onClick={() => router.push('/vendas/nova')} style={{ alignSelf: 'flex-start' }}>
+            + Nova Venda
+          </button>
+        </div>
+
+        {/* Minhas vendas de hoje */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          <KpiCard icon="◈" label="Minhas Vendas Hoje"
+            value={BRL(d?.vendas_hoje?.total || 0)}
+            sub={`${d?.vendas_hoje?.qtd || 0} vendas`}
+            tone="gold" onClick={() => router.push('/vendas')} />
+          <KpiCard icon="◎" label="Minha Meta do Mês"
+            value={BRL(meusDados?.total || 0)}
+            sub={`${pctMeta.toFixed(0)}% de ${BRL(metaInd)}`}
+            tone={pctMeta >= 100 ? 'success' : pctMeta >= 70 ? 'gold' : 'alert'} />
+          {minhaPos > 0 && (
+            <KpiCard icon="◆" label="Meu Ranking"
+              value={`${minhaPos}ª lugar`}
+              sub="no mês atual"
+              tone={minhaPos === 1 ? 'success' : 'gold'} />
+          )}
+        </div>
+
+        {/* Barra de meta */}
+        <div className="card-premium" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Minha meta do mês</span>
+            <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 700 }}>{pctMeta.toFixed(0)}%</span>
+          </div>
+          <ProgressBar value={meusDados?.total || 0} max={metaInd || 1} height={12} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+            <span>{BRL(meusDados?.total || 0)} vendido</span>
+            <span>Meta: {BRL(metaInd)}</span>
+          </div>
+        </div>
+
+        {/* Últimas vendas */}
+        {ultimasVendas.length > 0 && (
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>Minhas Últimas Vendas</h3>
+              <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => router.push('/vendas')}>Ver todas</button>
+            </div>
+            {ultimasVendas.map((v: any, i: number) => (
+              <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 18px', borderBottom: i < ultimasVendas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none' }}>
+                <div>
+                  <div style={{ fontSize: 13, color: '#F2EBD9' }}>#{v.codigo_legado || v.id}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.nome_cliente || '—'}</div>
+                </div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--gold)' }}>{BRL(Number(v.valor_total || 0))}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Atalhos rápidos */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {[
+            { label: 'Nova Venda', icon: '◈', path: '/vendas/nova' },
+            { label: 'Clientes', icon: '◉', path: '/clientes' },
+            { label: 'Nova Troca', icon: '⇄', path: '/trocas/nova' },
+          ].map(a => (
+            <button key={a.path} onClick={() => router.push(a.path)}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '18px 12px', background: 'rgba(201,168,76,0.04)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', color: 'var(--gold-light)', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.1)'; e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.04)'; e.currentTarget.style.borderColor = 'var(--border)' }}>
+              <span style={{ fontSize: 22 }}>{a.icon}</span>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>{a.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Métricas derivadas (ADMIN) ──────────────────────────
   const vendasMes = d?.vendas_mes?.total || 0
   const qtdVendasMes = d?.vendas_mes?.qtd || 0
   const restanteMeta = Math.max(0, metaMes - vendasMes)
