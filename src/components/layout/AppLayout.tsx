@@ -92,10 +92,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           padding: collapsed ? '22px 12px' : '24px 22px 20px',
           borderBottom: '1px solid rgba(201,168,76,0.10)',
           display: 'flex', alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'space-between',
+          justifyContent: 'center',
           gap: 10, position: 'relative',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: collapsed ? 'center' : 'flex-start', gap: collapsed ? 0 : 4, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, minWidth: 0 }}>
             <img
               src="/logo.png"
               alt="Jeito de Ser"
@@ -108,49 +108,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               }}
             />
             {!collapsed && (
-              <>
-                <div style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 24, fontWeight: 700,
-                  color: 'var(--gold)',
-                  letterSpacing: '0.01em', lineHeight: 1.05,
-                  marginTop: 10,
-                }}>
-                  Jeito de Ser
-                </div>
-                <div style={{
-                  fontSize: 9, fontWeight: 300,
-                  color: 'rgba(201,168,76,0.55)',
-                  letterSpacing: '0.22em', textTransform: 'uppercase',
-                  marginTop: 2,
-                }}>
-                  Fashion &amp; Gestão
-                </div>
-              </>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 24, fontWeight: 700,
+                color: 'var(--gold)',
+                letterSpacing: '0.01em', lineHeight: 1.05,
+                marginTop: 10,
+              }}>
+                Jeito de Ser
+              </div>
             )}
           </div>
-          {!collapsed && (
-            <button onClick={() => setCollapsed(true)} title="Recolher menu"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(201,168,76,0.4)', fontSize: 16, padding: 4,
-                alignSelf: 'flex-start',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(201,168,76,0.4)')}
-            >
-              ‹
-            </button>
-          )}
-          {collapsed && (
-            <button onClick={() => setCollapsed(false)} title="Expandir"
-              style={{
-                position: 'absolute', top: 6, right: 6,
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(201,168,76,0.4)', fontSize: 14, padding: 2,
-              }}>›</button>
-          )}
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? 'Expandir' : 'Recolher menu'}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(201,168,76,0.4)', fontSize: 15, padding: 4,
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(201,168,76,0.4)')}
+          >
+            {collapsed ? '›' : '‹'}
+          </button>
         </div>
 
         {/* ── Nav ───────────────────────────────────────────── */}

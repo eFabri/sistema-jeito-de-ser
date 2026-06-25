@@ -72,9 +72,6 @@ export default function LoginPage() {
           }}>
             Jeito de Ser
           </h1>
-          <p style={{ color: 'rgba(201,168,76,0.55)', fontSize: 11, letterSpacing: '0.32em', textTransform: 'uppercase', marginTop: 10, fontWeight: 600 }}>
-            Gestão & Moda
-          </p>
         </div>
 
         {/* Card do formulário */}
