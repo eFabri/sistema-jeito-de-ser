@@ -13,9 +13,9 @@ const NAV: NavItem[] = [
   { id: '/clientes',       label: 'Clientes',      icon: '◉', permissao: 'ver_clientes',        grupo: 'operacao' },
   { id: '/produtos',       label: 'Produtos',      icon: '◫', permissao: 'ver_produtos',        grupo: 'operacao' },
   { id: '/financeiro',     label: 'Financeiro',    icon: '◎', permissao: 'ver_financeiro',      grupo: 'operacao' },
-  { id: '/crediario',      label: 'Crediário',     icon: '◈', permissao: 'ver_financeiro',      grupo: 'operacao' },
+  { id: '/crediario',      label: 'Crediário',     icon: '◈', permissao: 'ver_crediario',      grupo: 'operacao' },
   { id: '/compras',        label: 'Compras',       icon: '◐', permissao: 'ver_compras',         grupo: 'operacao' },
-  { id: '/trocas',         label: 'Trocas',        icon: '⇄', permissao: 'ver_vendas',          grupo: 'operacao' },
+  { id: '/trocas',         label: 'Trocas',        icon: '⇄', permissao: 'ver_trocas',          grupo: 'operacao' },
 
   { id: '/relatorios',     label: 'Relatórios',    icon: '▤', permissao: 'ver_relatorios',      grupo: 'admin' },
   { id: '/whatsapp',       label: 'WhatsApp',      icon: '◍', permissao: 'ver_whatsapp',        grupo: 'admin' },
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (searchParams.get('acesso_negado') === '1') {
-      setToastMsg('Acesso restrito a administradores')
+      setToastMsg('Você não tem permissão para acessar este módulo. Fale com a administradora.')
       setTimeout(() => setToastMsg(''), 4000)
     }
   }, [searchParams])
