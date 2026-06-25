@@ -66,12 +66,6 @@ export default function LoginPage() {
               }}
             />
           </div>
-          <h1 className="shimmer-gold" style={{
-            fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700,
-            letterSpacing: '0.02em', lineHeight: 1,
-          }}>
-            Jeito de Ser
-          </h1>
         </div>
 
         {/* Card do formulário */}

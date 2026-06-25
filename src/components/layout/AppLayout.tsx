@@ -107,17 +107,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 transition: 'all 0.3s var(--ease-premium)',
               }}
             />
-            {!collapsed && (
-              <div style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 24, fontWeight: 700,
-                color: 'var(--gold)',
-                letterSpacing: '0.01em', lineHeight: 1.05,
-                marginTop: 10,
-              }}>
-                Jeito de Ser
-              </div>
-            )}
           </div>
           <button
             onClick={() => setCollapsed(c => !c)}
