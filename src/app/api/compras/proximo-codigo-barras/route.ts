@@ -11,7 +11,7 @@ function calcCheckDigit(digits12: string): number {
   return (10 - (sum % 10)) % 10
 }
 
-export function buildEAN13(seq: number): string {
+function buildEAN13(seq: number): string {
   const body = '789' + String(seq).padStart(9, '0') // 12 digits
   return body + calcCheckDigit(body)
 }

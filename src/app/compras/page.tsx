@@ -4,7 +4,23 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 
-const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
+interface Compra {
+  id: string
+  data: string
+  nota_numero: string | null
+  valor_total: number
+  grupo?: string
+  evento?: string
+  // new fields from updated API
+  fornecedor_nome: string
+  qtd_pecas: number
+  valor_venda_total: number
+  ganho_previsto: number
+  status: string
+}
+
+const BRL = (v: number) =>
+  'R$ ' + (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 function formatarData(d: string) {
   if (!d) return '—'
@@ -12,9 +28,30 @@ function formatarData(d: string) {
   return dt.toLocaleDateString('pt-BR')
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const isFinalizada = status === 'Finalizada'
+  return (
+    <span
+      style={{
+        background: isFinalizada ? '#1a1610' : 'rgba(255,255,255,0.05)',
+        border: isFinalizada ? '1px solid #2a2418' : '1px solid rgba(255,255,255,0.08)',
+        color: isFinalizada ? '#C9A84C' : '#a0a0a0',
+        borderRadius: 99,
+        padding: '2px 8px',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        whiteSpace: 'nowrap' as const,
+      }}
+    >
+      {status || '—'}
+    </span>
+  )
+}
+
 export default function ComprasPage() {
   const router = useRouter()
-  const [compras, setCompras] = useState<any[]>([])
+  const [compras, setCompras] = useState<Compra[]>([])
   const [total, setTotal] = useState(0)
   const [q, setQ] = useState('')
   const [pagina, setPagina] = useState(1)
@@ -41,6 +78,11 @@ export default function ComprasPage() {
   const totalPaginas = Math.ceil(total / limite)
   const valorTotal = compras.reduce((s, c) => s + Number(c.valor_total || 0), 0)
 
+  // Grid columns: Data | Fornecedor | Nota | Qtd | Valor Custo | Valor Venda | Ganho | Status | Ações
+  const gridCols = '110px 1fr 100px 60px 120px 120px 120px 110px 36px'
+
+  const headers = ['Data', 'Fornecedor', 'Nota Fiscal', 'Qtd', 'Valor Custo', 'Valor Venda', 'Ganho Previsto', 'Status', '']
+
   return (
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -64,21 +106,22 @@ export default function ComprasPage() {
           <input
             className="input"
             style={{ paddingLeft: 34 }}
-            placeholder="Buscar por número da nota ou grupo..."
+            placeholder="Buscar por número da nota ou fornecedor..."
             value={q}
             onChange={e => setQ(e.target.value)}
           />
         </div>
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {/* Header row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '120px 1fr 120px 140px 130px 44px',
+            gridTemplateColumns: gridCols,
             padding: '12px 20px',
             borderBottom: '1px solid var(--border)',
             background: 'rgba(201,168,76,0.03)',
           }}>
-            {['Data', 'Fornecedor', 'Nota', 'Grupo / Evento', 'Valor', ''].map((h, i) => (
+            {headers.map((h, i) => (
               <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 {h}
               </div>
@@ -98,25 +141,55 @@ export default function ComprasPage() {
               onClick={() => router.push(`/compras/${c.id}`)}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '120px 1fr 120px 140px 130px 44px',
+                gridTemplateColumns: gridCols,
                 padding: '13px 20px',
                 borderBottom: i < compras.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
-                cursor: 'pointer', alignItems: 'center', transition: 'background 0.1s',
+                cursor: 'pointer',
+                alignItems: 'center',
+                transition: 'background 0.1s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
+              {/* Data */}
               <div style={{ fontSize: 12, color: '#F2EBD9' }}>{formatarData(c.data)}</div>
+
+              {/* Fornecedor */}
               <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {c.fornecedor_nome || <span style={{ color: 'var(--text-muted)' }}>—</span>}
               </div>
+
+              {/* Nota Fiscal */}
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {c.nota_numero ? `NF ${c.nota_numero}` : '—'}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.grupo || c.evento || '—'}</div>
-              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C' }}>
+
+              {/* Qtd Peças */}
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
+                {c.qtd_pecas ?? '—'}
+              </div>
+
+              {/* Valor Custo */}
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
                 {BRL(Number(c.valor_total))}
               </div>
+
+              {/* Valor Venda */}
+              <div style={{ fontSize: 12, color: '#F2EBD9', textAlign: 'right' }}>
+                {BRL(Number(c.valor_venda_total))}
+              </div>
+
+              {/* Ganho Previsto */}
+              <div style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', textAlign: 'right' }}>
+                {BRL(Number(c.ganho_previsto))}
+              </div>
+
+              {/* Status */}
+              <div>
+                <StatusBadge status={c.status} />
+              </div>
+
+              {/* Ações */}
               <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
             </div>
           ))}
