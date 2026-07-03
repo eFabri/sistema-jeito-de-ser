@@ -1,403 +1,468 @@
-// src/app/compras/nova/page.tsx
 'use client'
-
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import AppLayout from '@/components/layout/AppLayout'
+import AutocompleteInput from '@/components/ui/AutocompleteInput'
 
-const BRL = (v: number) => `R$ ${(v || 0).toFixed(2).replace('.', ',')}`
+const BRL = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const PARTES_OPCOES = ['', 'TOPS', 'INTEIRO', 'BOOTONS', 'CONJUNTO']
+const PAGAMENTO_OPCOES = ['Boleto', 'PIX', 'Cartão', 'Duplicata', 'Dinheiro']
 
-interface Item {
-  id: string                  // temp id interno
-  cod_produto: number | null  // id do produto existente OU null pra produto novo
-  produto: string             // descrição (pra exibir ou criar)
+interface ItemRow {
+  id: string
   cod_barras: string
+  sub_grupo: string
+  marca: string
+  produto: string
+  partes: string
+  tamanho: string
+  cor: string
   quantidade: number
-  valor_unitario: number
-  preco_venda: number         // sugestão de preço de venda (pode atualizar produto)
-  atualiza_estoque: boolean
-  atualiza_preco: boolean
+  preco_custo: number
+  sub_total: number
+  ganho_rs: number
+  ganho_pct: number
+  preco_venda: number
 }
 
-interface Parcela {
-  data_vencimento: string
-  valor: number
+interface Cabecalho {
+  fornecedor_id: number | null
+  fornecedor_nome: string
+  data: string
+  nota_numero: string
+  grupo: string
+  evento: string
+  forma_pagamento: string
 }
 
-function novoItem(): Item {
-  return { id: `tmp-${Date.now()}-${Math.random()}`, cod_produto: null, produto: '', cod_barras: '', quantidade: 1, valor_unitario: 0, preco_venda: 0, atualiza_estoque: true, atualiza_preco: false }
+interface Opcoes {
+  grupos: string[]
+  subgrupos: string[]
+  cores: string[]
+  tamanhos: string[]
+  marcas: string[]
+  fornecedores: { id: number; nome: string }[]
+}
+
+interface ResultadoCompra {
+  id: number
+  total_pecas: number
+  valor_total: number
+  valor_venda_total: number
+  ganho_total: number
+  produtos_criados: number
+  produtos_atualizados: number
+  itens: Array<{ produto: string; cod_barras: string; quantidade: number; preco_custo: number; preco_venda: number }>
+}
+
+let rowSeq = 1
+function novaLinha(): ItemRow {
+  return {
+    id: `r${rowSeq++}`,
+    cod_barras: '', sub_grupo: '', marca: '', produto: '', partes: '',
+    tamanho: '', cor: '', quantidade: 1, preco_custo: 0,
+    sub_total: 0, ganho_rs: 0, ganho_pct: 0, preco_venda: 0,
+  }
+}
+
+const getHoje = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+const CAB_INICIAL: Cabecalho = {
+  fornecedor_id: null, fornecedor_nome: '', data: getHoje(),
+  nota_numero: '', grupo: '', evento: '', forma_pagamento: '',
 }
 
 export default function NovaCompraPage() {
   const router = useRouter()
-  const hoje = new Date().toISOString().split('T')[0]
-
-  const [data, setData] = useState(hoje)
-  const [notaNumero, setNotaNumero] = useState('')
-  const [grupo, setGrupo] = useState('')
-  const [evento, setEvento] = useState('')
-  const [documento, setDocumento] = useState('')
-
-  // Fornecedor
-  const [forn, setForn] = useState<any>(null)
-  const [buscaForn, setBuscaForn] = useState('')
-  const [sugestoesForn, setSugestoesForn] = useState<any[]>([])
-  const [mostrarSugForn, setMostrarSugForn] = useState(false)
-
-  // Itens
-  const [itens, setItens] = useState<Item[]>([novoItem()])
-
-  // Parcelas
-  const [gerarParcelas, setGerarParcelas] = useState(false)
-  const [qtdParcelas, setQtdParcelas] = useState(1)
-  const [diaVencimento, setDiaVencimento] = useState(10)
-  const [parcelas, setParcelas] = useState<Parcela[]>([])
-
+  const [cab, setCab] = useState<Cabecalho>(CAB_INICIAL)
+  const [linhas, setLinhas] = useState<ItemRow[]>([novaLinha()])
+  const [opcoes, setOpcoes] = useState<Opcoes>({ grupos: [], subgrupos: [], cores: [], tamanhos: [], marcas: [], fornecedores: [] })
   const [salvando, setSalvando] = useState(false)
-  const [erro, setErro] = useState('')
-
-  // Busca de produto por item (autocomplete)
-  const [buscaProd, setBuscaProd] = useState<{ [itemId: string]: string }>({})
-  const [sugestoesProd, setSugestoesProd] = useState<{ [itemId: string]: any[] }>({})
-
-  // Total
-  const total = itens.reduce((s, i) => s + (i.quantidade * i.valor_unitario), 0)
-
-  // ─── BUSCA FORNECEDOR ────────────────────────────
-  useEffect(() => {
-    if (buscaForn.length < 2) { setSugestoesForn([]); return }
-    const t = setTimeout(async () => {
-      const res = await fetch(`/api/fornecedores?q=${encodeURIComponent(buscaForn)}&limite=8`)
-      const d = await res.json()
-      setSugestoesForn(d.fornecedores || [])
-      setMostrarSugForn(true)
-    }, 250)
-    return () => clearTimeout(t)
-  }, [buscaForn])
-
-  function selecionarFornecedor(f: any) {
-    setForn(f)
-    setBuscaForn('')
-    setSugestoesForn([])
-    setMostrarSugForn(false)
-  }
-
-  // ─── BUSCA PRODUTO ───────────────────────────────
-  function alterarBuscaProd(itemId: string, valor: string) {
-    setBuscaProd(b => ({ ...b, [itemId]: valor }))
-    setItens(its => its.map(i => i.id === itemId ? { ...i, produto: valor, cod_produto: null } : i))
-  }
+  const [erros, setErros] = useState<Record<string, string>>({})
+  const [concluido, setConcluido] = useState<ResultadoCompra | null>(null)
 
   useEffect(() => {
-    const timers: any[] = []
-    Object.entries(buscaProd).forEach(([itemId, valor]) => {
-      if (valor.length < 2) { setSugestoesProd(s => ({ ...s, [itemId]: [] })); return }
-      const t = setTimeout(async () => {
-        const res = await fetch(`/api/produtos?q=${encodeURIComponent(valor)}&limite=6`)
-        const d = await res.json()
-        setSugestoesProd(s => ({ ...s, [itemId]: d.produtos || [] }))
-      }, 250)
-      timers.push(t)
+    fetch('/api/compras/opcoes').then(r => r.json()).then(d => setOpcoes(d)).catch(() => {})
+  }, [])
+
+  const setCab2 = (k: keyof Cabecalho, v: string | number | null) =>
+    setCab(prev => ({ ...prev, [k]: v }))
+
+  const updateLinha = useCallback((id: string, campo: keyof ItemRow, valor: string | number) => {
+    setLinhas(prev => prev.map(l => {
+      if (l.id !== id) return l
+      const next: ItemRow = { ...l, [campo]: valor }
+
+      const custo = campo === 'preco_custo' ? Number(valor) : l.preco_custo
+      const qty   = campo === 'quantidade'  ? Number(valor) : l.quantidade
+      next.sub_total = qty * custo
+
+      if (campo === 'preco_custo') {
+        next.ganho_rs    = custo * (l.ganho_pct / 100)
+        next.preco_venda = custo + next.ganho_rs
+      } else if (campo === 'ganho_pct') {
+        const pct = Number(valor)
+        next.ganho_pct   = pct
+        next.ganho_rs    = custo * (pct / 100)
+        next.preco_venda = custo + next.ganho_rs
+      } else if (campo === 'ganho_rs') {
+        const rs = Number(valor)
+        next.ganho_rs    = rs
+        next.ganho_pct   = custo > 0 ? (rs / custo) * 100 : 0
+        next.preco_venda = custo + rs
+      } else if (campo === 'preco_venda') {
+        const venda = Number(valor)
+        next.preco_venda = venda
+        next.ganho_rs    = venda - custo
+        next.ganho_pct   = custo > 0 ? ((venda - custo) / custo) * 100 : 0
+      }
+
+      return next
+    }))
+    setErros(prev => {
+      if (!prev[`${id}-${campo}`]) return prev
+      const n = { ...prev }; delete n[`${id}-${campo}`]; return n
     })
-    return () => timers.forEach(clearTimeout)
-  }, [buscaProd])
+  }, [])
 
-  function selecionarProduto(itemId: string, prod: any) {
-    setItens(its => its.map(i => i.id === itemId
-      ? { ...i, cod_produto: prod.id, produto: prod.descricao, cod_barras: prod.cod_barras || '', valor_unitario: i.valor_unitario || Number(prod.preco_custo || 0), preco_venda: Number(prod.preco_venda || 0) }
-      : i
-    ))
-    setBuscaProd(b => ({ ...b, [itemId]: '' }))
-    setSugestoesProd(s => ({ ...s, [itemId]: [] }))
-  }
+  const adicionarLinha = useCallback(() => {
+    const nova = novaLinha()
+    setLinhas(prev => [...prev, nova])
+    setTimeout(() => {
+      const el = document.querySelector(`[data-rowid="${nova.id}"] input`) as HTMLInputElement | null
+      el?.focus()
+    }, 80)
+  }, [])
 
-  function alterarItem<K extends keyof Item>(itemId: string, campo: K, valor: Item[K]) {
-    setItens(its => its.map(i => i.id === itemId ? { ...i, [campo]: valor } : i))
-  }
+  const removerLinha = useCallback((id: string) => {
+    setLinhas(prev => prev.filter(l => l.id !== id))
+  }, [])
 
-  function removerItem(itemId: string) {
-    setItens(its => its.filter(i => i.id !== itemId))
-  }
+  const duplicarLinha = useCallback((id: string) => {
+    setLinhas(prev => {
+      const idx = prev.findIndex(l => l.id === id)
+      if (idx < 0) return prev
+      const nova: ItemRow = { ...prev[idx], id: `r${rowSeq++}`, quantidade: 1, cor: '' }
+      return [...prev.slice(0, idx + 1), nova, ...prev.slice(idx + 1)]
+    })
+  }, [])
 
-  function adicionarItem() {
-    setItens(its => [...its, novoItem()])
-  }
+  const handleTabLast = useCallback((e: React.KeyboardEvent, rowId: string) => {
+    if (e.key !== 'Tab' || e.shiftKey) return
+    setLinhas(current => {
+      const isLast = current[current.length - 1]?.id === rowId
+      if (isLast) {
+        e.preventDefault()
+        const nova = novaLinha()
+        setTimeout(() => {
+          const el = document.querySelector(`[data-rowid="${nova.id}"] input`) as HTMLInputElement | null
+          el?.focus()
+        }, 80)
+        return [...current, nova]
+      }
+      return current
+    })
+  }, [])
 
-  // ─── PARCELAS ────────────────────────────────────
-  function gerarParcelasAuto() {
-    if (qtdParcelas < 1 || total === 0) return
-    const valorParc = parseFloat((total / qtdParcelas).toFixed(2))
-    const novas: Parcela[] = []
-    const base = new Date(data + 'T00:00:00')
-    for (let n = 0; n < qtdParcelas; n++) {
-      const venc = new Date(base)
-      venc.setMonth(venc.getMonth() + n + 1)
-      venc.setDate(diaVencimento)
-      novas.push({ data_vencimento: venc.toISOString().split('T')[0], valor: valorParc })
+  const totalPecas = linhas.reduce((s, l) => s + Number(l.quantidade), 0)
+  const totalCusto = linhas.reduce((s, l) => s + l.sub_total, 0)
+  const totalVenda = linhas.reduce((s, l) => s + l.preco_venda * Number(l.quantidade), 0)
+  const totalGanho = totalVenda - totalCusto
+
+  async function finalizar() {
+    const novosErros: Record<string, string> = {}
+    if (linhas.length === 0) { setErros({ geral: 'Adicione pelo menos um item.' }); return }
+    for (const l of linhas) {
+      if (!l.sub_grupo)                        novosErros[`${l.id}-sub_grupo`]    = 'Obrigatório'
+      if (!l.produto)                           novosErros[`${l.id}-produto`]      = 'Obrigatório'
+      if (!l.preco_custo || l.preco_custo <= 0) novosErros[`${l.id}-preco_custo`] = 'Obrigatório'
+      if (!l.preco_venda || l.preco_venda <= 0) novosErros[`${l.id}-preco_venda`] = 'Obrigatório'
+      if (Number(l.quantidade) < 1)             novosErros[`${l.id}-quantidade`]  = 'Mín 1'
     }
-    // ajuste de centavos na última
-    const soma = novas.reduce((s, p) => s + p.valor, 0)
-    const diff = parseFloat((total - soma).toFixed(2))
-    if (diff !== 0) novas[novas.length - 1].valor = parseFloat((novas[novas.length - 1].valor + diff).toFixed(2))
-    setParcelas(novas)
-  }
-
-  useEffect(() => { if (gerarParcelas) gerarParcelasAuto() }, [gerarParcelas, qtdParcelas, diaVencimento, total, data])
-
-  // ─── SALVAR ──────────────────────────────────────
-  async function salvar() {
-    setErro('')
-    if (itens.length === 0 || itens.every(i => !i.produto.trim())) {
-      setErro('Adicione pelo menos um item válido')
-      return
-    }
-    const itensValidos = itens.filter(i => i.produto.trim() && i.quantidade > 0)
-    if (itensValidos.length === 0) {
-      setErro('Itens precisam ter produto e quantidade > 0')
-      return
-    }
+    if (Object.keys(novosErros).length > 0) { setErros(novosErros); return }
 
     setSalvando(true)
+    setErros({})
     try {
-      const body: any = {
-        data,
-        nota_numero: notaNumero ? parseInt(notaNumero) : null,
-        cod_fornecedor: forn?.id || null,
-        grupo, evento, documento,
-        itens: itensValidos,
-      }
-      if (gerarParcelas && parcelas.length > 0) body.parcelas = parcelas
-
       const res = await fetch('/api/compras', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cabecalho: cab, itens: linhas }),
       })
-      const d = await res.json()
-      if (!res.ok) throw new Error(d.erro || 'Erro ao salvar')
-      if (d.aviso) alert(d.aviso)
-      router.push('/compras')
-    } catch (e: any) {
-      setErro(e.message)
+      const ct = res.headers.get('content-type') || ''
+      if (!ct.includes('application/json')) {
+        setErros({ geral: 'Sessão expirada. Recarregue e faça login novamente.' })
+        return
+      }
+      const data = await res.json()
+      if (!res.ok) { setErros({ geral: data.erro || 'Erro ao salvar compra.' }); return }
+      setConcluido(data)
+    } catch {
+      setErros({ geral: 'Erro de conexão. Verifique sua internet.' })
     } finally {
       setSalvando(false)
     }
   }
 
-  return (
-    <AppLayout>
-      <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
-          Nova Compra
-        </h1>
+  function resetar() {
+    setCab({ ...CAB_INICIAL, data: getHoje() })
+    setLinhas([novaLinha()])
+    setErros({})
+    setConcluido(null)
+  }
 
-        {erro && (
-          <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 12, borderRadius: 8, fontSize: 13 }}>
-            {erro}
-          </div>
-        )}
+  const input: React.CSSProperties = {
+    background: '#111', color: '#F2EBD9', border: '1px solid #2a2418',
+    borderRadius: 6, padding: '6px 8px', fontSize: 12, width: '100%', outline: 'none', boxSizing: 'border-box',
+  }
+  const errInput = (field: string, rowId: string): React.CSSProperties =>
+    erros[`${rowId}-${field}`] ? { ...input, borderColor: '#E5584A' } : input
+  const cell: React.CSSProperties = { padding: '3px 3px', verticalAlign: 'top' }
+  const th: React.CSSProperties = {
+    padding: '8px 6px', color: '#8a7a60', fontSize: 10, fontWeight: 600,
+    textTransform: 'uppercase' as const, letterSpacing: 0.5, whiteSpace: 'nowrap' as const, textAlign: 'left' as const,
+  }
 
-        {/* CABEÇALHO */}
-        <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 13, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 16 }}>
-            Dados da Compra
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 120px 1fr', gap: 14 }}>
-            <Campo label="Data">
-              <input className="input" type="date" value={data} onChange={e => setData(e.target.value)} />
-            </Campo>
-            <Campo label="Fornecedor">
-              <div style={{ position: 'relative' }}>
-                {forn ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(201,168,76,0.06)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                    <span style={{ flex: 1, color: '#F2EBD9', fontSize: 13 }}>{forn.nome}</span>
-                    <button type="button" onClick={() => { setForn(null); setBuscaForn('') }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>×</button>
-                  </div>
-                ) : (
-                  <>
-                    <input
-                      className="input"
-                      placeholder="Buscar fornecedor por nome..."
-                      value={buscaForn}
-                      onChange={e => setBuscaForn(e.target.value)}
-                      onFocus={() => setMostrarSugForn(true)}
-                    />
-                    {mostrarSugForn && sugestoesForn.length > 0 && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
-                        {sugestoesForn.map(f => (
-                          <div key={f.id} onClick={() => selecionarFornecedor(f)}
-                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                            <div>{f.nome}</div>
-                            {f.cidade && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.cidade}/{f.uf}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </Campo>
-            <Campo label="Nº Nota">
-              <input className="input" inputMode="numeric" value={notaNumero} onChange={e => setNotaNumero(e.target.value.replace(/\D/g, ''))} />
-            </Campo>
-            <Campo label="Grupo / Evento">
-              <input className="input" value={grupo} onChange={e => setGrupo(e.target.value)} placeholder="Verão 2026, Reposição..." />
-            </Campo>
-          </div>
-        </div>
-
-        {/* ITENS */}
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h2 style={{ fontSize: 13, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
-              Itens da Compra
-            </h2>
-            <button type="button" className="btn btn-ghost" onClick={adicionarItem} style={{ padding: '6px 12px', fontSize: 12 }}>
-              + Adicionar item
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {itens.map((item, idx) => (
-              <div key={item.id} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, background: 'rgba(255,255,255,0.01)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    Item {idx + 1}
-                  </span>
-                  {itens.length > 1 && (
-                    <button type="button" onClick={() => removerItem(item.id)}
-                      style={{ background: 'none', border: 'none', color: '#E5584A', cursor: 'pointer', fontSize: 12 }}>
-                      Remover
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 130px 130px', gap: 12 }}>
-                  {/* Produto */}
-                  <div style={{ position: 'relative' }}>
-                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                      Produto {item.cod_produto && <span style={{ color: '#4CAF82', textTransform: 'none', letterSpacing: 0 }}>(já cadastrado)</span>}
-                      {!item.cod_produto && item.produto && <span style={{ color: '#E8943A', textTransform: 'none', letterSpacing: 0 }}>(será criado se digitado um novo)</span>}
-                    </label>
-                    <input
-                      className="input"
-                      value={item.produto}
-                      onChange={e => alterarBuscaProd(item.id, e.target.value)}
-                      placeholder="Descrição do produto"
-                    />
-                    {(sugestoesProd[item.id]?.length || 0) > 0 && !item.cod_produto && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
-                        {sugestoesProd[item.id].map((p: any) => (
-                          <div key={p.id} onClick={() => selecionarProduto(item.id, p)}
-                            style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                            <div>{p.descricao}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                              estoque: {p.estoque || 0} · custo: {BRL(Number(p.preco_custo || 0))} · venda: {BRL(Number(p.preco_venda || 0))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <Campo label="Qtd">
-                    <input className="input" type="number" min="1" value={item.quantidade}
-                      onChange={e => alterarItem(item.id, 'quantidade', parseInt(e.target.value) || 0)} />
-                  </Campo>
-                  <Campo label="Custo unit. (R$)">
-                    <input className="input" type="number" step="0.01" value={item.valor_unitario}
-                      onChange={e => alterarItem(item.id, 'valor_unitario', parseFloat(e.target.value) || 0)} />
-                  </Campo>
-                  <Campo label="Preço venda (R$)">
-                    <input className="input" type="number" step="0.01" value={item.preco_venda}
-                      onChange={e => alterarItem(item.id, 'preco_venda', parseFloat(e.target.value) || 0)} />
-                  </Campo>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                  <div style={{ display: 'flex', gap: 14, fontSize: 11 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#F2EBD9', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={item.atualiza_estoque}
-                        onChange={e => alterarItem(item.id, 'atualiza_estoque', e.target.checked)} />
-                      Atualizar estoque
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#F2EBD9', cursor: 'pointer', opacity: item.cod_produto ? 1 : 0.4 }}>
-                      <input type="checkbox" checked={item.atualiza_preco} disabled={!item.cod_produto}
-                        onChange={e => alterarItem(item.id, 'atualiza_preco', e.target.checked)} />
-                      Atualizar preço de venda
-                    </label>
-                  </div>
-                  <div style={{ fontSize: 14, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-                    Subtotal: {BRL(item.quantidade * item.valor_unitario)}
-                  </div>
-                </div>
+  if (concluido) {
+    return (
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px', fontFamily: 'inherit' }}>
+        <style>{`@media print { .no-print { display: none !important; } }`}</style>
+        <div style={{ background: '#1a1610', border: '1px solid #C9A84C', borderRadius: 12, padding: 28, marginBottom: 24 }}>
+          <div style={{ fontSize: 28, marginBottom: 6, color: '#C9A84C' }}>✓</div>
+          <h2 style={{ color: '#C9A84C', margin: '0 0 20px', fontSize: 20 }}>Compra Finalizada!</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {([
+              ['Produtos criados',     concluido.produtos_criados],
+              ['Produtos atualizados', concluido.produtos_atualizados],
+              ['Total de peças',       concluido.total_pecas],
+              ['Valor da compra',      `R$ ${BRL(concluido.valor_total)}`],
+              ['Valor a venda',        `R$ ${BRL(concluido.valor_venda_total)}`],
+              ['Ganho previsto',       `R$ ${BRL(concluido.ganho_total)}`],
+            ] as [string, string | number][]).map(([label, val]) => (
+              <div key={label}>
+                <div style={{ fontSize: 10, color: '#8a7a60', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 17, color: '#F2EBD9', fontWeight: 700 }}>{val}</div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* PARCELAS */}
-        <div className="card" style={{ padding: 24 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#F2EBD9' }}>
-            <input type="checkbox" checked={gerarParcelas} onChange={e => setGerarParcelas(e.target.checked)} />
-            <span style={{ fontWeight: 700, letterSpacing: '0.05em' }}>Gerar parcelas em CONTAS A PAGAR</span>
-          </label>
-          {gerarParcelas && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '160px 160px 1fr', gap: 14, marginTop: 14 }}>
-                <Campo label="Nº Parcelas">
-                  <input className="input" type="number" min="1" max="60" value={qtdParcelas} onChange={e => setQtdParcelas(parseInt(e.target.value) || 1)} />
-                </Campo>
-                <Campo label="Dia Vencimento">
-                  <input className="input" type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(parseInt(e.target.value) || 10)} />
-                </Campo>
-                <Campo label="Documento (texto p/ identificar)">
-                  <input className="input" value={documento} onChange={e => setDocumento(e.target.value)} placeholder="Ex: NF 1234 · Fornecedor X" />
-                </Campo>
-              </div>
-              {parcelas.length > 0 && (
-                <div style={{ marginTop: 14, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {parcelas.map((p, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                      <span>Parcela {idx + 1}/{parcelas.length} — vence {new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
-                      <span style={{ color: '#C9A84C' }}>{BRL(p.valor)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+        <div style={{ background: '#111', borderRadius: 8, overflow: 'auto', marginBottom: 20 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: '#1a1610' }}>
+                {['Produto','Cód. Barras','Qtd','Custo (R$)','Venda (R$)'].map(h => (
+                  <th key={h} style={{ ...th, borderBottom: '1px solid #2a2418' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {concluido.itens.map((it, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #1a1610' }}>
+                  <td style={{ padding: '6px 6px', color: '#F2EBD9' }}>{it.produto}</td>
+                  <td style={{ padding: '6px 6px', color: '#8a7a60', fontFamily: 'monospace', fontSize: 11 }}>{it.cod_barras}</td>
+                  <td style={{ padding: '6px 6px', color: '#F2EBD9', textAlign: 'right' }}>{it.quantidade}</td>
+                  <td style={{ padding: '6px 6px', color: '#F2EBD9', textAlign: 'right' }}>{BRL(it.preco_custo)}</td>
+                  <td style={{ padding: '6px 6px', color: '#C9A84C', textAlign: 'right', fontWeight: 600 }}>{BRL(it.preco_venda)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {/* TOTAL + SALVAR */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Total da Compra</div>
-            <div style={{ fontSize: 28, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-              {BRL(total)}
-            </div>
-          </div>
-          <button className="btn btn-primary" onClick={salvar} disabled={salvando} style={{ padding: '12px 28px' }}>
-            {salvando ? 'Salvando...' : 'Salvar Compra'}
-          </button>
+        <div className="no-print" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={() => window.print()} style={{ padding: '10px 18px', background: '#222', color: '#F2EBD9', border: '1px solid #444', borderRadius: 8, cursor: 'pointer' }}>🖨 Imprimir relatório</button>
+          <button onClick={resetar} style={{ padding: '10px 20px', background: '#C9A84C', color: '#111', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>+ Nova Compra</button>
+          <button onClick={() => router.push('/produtos')} style={{ padding: '10px 18px', background: '#1a1610', color: '#F2EBD9', border: '1px solid #333', borderRadius: 8, cursor: 'pointer' }}>Ver estoque atualizado</button>
         </div>
       </div>
-    </AppLayout>
-  )
-}
+    )
+  }
 
-function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-        {label}
-      </label>
-      {children}
+    <div style={{ padding: '20px 16px', fontFamily: 'inherit' }}>
+      <style>{`
+        @media print { .no-print { display: none !important; } }
+        input:focus { border-color: #C9A84C !important; box-shadow: none; }
+        select:focus { border-color: #C9A84C !important; }
+        input[type=number]::-webkit-inner-spin-button { opacity: 0.5; }
+      `}</style>
+
+      <div className="no-print" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <button onClick={() => router.push('/compras')} style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', fontSize: 18, padding: 0 }}>←</button>
+        <h1 style={{ margin: 0, fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>Nova Compra</h1>
+      </div>
+
+      <div className="no-print" style={{ background: '#1a1610', border: '1px solid #2a2418', borderRadius: 10, padding: 18, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14 }}>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Fornecedor</label>
+            <AutocompleteInput
+              value={cab.fornecedor_nome}
+              onChange={v => {
+                const found = opcoes.fornecedores.find(f => f.nome.toLowerCase() === v.toLowerCase())
+                setCab2('fornecedor_nome', v)
+                setCab2('fornecedor_id', found ? found.id : null)
+              }}
+              options={opcoes.fornecedores.map(f => f.nome)}
+              placeholder="Buscar fornecedor..."
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Data</label>
+            <input type="date" value={cab.data} onChange={e => setCab2('data', e.target.value)} style={input} />
+          </div>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Nº Nota Fiscal</label>
+            <input type="text" value={cab.nota_numero} onChange={e => setCab2('nota_numero', e.target.value)} placeholder="Ex: 001234" style={input} />
+          </div>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Grupo</label>
+            <AutocompleteInput value={cab.grupo} onChange={v => setCab2('grupo', v)} options={opcoes.grupos} placeholder="Ex: Moda Feminina" />
+          </div>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Evento / Coleção</label>
+            <input type="text" value={cab.evento} onChange={e => setCab2('evento', e.target.value)} placeholder="Ex: Inverno 26" style={input} />
+          </div>
+          <div>
+            <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Forma de Pagamento</label>
+            <select value={cab.forma_pagamento} onChange={e => setCab2('forma_pagamento', e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+              <option value="">Selecionar...</option>
+              {PAGAMENTO_OPCOES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {erros.geral && (
+        <div className="no-print" style={{ background: '#2a1010', border: '1px solid #E5584A', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#E5584A', fontSize: 13 }}>
+          {erros.geral}
+        </div>
+      )}
+
+      <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1280 }}>
+          <thead>
+            <tr style={{ background: '#111', borderBottom: '2px solid #2a2418' }}>
+              <th style={{ ...th, minWidth: 130 }}>Cód. Barras</th>
+              <th style={{ ...th, minWidth: 148 }}>Sub-Grupo *</th>
+              <th style={{ ...th, minWidth: 130 }}>Marca</th>
+              <th style={{ ...th, minWidth: 180 }}>Produto *</th>
+              <th style={{ ...th, minWidth: 105 }}>Partes</th>
+              <th style={{ ...th, minWidth: 85 }}>Tamanho</th>
+              <th style={{ ...th, minWidth: 118 }}>Cor</th>
+              <th style={{ ...th, minWidth: 65, textAlign: 'right' }}>Qtd *</th>
+              <th style={{ ...th, minWidth: 88, textAlign: 'right' }}>Custo *</th>
+              <th style={{ ...th, minWidth: 90, textAlign: 'right' }}>Sub-Total</th>
+              <th style={{ ...th, minWidth: 88, textAlign: 'right' }}>Ganho R$</th>
+              <th style={{ ...th, minWidth: 78, textAlign: 'right' }}>Ganho %</th>
+              <th style={{ ...th, minWidth: 88, textAlign: 'right' }}>Venda *</th>
+              <th style={{ ...th, minWidth: 62 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((l, idx) => {
+              const rowHasErr = ['sub_grupo','produto','preco_custo','preco_venda','quantidade'].some(f => erros[`${l.id}-${f}`])
+              const isLast = idx === linhas.length - 1
+              return (
+                <tr key={l.id} style={{ borderBottom: '1px solid #1a1610', background: rowHasErr ? 'rgba(229,88,74,0.06)' : 'transparent' }}>
+                  <td style={cell}>
+                    <input value={l.cod_barras} onChange={e => updateLinha(l.id, 'cod_barras', e.target.value)} placeholder="Auto (EAN-13)" style={{ ...input, fontFamily: 'monospace', fontSize: 11 }} />
+                  </td>
+                  <td style={cell} data-rowid={l.id}>
+                    <AutocompleteInput value={l.sub_grupo} onChange={v => updateLinha(l.id, 'sub_grupo', v)} options={opcoes.subgrupos} placeholder="Sub-grupo *" />
+                    {erros[`${l.id}-sub_grupo`] && <div style={{ color: '#E5584A', fontSize: 9, marginTop: 1 }}>Obrigatório</div>}
+                  </td>
+                  <td style={cell}>
+                    <AutocompleteInput value={l.marca} onChange={v => updateLinha(l.id, 'marca', v)} options={opcoes.marcas} placeholder="Marca" />
+                  </td>
+                  <td style={cell}>
+                    <input value={l.produto} onChange={e => updateLinha(l.id, 'produto', e.target.value)} placeholder="Descrição *" style={errInput('produto', l.id)} />
+                    {erros[`${l.id}-produto`] && <div style={{ color: '#E5584A', fontSize: 9, marginTop: 1 }}>Obrigatório</div>}
+                  </td>
+                  <td style={cell}>
+                    <select value={l.partes} onChange={e => updateLinha(l.id, 'partes', e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+                      {PARTES_OPCOES.map(p => <option key={p} value={p}>{p || '—'}</option>)}
+                    </select>
+                  </td>
+                  <td style={cell}>
+                    <AutocompleteInput value={l.tamanho} onChange={v => updateLinha(l.id, 'tamanho', v)} options={opcoes.tamanhos} placeholder="Tam." />
+                  </td>
+                  <td style={cell}>
+                    <AutocompleteInput value={l.cor} onChange={v => updateLinha(l.id, 'cor', v)} options={opcoes.cores} placeholder="Cor" />
+                  </td>
+                  <td style={cell}>
+                    <input type="number" min={1} value={l.quantidade}
+                      onChange={e => updateLinha(l.id, 'quantidade', parseInt(e.target.value) || 0)}
+                      style={{ ...errInput('quantidade', l.id), textAlign: 'right' }} />
+                  </td>
+                  <td style={cell}>
+                    <input type="number" min={0} step={0.01} value={l.preco_custo || ''}
+                      onChange={e => updateLinha(l.id, 'preco_custo', parseFloat(e.target.value) || 0)}
+                      placeholder="0,00" style={{ ...errInput('preco_custo', l.id), textAlign: 'right' }} />
+                    {erros[`${l.id}-preco_custo`] && <div style={{ color: '#E5584A', fontSize: 9, marginTop: 1 }}>Obrigatório</div>}
+                  </td>
+                  <td style={cell}>
+                    <input value={BRL(l.sub_total)} readOnly style={{ ...input, textAlign: 'right', color: '#8a7a60', cursor: 'default' }} />
+                  </td>
+                  <td style={cell}>
+                    <input type="number" min={0} step={0.01} value={l.ganho_rs || ''}
+                      onChange={e => updateLinha(l.id, 'ganho_rs', parseFloat(e.target.value) || 0)}
+                      placeholder="0,00" style={{ ...input, textAlign: 'right' }} />
+                  </td>
+                  <td style={cell}>
+                    <input type="number" min={0} step={0.1}
+                      value={l.ganho_pct ? parseFloat(l.ganho_pct.toFixed(1)) : ''}
+                      onChange={e => updateLinha(l.id, 'ganho_pct', parseFloat(e.target.value) || 0)}
+                      placeholder="0,0" style={{ ...input, textAlign: 'right' }} />
+                  </td>
+                  <td style={cell}>
+                    <input type="number" min={0} step={0.01} value={l.preco_venda || ''}
+                      onChange={e => updateLinha(l.id, 'preco_venda', parseFloat(e.target.value) || 0)}
+                      placeholder="0,00"
+                      style={{ ...errInput('preco_venda', l.id), textAlign: 'right', color: '#C9A84C' }}
+                      onKeyDown={e => { if (isLast) handleTabLast(e, l.id) }}
+                    />
+                    {erros[`${l.id}-preco_venda`] && <div style={{ color: '#E5584A', fontSize: 9, marginTop: 1 }}>Obrigatório</div>}
+                  </td>
+                  <td style={{ ...cell, whiteSpace: 'nowrap' }}>
+                    <button onClick={() => duplicarLinha(l.id)} title="Duplicar" style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', fontSize: 13, padding: '4px 5px' }}>⧉</button>
+                    <button onClick={() => removerLinha(l.id)} title="Remover" style={{ background: 'none', border: 'none', color: '#E5584A', cursor: 'pointer', fontSize: 13, padding: '4px 5px' }}>✕</button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="no-print" style={{ marginBottom: 20 }}>
+        <button onClick={adicionarLinha} style={{ padding: '8px 18px', background: '#1a1610', border: '1px solid #C9A84C', color: '#C9A84C', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+          + Adicionar linha
+        </button>
+      </div>
+
+      <div style={{ background: '#1a1610', border: '1px solid #2a2418', borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        {([
+          ['Total de peças',  String(totalPecas),       false],
+          ['Valor da compra', `R$ ${BRL(totalCusto)}`,  false],
+          ['Valor a venda',   `R$ ${BRL(totalVenda)}`,  false],
+          ['Ganho previsto',  `R$ ${BRL(totalGanho)}`,  true ],
+        ] as [string, string, boolean][]).map(([label, val, gold]) => (
+          <div key={label}>
+            <div style={{ fontSize: 10, color: '#8a7a60', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: gold ? '#C9A84C' : '#F2EBD9' }}>{val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={finalizar}
+          disabled={salvando}
+          style={{ padding: '12px 36px', background: salvando ? '#444' : '#C9A84C', color: '#111', border: 'none', borderRadius: 10, cursor: salvando ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16 }}
+        >
+          {salvando ? 'Salvando...' : '✓ Finalizar Compra'}
+        </button>
+      </div>
     </div>
   )
 }
