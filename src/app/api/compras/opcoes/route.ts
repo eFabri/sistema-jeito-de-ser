@@ -10,13 +10,18 @@ export async function GET() {
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))].sort()
 
   const [gruposRes, subGruposRes, coresRes, tamanhosRes, marcasRes, fornecedoresRes] = await Promise.all([
-    supabase.from('produtos').select('grupo').not('grupo', 'is', null),
-    supabase.from('produtos').select('sub_grupo').not('sub_grupo', 'is', null),
-    supabase.from('produtos').select('cor').not('cor', 'is', null),
-    supabase.from('produtos').select('tamanho').not('tamanho', 'is', null),
-    supabase.from('produtos').select('marca').not('marca', 'is', null),
+    supabase.from('produtos').select('grupo').not('grupo', 'is', null).neq('grupo', ''),
+    supabase.from('produtos').select('sub_grupo').not('sub_grupo', 'is', null).neq('sub_grupo', ''),
+    supabase.from('produtos').select('cor').not('cor', 'is', null).neq('cor', ''),
+    supabase.from('produtos').select('tamanho').not('tamanho', 'is', null).neq('tamanho', ''),
+    supabase.from('produtos').select('marca').not('marca', 'is', null).neq('marca', ''),
     supabase.from('fornecedores').select('id, nome').order('nome'),
   ])
+
+  // Log errors but continue — partial data is better than a 500 for autocomplete
+  for (const [name, result] of Object.entries({ gruposRes, subGruposRes, coresRes, tamanhosRes, marcasRes, fornecedoresRes })) {
+    if (result.error) console.error(`[compras/opcoes] query ${name} failed:`, result.error.message)
+  }
 
   const grupos = unique((gruposRes.data || []).map((r: any) => r.grupo))
   const subgrupos = unique([...SUBGRUPOS_BASE, ...(subGruposRes.data || []).map((r: any) => r.sub_grupo)])
@@ -24,7 +29,9 @@ export async function GET() {
   const tamanhosBD = unique((tamanhosRes.data || []).map((r: any) => r.tamanho))
   const tamanhos = unique([...TAMANHOS_FIXOS, ...tamanhosBD])
   const marcas = unique((marcasRes.data || []).map((r: any) => r.marca))
-  const fornecedores = (fornecedoresRes.data || []).map((f: any) => ({ id: f.id as number, nome: f.nome as string }))
+  const fornecedores = (fornecedoresRes.data || [])
+    .filter((f: any) => f.id != null && f.nome)
+    .map((f: any) => ({ id: f.id as number, nome: f.nome as string }))
 
   return NextResponse.json({ grupos, subgrupos, cores, tamanhos, marcas, fornecedores })
 }
