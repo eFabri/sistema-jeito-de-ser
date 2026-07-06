@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       situacao: situacao || 'Venda',
       forma_pagamento: pagamentos?.map((p: any) => p.forma).join(', ') || '',
       observacao: observacao || null,
-      data: new Date().toISOString().split('T')[0],
+      data: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
     })
     .select()
     .single()
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       pagamentos.map((p: any) => ({
         ...p,
         cod_venda: venda.id,
-        data: new Date().toISOString().split('T')[0],
+        data: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       }))
     )
     if (errPgto) console.error('Erro pagamentos:', errPgto.message)
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       cod_cliente,
       cod_venda: venda.id,
       parcela: c.parcela || `${idx + 1}/${crediario.length}`,
-      data_lancamento: new Date().toISOString().split('T')[0],
+      data_lancamento: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       data_vencimento: c.data_vencimento,
       valor: c.valor,
       historico: `Venda #${venda.id}`,

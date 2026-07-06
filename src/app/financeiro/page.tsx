@@ -5,60 +5,182 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { imprimirRecibo } from '@/lib/impressora'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'R$ 0,00'
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
 const FORMAS  = ['Dinheiro', 'PIX', 'Cartão Débito', 'Cartão Crédito', 'Transferência', 'Cheque']
+import { hojeNoBrasil, mesAtualNoBrasil } from '@/lib/dates'
+const dataBR  = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 
 // ─── MODAL RECEBIMENTO ────────────────────────────────────
 function ModalReceber({ conta, onClose, onSalvo }: any) {
-  const [valor, setValor]  = useState(conta.valor || 0)
-  const [juros, setJuros]  = useState(0)
-  const [forma, setForma]  = useState('Dinheiro')
-  const [data, setData]    = useState(new Date().toISOString().split('T')[0])
-  const [salvando, setSalvando] = useState(false)
+  const saldoAtual  = conta.parcialmente_pago ? (conta.saldo_devedor_original || conta.saldo_devedor || conta.valor) : conta.valor
+  const jaRecebido  = conta.valor_pago > 0 ? conta.valor_pago : Math.max(0, conta.valor - saldoAtual)
+  const isParcial   = conta.status === 'Pago Parcial'
 
-  const vencida = new Date(conta.data_vencimento) < new Date()
-  const dias    = Math.floor((Date.now() - new Date(conta.data_vencimento).getTime()) / 86400000)
+  const [tipoPgto, setTipoPgto] = useState<'total' | 'parcial'>('total')
+  const [valor, setValor]       = useState(saldoAtual)
+  const [juros, setJuros]       = useState(0)
+  const [desconto, setDesconto] = useState(0)
+  const [forma, setForma]       = useState('Dinheiro')
+  const [data, setData]         = useState(dataBR())
+  const [salvando, setSalvando] = useState(false)
+  const [resultado, setResultado] = useState<any>(null)
+
+  const vencida      = new Date(conta.data_vencimento + 'T12:00:00') < new Date()
+  const dias         = Math.floor((Date.now() - new Date(conta.data_vencimento + 'T12:00:00').getTime()) / 86400000)
+  // valorFinal = o que o cliente paga de fato (base - desconto + juros)
+  const valorBase    = tipoPgto === 'total' ? saldoAtual : valor
+  const valorFinal   = Math.max(0, valorBase - desconto + juros)
+  const ficaRestante = tipoPgto === 'total' ? 0 : Math.max(0, saldoAtual - valorBase)
+  const quitaTotal   = tipoPgto === 'total' || ficaRestante < 0.01
+
+  function handleTipo(t: 'total' | 'parcial') {
+    setTipoPgto(t)
+    if (t === 'total') setValor(saldoAtual)
+  }
 
   async function salvar() {
     setSalvando(true)
-    await fetch('/api/financeiro/receber', {
+    const res  = await fetch('/api/financeiro/receber', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cod_conta: conta.id, valor_recebido: valor, forma_pgto: forma, juros, data_pgto: data }),
+      body: JSON.stringify({ cod_conta: conta.id, valor_recebido: valorFinal, forma_pgto: forma, juros, desconto, data_pgto: data, tipo: tipoPgto }),
     })
+    const json = await res.json()
     setSalvando(false)
+    setResultado({ quitado: json.quitado, valorRecebido: valorFinal, saldoRestante: json.saldo_restante || 0 })
+  }
+
+  function imprimirComprovante(vias: 1 | 2) {
+    imprimirRecibo({
+      empresa: 'Jeito de Ser Ltda.',
+      nomeCliente: conta.clientes?.nome || 'Cliente',
+      codVenda: `Crediário #${conta.id}`,
+      data: new Date().toLocaleDateString('pt-BR'),
+      itens: [{ produto: `Parcela ${conta.parcela || '—'} — Crediário`, quantidade: 1, preco: resultado.valorRecebido, subtotal: resultado.valorRecebido }],
+      pagamentos: [{ forma, valor: resultado.valorRecebido }],
+      valorTotal: resultado.valorRecebido,
+      observacao: resultado.quitado ? 'Conta quitada integralmente' : `Baixa parcial — Saldo: ${BRL(resultado.saldoRestante)}`,
+    }, undefined, vias)
     onSalvo()
   }
 
+  const overlay = { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }
+  const box     = { background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 440, boxShadow: 'var(--shadow-dropdown)' }
+
+  // ── Tela de sucesso com comprovante ──
+  if (resultado) {
+    return (
+      <div style={overlay}>
+        <div style={{ ...box, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>{resultado.quitado ? '✅' : '◉'}</div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 4 }}>
+            {resultado.quitado ? 'Conta Quitada!' : 'Baixa Parcial Registrada!'}
+          </h3>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#C9A84C', marginBottom: 4 }}>
+            {BRL(resultado.valorRecebido)}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: resultado.quitado ? 20 : 8 }}>
+            {conta.clientes?.nome} · {forma}
+          </p>
+          {!resultado.quitado && (
+            <div style={{ background: 'rgba(232,148,58,0.08)', border: '1px solid rgba(232,148,58,0.2)', borderRadius: 8, padding: '8px 14px', marginBottom: 20, fontSize: 12, color: '#E8943A' }}>
+              Saldo restante: <strong>{BRL(resultado.saldoRestante)}</strong>
+            </div>
+          )}
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>Imprimir comprovante?</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            {([1, 2] as const).map(n => (
+              <button key={n} className="btn btn-ghost" style={{ justifyContent: 'center', flexDirection: 'column', gap: 2, padding: '12px' }} onClick={() => imprimirComprovante(n)}>
+                <span>🖨 {n} {n === 1 ? 'via' : 'vias'}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>{n === 1 ? 'só cliente' : 'cliente + loja'}</span>
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-success" style={{ width: '100%', justifyContent: 'center' }} onClick={onSalvo}>
+            Fechar sem imprimir
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 420, boxShadow: 'var(--shadow-dropdown)' }}>
+    <div style={overlay}>
+      <div style={box}>
         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Registrar Recebimento</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
           {conta.clientes?.nome || 'Cliente'} · Parcela {conta.parcela || '—'} · Vence {fmtData(conta.data_vencimento)}
         </p>
 
-        {vencida && (
-          <div style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#E5584A' }}>
-            ⚠ Conta vencida há {dias} dias. Você pode adicionar juros abaixo.
+        {/* Resumo de baixas parciais anteriores */}
+        {isParcial && jaRecebido > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+            {[
+              { label: 'Total original', val: conta.valor, color: 'var(--text-muted)' },
+              { label: 'Já recebido',   val: jaRecebido,  color: '#4CAF82' },
+              { label: 'Saldo devedor', val: saldoAtual,  color: '#C9A84C' },
+            ].map(({ label, val, color }) => (
+              <div key={label} style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                <div style={{ fontSize: 9, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color }}>{BRL(val)}</div>
+              </div>
+            ))}
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-              Valor recebido (R$)
-            </label>
-            <input type="number" className="input" value={valor} step={0.01} onChange={e => setValor(parseFloat(e.target.value) || 0)} />
+        {vencida && (
+          <div style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#E5584A' }}>
+            ⚠ Conta vencida há {dias} dias. Adicione juros se houver.
           </div>
-          {vencida && (
+        )}
+
+        {/* Radio: Total / Parcial */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+          {(['total', 'parcial'] as const).map(t => (
+            <button key={t} type="button" onClick={() => handleTipo(t)} style={{
+              padding: '10px 12px', borderRadius: 10,
+              border: `1px solid ${tipoPgto === t ? 'rgba(201,168,76,0.45)' : 'var(--border)'}`,
+              background: tipoPgto === t ? 'rgba(201,168,76,0.1)' : 'rgba(255,255,255,0.02)',
+              color: tipoPgto === t ? '#C9A84C' : 'var(--text-secondary)',
+              cursor: 'pointer', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', lineHeight: 1.4,
+            }}>
+              {t === 'total' ? `◉ Pagamento total\n${BRL(saldoAtual)}` : '◎ Pagamento parcial'}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {tipoPgto === 'parcial' && (
             <div>
-              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Juros (R$)</label>
-              <input type="number" className="input" value={juros} step={0.01} min={0} onChange={e => setJuros(parseFloat(e.target.value) || 0)} />
+              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                Valor recebido agora (R$)
+              </label>
+              <input type="number" className="input" value={valor} step={0.01} min={0.01} max={saldoAtual}
+                onChange={e => setValor(parseFloat(e.target.value) || 0)} autoFocus />
             </div>
           )}
+
+          {/* Desconto e Juros — sempre visíveis */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                Desconto (R$)
+              </label>
+              <input type="number" className="input" value={desconto} step={0.01} min={0}
+                onChange={e => setDesconto(parseFloat(e.target.value) || 0)} placeholder="0,00" />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
+                Juros (R$)
+              </label>
+              <input type="number" className="input" value={juros} step={0.01} min={0}
+                onChange={e => setJuros(parseFloat(e.target.value) || 0)} placeholder="0,00" />
+            </div>
+          </div>
+
           <div>
             <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Forma de pagamento</label>
             <select className="input" value={forma} onChange={e => setForma(e.target.value)}>
@@ -70,18 +192,32 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
             <input type="date" className="input" value={data} onChange={e => setData(e.target.value)} />
           </div>
 
-          {juros > 0 && (
-            <div style={{ padding: '10px 14px', background: 'rgba(201,168,76,0.06)', borderRadius: 8, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total a receber:</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#C9A84C' }}>{BRL(valor + juros)}</span>
+          {/* Resumo em tempo real */}
+          <div style={{ padding: '12px 14px', background: quitaTotal ? 'rgba(76,175,130,0.06)' : 'rgba(201,168,76,0.06)', border: `1px solid ${quitaTotal ? 'rgba(76,175,130,0.2)' : 'rgba(201,168,76,0.15)'}`, borderRadius: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Valor a receber:</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#C9A84C' }}>{BRL(valorFinal)}</span>
             </div>
-          )}
+            {(desconto > 0 || juros > 0) && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                {desconto > 0 && <span style={{ color: '#4CAF82' }}>-{BRL(desconto)} desconto </span>}
+                {juros > 0 && <span style={{ color: '#E8943A' }}>+{BRL(juros)} juros</span>}
+              </div>
+            )}
+            {!quitaTotal && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Saldo em aberto:</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#E8943A' }}>{BRL(ficaRestante)}</span>
+              </div>
+            )}
+            {quitaTotal && <div style={{ fontSize: 12, color: '#4CAF82', fontWeight: 600 }}>✓ Conta será quitada integralmente</div>}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
           <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
-          <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: '11px' }} onClick={salvar} disabled={salvando}>
-            {salvando ? 'Registrando...' : '✓ Confirmar Recebimento'}
+          <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: '11px' }} onClick={salvar} disabled={salvando || valor <= 0}>
+            {salvando ? 'Registrando...' : quitaTotal ? '✓ Quitar Conta' : '✓ Baixa Parcial'}
           </button>
         </div>
       </div>
@@ -95,7 +231,7 @@ function ModalPagar({ conta, onClose, onSalvo }: any) {
   const [juros, setJuros]    = useState(0)
   const [desconto, setDesc]  = useState(0)
   const [forma, setForma]    = useState('Dinheiro')
-  const [data, setData]      = useState(new Date().toISOString().split('T')[0])
+  const [data, setData]      = useState(dataBR())
   const [salvando, setSalvando] = useState(false)
 
   async function salvar() {
@@ -162,7 +298,7 @@ function ModalNovaContaPagar({ onClose, onSalvo }: any) {
     await fetch('/api/financeiro/pagar', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, valor: parseFloat(form.valor) || 0, data: new Date().toISOString().split('T')[0], pago: false, status: 'Em aberto' }),
+      body: JSON.stringify({ ...form, valor: parseFloat(form.valor) || 0, data: hojeNoBrasil(), pago: false, status: 'Em aberto' }),
     })
     setSalvando(false)
     onSalvo()
@@ -205,7 +341,7 @@ export default function FinanceiroPage() {
   const [busca, setBusca]    = useState('')
   const [pagina, setPagina]  = useState(1)
   const [loading, setLoading] = useState(true)
-  const [mesFluxo, setMesFluxo] = useState(new Date().toISOString().substring(0, 7))
+  const [mesFluxo, setMesFluxo] = useState(mesAtualNoBrasil())
   const [modalReceber, setModalReceber] = useState<any>(null)
   const [modalPagar, setModalPagar]     = useState<any>(null)
   const [modalNovaPagar, setModalNovaPagar] = useState(false)
@@ -235,7 +371,7 @@ export default function FinanceiroPage() {
 
   const totalPags = Math.ceil(total / limite)
 
-  const hoje = new Date().toISOString().split('T')[0]
+  const hoje = dataBR()
 
   // ─── TABS ────────────────────────────────────────────────
   const TABS = [
@@ -246,6 +382,7 @@ export default function FinanceiroPage() {
 
   const FILTROS_RECEBER = [
     { id: 'aberto',  label: 'Em Aberto' },
+    { id: 'parcial', label: 'Parcial' },
     { id: 'vencido', label: 'Vencido' },
     { id: 'pago',    label: 'Pago' },
     { id: 'todos',   label: 'Todos' },
@@ -345,14 +482,18 @@ export default function FinanceiroPage() {
                       Nenhuma conta encontrada
                     </div>
                   ) : contas.map((c: any, i: number) => {
-                    const atrasado = !c.pago && c.data_vencimento < hoje
+                    const atrasado  = !c.pago && c.data_vencimento < hoje
+                    const isParcial = c.status === 'Pago Parcial'
                     const diasAtraso = atrasado ? Math.floor((Date.now() - new Date(c.data_vencimento).getTime()) / 86400000) : 0
+                    const saldoExibido = c.parcialmente_pago ? (c.saldo_devedor_original || c.saldo_devedor || c.valor) : c.valor
+                    const statusColor = c.pago ? '#4CAF82' : isParcial ? '#C9A84C' : atrasado ? '#E5584A' : '#E8943A'
+                    const statusLabel = c.pago ? 'PAGO' : isParcial ? 'PARCIAL' : atrasado ? 'VENCIDO' : 'EM ABERTO'
                     return (
                       <div key={c.id} style={{
-                        display: 'grid', gridTemplateColumns: '1fr 100px 110px 120px 100px 44px',
+                        display: 'grid', gridTemplateColumns: '1fr 100px 110px 130px 100px 44px',
                         padding: '13px 20px', alignItems: 'center',
                         borderBottom: i < contas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
-                        background: atrasado ? 'rgba(229,88,74,0.02)' : 'transparent',
+                        background: atrasado ? 'rgba(229,88,74,0.02)' : isParcial ? 'rgba(201,168,76,0.02)' : 'transparent',
                       }}>
                         <div>
                           <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, cursor: 'pointer' }}
@@ -367,15 +508,21 @@ export default function FinanceiroPage() {
                           {atrasado && <div style={{ fontSize: 10, color: '#E5584A' }}>{diasAtraso}d atraso</div>}
                         </div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: atrasado ? '#E5584A' : '#C9A84C' }}>
-                          {BRL(c.valor)}
+                          {BRL(saldoExibido)}
+                          {isParcial && (() => {
+                            const vPago = c.valor_pago > 0 ? c.valor_pago : Math.max(0, c.valor - saldoExibido)
+                            return (
+                              <div>
+                                <div style={{ fontSize: 10, color: '#4CAF82' }}>✓ {BRL(vPago)} pago</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>de {BRL(c.valor)} total</div>
+                              </div>
+                            )
+                          })()}
                           {c.juros > 0 && <div style={{ fontSize: 11, color: '#E8943A' }}>+{BRL(c.juros)} juros</div>}
                         </div>
                         <div>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                            color: c.pago ? '#4CAF82' : atrasado ? '#E5584A' : '#E8943A',
-                          }}>
-                            {c.pago ? 'PAGO' : atrasado ? 'VENCIDO' : 'EM ABERTO'}
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: statusColor }}>
+                            {statusLabel}
                           </span>
                         </div>
                         <div>

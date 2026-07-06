@@ -2,23 +2,26 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseAdmin } from '@/lib/supabase/server'
 
-function fmt(d: Date) {
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+// Data no fuso de Brasília (UTC-3) — servidor Vercel roda em UTC
+function dataBR(offset = 0): string {
+  const d = new Date()
+  d.setDate(d.getDate() - offset)
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
+function subDias(str: string, n: number): string {
+  const [y, m, dia] = str.split('-').map(Number)
+  const dt = new Date(y, m - 1, dia - n)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
 export async function GET() {
   const supabase = createServerSupabaseAdmin()
-  const hoje = new Date()
-  const hojeStr = fmt(hoje)
-  const ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1)
-  const ontemStr = fmt(ontem)
-  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-  const inicioMesStr = fmt(inicioMes)
-  const ha14 = new Date(hoje); ha14.setDate(ha14.getDate() - 13)
-  const ha14Str = fmt(ha14)
-  const ha30 = new Date(hoje); ha30.setDate(ha30.getDate() - 29)
-  const ha30Str = fmt(ha30)
+  const hojeStr = dataBR()
+  const ontemStr = subDias(hojeStr, 1)
+  const inicioMesStr = hojeStr.substring(0, 8) + '01'
+  const ha14Str = subDias(hojeStr, 13)
+  const ha30Str = subDias(hojeStr, 29)
   const inicioPeriodoVendas = ha30Str // pega 30 dias pra trás (cobre 7/14/30/mês)
 
   // ─── 1. Vendas no período (carrega uma vez, fatia depois) ──────
@@ -70,8 +73,7 @@ export async function GET() {
     const agg = agruparPorData(vendasPeriodo)
     const aggMap = new Map(agg.map(a => [a.data, a]))
     for (let i = diasAtras - 1; i >= 0; i--) {
-      const d = new Date(hoje); d.setDate(d.getDate() - i)
-      const s = fmt(d)
+      const s = subDias(hojeStr, i)
       const e = aggMap.get(s)
       result.push({ data: s, total: e?.total || 0, qtd: e?.qtd || 0 })
     }
@@ -101,7 +103,7 @@ export async function GET() {
   while (true) {
     const { data, error } = await supabase
       .from('contas_a_receber')
-      .select('id, cod_cliente, valor, pago, data_vencimento, parcela')
+      .select('id, cod_cliente, valor, saldo_devedor_original, parcialmente_pago, pago, data_vencimento, parcela')
       .eq('pago', false)
       .range(offCar, offCar + 999)
     if (error || !data || data.length === 0) break
@@ -113,8 +115,9 @@ export async function GET() {
     offCar += 1000
     if (offCar > 9000) break
   }
-  const totalReceberHoje = aRecHoje.reduce((s, c) => s + Number(c.valor || 0), 0)
-  const totalInadimplente = inadimplentes.reduce((s, c) => s + Number(c.valor || 0), 0)
+  const saldoRealDash = (c: any) => c.parcialmente_pago ? Number(c.saldo_devedor_original || c.valor || 0) : Number(c.valor || 0)
+  const totalReceberHoje = aRecHoje.reduce((s, c) => s + saldoRealDash(c), 0)
+  const totalInadimplente = inadimplentes.reduce((s, c) => s + saldoRealDash(c), 0)
 
   // ─── 5. Estoque crítico ──────────────────────────────────
   // Como `lte('estoque', 'estoque_minimo')` exige filter('estoque', 'lte', 'estoque_minimo') que olha

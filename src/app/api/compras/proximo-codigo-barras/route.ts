@@ -1,41 +1,28 @@
 // src/app/api/compras/proximo-codigo-barras/route.ts
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 
-function calcCheckDigit(digits12: string): number {
-  let sum = 0
-  for (let i = 0; i < 12; i++) {
-    const d = parseInt(digits12[i], 10)
-    sum += i % 2 === 0 ? d : d * 3
-  }
-  return (10 - (sum % 10)) % 10
-}
-
-function buildEAN13(seq: number): string {
-  const body = '789' + String(seq).padStart(9, '0') // 12 digits
-  return body + calcCheckDigit(body)
-}
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase()
+  const { searchParams } = new URL(req.url)
+  const offset = Math.max(0, parseInt(searchParams.get('offset') || '0', 10) || 0)
 
+  // Fetch all 4-character barcode strings and find the max numeric one
   const { data, error } = await supabase
     .from('produtos')
     .select('cod_barras')
-    .like('cod_barras', '789%')
+    .like('cod_barras', '____')   // exactly 4 characters
     .order('cod_barras', { ascending: false })
-    .limit(1)
+    .limit(100)
 
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
 
-  let seq = 1
-  if (data && data.length > 0) {
-    const last = data[0].cod_barras
-    if (typeof last === 'string' && last.length === 13) {
-      const num = parseInt(last.substring(3, 12), 10) // extract 9-digit seq
-      if (!isNaN(num)) seq = num + 1
-    }
-  }
+  const maxCode = (data || [])
+    .map(r => r.cod_barras as string)
+    .filter(b => /^\d{4}$/.test(b))
+    .map(b => parseInt(b, 10))
+    .reduce((a, b) => Math.max(a, b), 0)
 
-  return NextResponse.json({ codigo: buildEAN13(seq) })
+  const next = (maxCode || 0) + 1 + offset
+  return NextResponse.json({ codigo: String(next).padStart(4, '0') })
 }

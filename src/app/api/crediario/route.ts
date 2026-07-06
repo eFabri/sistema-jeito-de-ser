@@ -11,18 +11,16 @@ export async function GET(req: NextRequest) {
 
   // 1. Busca contas com paginação manual via offset/limit
   //    (range() do supabase-js às vezes interpreta como HTTP Range bytes)
-  type CR = { id: number; cod_cliente: number; valor: number; pago: boolean; data_vencimento: string | null; data_cobranca: string | null }
+  type CR = { id: number; cod_cliente: number; valor: number; pago: boolean; parcialmente_pago: boolean; saldo_devedor_original: number; data_vencimento: string | null; data_cobranca: string | null }
   const todas: CR[] = []
   const pageSize = 1000
   let pagina = 0
   while (true) {
     let q1 = supabase
       .from('contas_a_receber')
-      .select('id, cod_cliente, valor, pago, data_vencimento, data_cobranca')
+      .select('id, cod_cliente, valor, pago, parcialmente_pago, saldo_devedor_original, data_vencimento, data_cobranca')
       .not('cod_cliente', 'is', null)
       .limit(pageSize)
-    // Pula offset registros manualmente — supabase-js usa range() que funciona
-    // mas precisa do header range-unit. Usa OFFSET via .range() com cuidado:
     q1 = q1.range(pagina * pageSize, pagina * pageSize + pageSize - 1)
 
     const { data, error } = await q1
@@ -34,8 +32,8 @@ export async function GET(req: NextRequest) {
     if (pagina > 20) break // safety
   }
 
-  // 2. Agrega por cliente
-  const hoje = new Date().toISOString().split('T')[0]
+  // 2. Agrega por cliente — usa saldo_devedor_original para parciais
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   type Agg = {
     cod_cliente: number; em_aberto: number; parcelas_em_aberto: number
     pago_acumulado: number; parcelas_pagas: number
@@ -49,18 +47,19 @@ export async function GET(req: NextRequest) {
       pago_acumulado: 0, parcelas_pagas: 0, proxima_vencimento: null,
       em_atraso: 0, parcelas_em_atraso: 0,
     }
-    const valor = Number(c.valor || 0)
+    // Valor real = saldo_devedor_original para parciais, valor integral para abertos
+    const valorReal = c.parcialmente_pago ? Number(c.saldo_devedor_original || 0) : Number(c.valor || 0)
     if (c.pago) {
-      cur.pago_acumulado += valor
+      cur.pago_acumulado += Number(c.valor || 0)
       cur.parcelas_pagas += 1
     } else {
-      cur.em_aberto += valor
+      cur.em_aberto += valorReal
       cur.parcelas_em_aberto += 1
       if (c.data_vencimento && c.data_vencimento < hoje) {
-        cur.em_atraso += valor
+        cur.em_atraso += valorReal
         cur.parcelas_em_atraso += 1
       }
-      if (c.data_vencimento && (!cur.proxima_vencimento || c.data_vencimento < cur.proxima_vencimento)) {
+      if (c.data_vencimento && c.data_vencimento >= hoje && (!cur.proxima_vencimento || c.data_vencimento < cur.proxima_vencimento)) {
         cur.proxima_vencimento = c.data_vencimento
       }
     }

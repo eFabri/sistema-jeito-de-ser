@@ -570,36 +570,73 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {d?.aniversariantes?.length > 0 && (
-            <div className="card-premium" style={{ padding: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 22 }}>🎂</span>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--gold-light)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Aniversariantes Hoje
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {d.aniversariantes.length} cliente{d.aniversariantes.length === 1 ? '' : 's'}
+          {/* Aniversários de nascimento */}
+          {(() => {
+            const aniv = (d?.aniversariantes || []).filter((a: any) => !a.tipo_aniversario || a.tipo_aniversario === 'aniversario')
+            if (!aniv.length) return null
+            return (
+              <div className="card-premium" style={{ padding: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 22 }}>🎂</span>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--gold-light)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+                      Aniversariantes Hoje
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {aniv.length} cliente{aniv.length === 1 ? '' : 's'}
+                    </div>
                   </div>
                 </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  {aniv.slice(0, 3).map((a: any) => (
+                    <div key={a.id} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      • {a.nome?.split(' ').slice(0, 2).join(' ')}
+                    </div>
+                  ))}
+                  {aniv.length > 3 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>+ {aniv.length - 3} mais</div>
+                  )}
+                </div>
+                <button className="btn btn-primary" onClick={() => router.push('/whatsapp')} style={{ width: '100%', justifyContent: 'center', padding: '10px' }}>
+                  Enviar mensagens
+                </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-                {d.aniversariantes.slice(0, 3).map((a: any) => (
-                  <div key={a.id} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                    • {a.nome?.split(' ').slice(0, 2).join(' ')}
+            )
+          })()}
+
+          {/* Aniversários de casamento */}
+          {(() => {
+            const casam = (d?.aniversariantes || []).filter((a: any) => a.tipo_aniversario === 'casamento')
+            if (!casam.length) return null
+            return (
+              <div className="card-premium" style={{ padding: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 22 }}>💍</span>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--gold-light)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+                      Aniversário de Casamento
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {casam.length} cliente{casam.length === 1 ? '' : 's'}
+                    </div>
                   </div>
-                ))}
-                {d.aniversariantes.length > 3 && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    + {d.aniversariantes.length - 3} mais
-                  </div>
-                )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  {casam.slice(0, 3).map((a: any) => (
+                    <div key={a.id + '-casam'} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      • {a.nome?.split(' ').slice(0, 2).join(' ')}
+                    </div>
+                  ))}
+                  {casam.length > 3 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>+ {casam.length - 3} mais</div>
+                  )}
+                </div>
+                <button className="btn btn-primary" onClick={() => router.push('/whatsapp')} style={{ width: '100%', justifyContent: 'center', padding: '10px' }}>
+                  Enviar mensagens
+                </button>
               </div>
-              <button className="btn btn-primary" onClick={() => router.push('/whatsapp')} style={{ width: '100%', justifyContent: 'center', padding: '10px' }}>
-                Enviar mensagens
-              </button>
-            </div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </div>

@@ -81,7 +81,7 @@ export default function ComprasPage() {
   // Grid columns: Data | Fornecedor | Nota | Qtd | Valor Custo | Valor Venda | Ganho | Status | Ações
   const gridCols = '110px 1fr 100px 60px 120px 120px 120px 110px 36px'
 
-  const headers = ['Data', 'Fornecedor', 'Nota Fiscal', 'Qtd', 'Valor Custo', 'Valor Venda', 'Ganho Previsto', 'Status', '']
+  const headers = ['Data', 'Fornecedor', 'Nota Fiscal', 'Qtd Peças', 'Valor Custo', 'Valor Venda', 'Ganho Previsto', 'Status', '']
 
   return (
     <AppLayout>

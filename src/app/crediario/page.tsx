@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { hojeNoBrasil } from '@/lib/dates'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const formatarData = (d: string | null) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
@@ -159,7 +160,7 @@ export default function CrediarioPage() {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {c.pago_acumulado > 0 ? BRL(c.pago_acumulado) : '—'}
               </div>
-              <div style={{ fontSize: 12, color: c.proxima_vencimento && c.proxima_vencimento < new Date().toISOString().split('T')[0] ? '#E5584A' : '#F2EBD9' }}>
+              <div style={{ fontSize: 12, color: c.proxima_vencimento && c.proxima_vencimento < hojeNoBrasil() ? '#E5584A' : '#F2EBD9' }}>
                 {formatarData(c.proxima_vencimento)}
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>

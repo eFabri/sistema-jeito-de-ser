@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     .from('contas_a_pagar').select('*').eq('id', cod_conta).single()
   if (error || !conta) return NextResponse.json({ erro: 'Conta não encontrada' }, { status: 404 })
 
-  const hoje = data_pgto || new Date().toISOString().split('T')[0]
+  const hoje = data_pgto || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   const valorFinal = valor_pago + juros - desconto
 
   await supabase.from('pagamentos').insert({

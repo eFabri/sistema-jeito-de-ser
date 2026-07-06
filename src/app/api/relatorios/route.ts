@@ -1,13 +1,15 @@
 // src/app/api/relatorios/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { hojeNoBrasil } from '@/lib/dates'
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase()
   const { searchParams } = new URL(req.url)
   const tipo = searchParams.get('tipo') || 'vendas_periodo'
-  const ini  = searchParams.get('ini') || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
-  const fim  = searchParams.get('fim') || new Date().toISOString().split('T')[0]
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const ini  = searchParams.get('ini') || hoje.substring(0, 8) + '01'
+  const fim  = searchParams.get('fim') || hoje
 
   // ─── VENDAS POR PERÍODO (agrupado por dia) ──────────────
   if (tipo === 'vendas_periodo') {
@@ -97,7 +99,7 @@ export async function GET(req: NextRequest) {
 
   // ─── INADIMPLÊNCIA ────────────────────────────────────────
   if (tipo === 'inadimplencia') {
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = hojeNoBrasil()
     const { data } = await supabase
       .from('contas_a_receber')
       .select(`

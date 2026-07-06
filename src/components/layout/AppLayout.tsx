@@ -4,32 +4,34 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-interface NavItem { id: string; label: string; icon: string; permissao: string; grupo: 'principal' | 'operacao' | 'admin' }
+interface NavItem { id: string; label: string; icon: string; permissao: string; grupo: 'principal' | 'operacao' | 'admin'; badgeKey?: string }
 
 const NAV: NavItem[] = [
-  { id: '/',               label: 'Dashboard',     icon: '⊞', permissao: 'ver_dashboard',       grupo: 'principal' },
+  { id: '/',                    label: 'Dashboard',          icon: '⊞', permissao: 'ver_dashboard',    grupo: 'principal' },
 
-  { id: '/vendas',         label: 'Vendas / PDV',  icon: '◈', permissao: 'ver_vendas',          grupo: 'operacao' },
-  { id: '/clientes',       label: 'Clientes',      icon: '◉', permissao: 'ver_clientes',        grupo: 'operacao' },
-  { id: '/produtos',       label: 'Produtos',      icon: '◫', permissao: 'ver_produtos',        grupo: 'operacao' },
-  { id: '/financeiro',     label: 'Financeiro',    icon: '◎', permissao: 'ver_financeiro',      grupo: 'operacao' },
-  { id: '/crediario',      label: 'Crediário',     icon: '◈', permissao: 'ver_crediario',      grupo: 'operacao' },
-  { id: '/compras',        label: 'Compras',       icon: '◐', permissao: 'ver_compras',         grupo: 'operacao' },
-  { id: '/trocas',         label: 'Trocas',        icon: '⇄', permissao: 'ver_trocas',          grupo: 'operacao' },
+  { id: '/vendas',              label: 'Vendas / PDV',       icon: '◈', permissao: 'ver_vendas',       grupo: 'operacao' },
+  { id: '/clientes',            label: 'Clientes',           icon: '◉', permissao: 'ver_clientes',     grupo: 'operacao' },
+  { id: '/produtos',            label: 'Produtos',           icon: '◫', permissao: 'ver_produtos',     grupo: 'operacao' },
+  { id: '/financeiro',          label: 'Financeiro',         icon: '◎', permissao: 'ver_financeiro',   grupo: 'operacao' },
+  { id: '/contas-a-receber',    label: 'Contas a Receber',   icon: '◌', permissao: 'ver_financeiro',   grupo: 'operacao', badgeKey: 'contasReceber' },
+  { id: '/crediario',           label: 'Crediário',          icon: '◈', permissao: 'ver_crediario',    grupo: 'operacao' },
+  { id: '/compras',             label: 'Compras',            icon: '◐', permissao: 'ver_compras',      grupo: 'operacao' },
+  { id: '/trocas',              label: 'Trocas',             icon: '⇄', permissao: 'ver_trocas',       grupo: 'operacao' },
 
-  { id: '/relatorios',     label: 'Relatórios',    icon: '▤', permissao: 'ver_relatorios',      grupo: 'admin' },
-  { id: '/whatsapp',       label: 'WhatsApp',      icon: '◍', permissao: 'ver_whatsapp',        grupo: 'admin' },
-  { id: '/usuarios',       label: 'Usuários',      icon: '◇', permissao: '__admin__',           grupo: 'admin' },
-  { id: '/configuracoes',  label: 'Configurações', icon: '⊛', permissao: 'ver_configuracoes',   grupo: 'admin' },
+  { id: '/relatorios',          label: 'Relatórios',         icon: '▤', permissao: 'ver_relatorios',   grupo: 'admin' },
+  { id: '/whatsapp',            label: 'WhatsApp',           icon: '◍', permissao: 'ver_whatsapp',     grupo: 'admin' },
+  { id: '/usuarios',            label: 'Usuários',           icon: '◇', permissao: '__admin__',        grupo: 'admin' },
+  { id: '/configuracoes',       label: 'Configurações',      icon: '⊛', permissao: 'ver_configuracoes',grupo: 'admin' },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [perfil, setPerfil] = useState<any>(null)
+  const [perfil, setPerfil]     = useState<any>(null)
   const [collapsed, setCollapsed] = useState(false)
-  const [toastMsg, setToastMsg] = useState('')
+  const [toastMsg, setToastMsg]   = useState('')
+  const [badges, setBadges]       = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetch('/api/perfil')
@@ -37,6 +39,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .then(d => { if (d && d.user_id) setPerfil(d) })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    fetch('/api/financeiro?aba=resumo_receber')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.badge != null) setBadges(b => ({ ...b, contasReceber: d.badge })) })
+      .catch(() => {})
+  }, [pathname])
 
   useEffect(() => {
     if (searchParams.get('acesso_negado') === '1') {
@@ -199,7 +208,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       >
                         {item.icon}
                       </span>
-                      {!collapsed && item.label}
+                      {!collapsed && (
+                        <>
+                          <span style={{ flex: 1 }}>{item.label}</span>
+                          {item.badgeKey && (badges[item.badgeKey] || 0) > 0 && (
+                            <span style={{
+                              background: '#E5584A', color: '#fff',
+                              borderRadius: 99, fontSize: 10, fontWeight: 700,
+                              padding: '1px 6px', lineHeight: 1.5, flexShrink: 0,
+                            }}>
+                              {badges[item.badgeKey]}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {collapsed && item.badgeKey && (badges[item.badgeKey] || 0) > 0 && (
+                        <span style={{
+                          position: 'absolute', top: 4, right: 4,
+                          background: '#E5584A', color: '#fff',
+                          borderRadius: 99, fontSize: 9, fontWeight: 700,
+                          padding: '1px 4px', lineHeight: 1.4,
+                        }}>
+                          {badges[item.badgeKey]}
+                        </span>
+                      )}
                     </button>
                   )
                 })}

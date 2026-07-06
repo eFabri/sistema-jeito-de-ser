@@ -3,9 +3,11 @@
 
 export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import SelectCustom from '@/components/ui/SelectCustom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 import { imprimirRecibo } from '@/lib/impressora'
+import { hojeNoBrasil } from '@/lib/dates'
 
 // ─── TIPOS ────────────────────────────────────────────────
 interface ItemCarrinho {
@@ -60,9 +62,25 @@ export default function NovaVendaPage() {
   const [sugestoesCli, setSugestoesCli] = useState<any[]>([])
   const [mostrarSugestoesCli, setMostrarSugestoesCli] = useState(false)
 
-  // Modal de cadastro rápido de cliente (obrigatório se cliente não existe)
+  // Modal de cadastro de cliente (completo)
   const [mostrarModalCli, setMostrarModalCli] = useState(false)
-  const [novoCli, setNovoCli] = useState({ nome: '', celular: '', cpf: '', categoria: 'Avista' })
+  const [novoCli, setNovoCli] = useState({
+    nome: '', data_nascimento: '', cpf: '', identidade: '', estado_civil: '',
+    conjuge: '', conjuge_telefone: '', data_casamento: '',
+    filho: '', filho_telefone: '',
+    filiacao_mae: '', filiacao_mae_tel: '',
+    filiacao_pai: '', filiacao_pai_tel: '',
+    celular: '', telefone: '', whatsapp: '', email: '', rede_social: '',
+    cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: 'MG',
+    trabalho_nome: '', trabalho_cargo: '', trabalho_telefone: '', renda: '', trabalho_tempo: '',
+    categoria: 'Avista', limite_credito: '', desconto_familia: '',
+    tamanho: '', tamanho2: '', tamanho3: '', perfil: '',
+    ref_comercial: '', ref_comercial_tel: '',
+    ref_pessoal1: '', ref_pessoal1_tel: '',
+    ref_pessoal2: '', ref_pessoal2_tel: '',
+    observacao: '',
+  })
+  const [abaCli, setAbaCli] = useState<'pessoal' | 'familia' | 'contato' | 'endereco' | 'trabalho' | 'credito' | 'refs'>('pessoal')
   const [salvandoCli, setSalvandoCli] = useState(false)
   const [erroCli, setErroCli] = useState('')
 
@@ -71,7 +89,8 @@ export default function NovaVendaPage() {
   const [buscaProduto, setBuscaProduto] = useState('')
   const [sugestoesProd, setSugestoesProd] = useState<any[]>([])
   const [mostrarSugestoesProd, setMostrarSugestoesProd] = useState(false)
-  const [descontoGlobal, setDescontoGlobal] = useState(0) // %
+  const [descontoRs, setDescontoRs]   = useState(0)
+  const [descontoPct, setDescontoPct] = useState(0)
 
   // Estado do pagamento
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
@@ -92,8 +111,30 @@ export default function NovaVendaPage() {
   const [modalImprimir, setModalImprimir] = useState(false)
   const inputProdRef = useRef<HTMLInputElement>(null)
 
+  // Cadastro rápido de produto
+  const [buscandoProd, setBuscandoProd] = useState(false)
+  const [semResultadosProd, setSemResultadosProd] = useState(false)
+  const [mostrarModalProd, setMostrarModalProd] = useState(false)
+  const [novoProd, setNovoProd] = useState<any>({ cod_referencia: '', descricao: '', grupo: '', preco_venda: '', estoque_inicial: 0, cor: '', tamanho: '', marca: '', preco_custo: '' })
+  const [maisDetalhesProd, setMaisDetalhesProd] = useState(false)
+  const [salvandoProd, setSalvandoProd] = useState(false)
+  const [toastPDV, setToastPDV] = useState('')
+
   const isAdmin = perfilUsuario?.perfil === 'admin'
   const podeAlterarDesconto = isAdmin || perfilUsuario?.alterar_preco_pdv
+
+  function handleDescontoRs(v: number) {
+    const sub = carrinho.reduce((s, i) => s + i.quantidade * i.preco_venda, 0)
+    const val  = Math.min(Math.max(0, v), sub)
+    setDescontoRs(val)
+    setDescontoPct(sub > 0 ? parseFloat(((val / sub) * 100).toFixed(4)) : 0)
+  }
+  function handleDescontoPct(v: number) {
+    const sub = carrinho.reduce((s, i) => s + i.quantidade * i.preco_venda, 0)
+    const pct  = Math.min(Math.max(0, v), 100)
+    setDescontoPct(pct)
+    setDescontoRs(parseFloat((sub * (pct / 100)).toFixed(2)))
+  }
 
   // Pré-carregar cliente da URL e perfil
   useEffect(() => {
@@ -146,12 +187,22 @@ export default function NovaVendaPage() {
 
   // ─── BUSCA PRODUTO ──────────────────────────────────────
   useEffect(() => {
-    if (buscaProduto.length < 2) { setSugestoesProd([]); return }
+    if (buscaProduto.length < 2) {
+      setSugestoesProd([])
+      setSemResultadosProd(false)
+      setBuscandoProd(false)
+      return
+    }
+    setSemResultadosProd(false)
+    setBuscandoProd(true)
     const t = setTimeout(async () => {
       const res = await fetch(`/api/produtos?q=${encodeURIComponent(buscaProduto)}&limite=8`)
       const data = await res.json()
-      setSugestoesProd(data.produtos || [])
-      setMostrarSugestoesProd(true)
+      const prods = data.produtos || []
+      setSugestoesProd(prods)
+      setMostrarSugestoesProd(prods.length > 0)
+      setSemResultadosProd(prods.length === 0)
+      setBuscandoProd(false)
     }, 200)
     return () => clearTimeout(t)
   }, [buscaProduto])
@@ -203,7 +254,7 @@ export default function NovaVendaPage() {
 
   // ─── TOTAIS ─────────────────────────────────────────────
   const subtotalBruto = carrinho.reduce((s, i) => s + i.quantidade * i.preco_venda, 0)
-  const descontoValor = descontoGlobal > 0 ? subtotalBruto * (descontoGlobal / 100) : 0
+  const descontoValor = descontoRs
   const totalFinal    = subtotalBruto - descontoValor
 
   // ─── PAGAMENTO ──────────────────────────────────────────
@@ -230,15 +281,20 @@ export default function NovaVendaPage() {
     const valorCrediario = pagamentos.find(p => p.forma === 'Crediário')?.valor || totalFinal
     const valorParcela = valorCrediario / qtdParcelas
     const parcelas: ParcelaCrediario[] = []
-    const hoje = new Date()
+    // Usar data Brasília como base para não deslocar 1 dia após 21h
+    const [anoBase, mesBase, diaBase] = hojeNoBrasil().split('-').map(Number)
+    const hoje = new Date(anoBase, mesBase - 1, diaBase)
 
     for (let i = 0; i < qtdParcelas; i++) {
       const venc = new Date(hoje)
       venc.setMonth(venc.getMonth() + i + 1)
       venc.setDate(diaVencimento)
+      const ano = venc.getFullYear()
+      const mes = String(venc.getMonth() + 1).padStart(2, '0')
+      const dia = String(venc.getDate()).padStart(2, '0')
       parcelas.push({
         parcela: `${i + 1}/${qtdParcelas}`,
-        data_vencimento: venc.toISOString().split('T')[0],
+        data_vencimento: `${ano}-${mes}-${dia}`,
         valor: parseFloat(valorParcela.toFixed(2)),
       })
     }
@@ -252,34 +308,97 @@ export default function NovaVendaPage() {
 
   useEffect(() => { if (temCrediario) gerarParcelas() }, [qtdParcelas, diaVencimento, pagamentos])
 
-  // ─── CADASTRO RÁPIDO DE CLIENTE ───────────────────────────
+  // ─── CADASTRO DE CLIENTE ────────────────────────────────
+  const fcli = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setNovoCli(c => ({ ...c, [field]: e.target.value }))
+
   async function criarClienteRapido() {
     setErroCli('')
-    if (!novoCli.nome.trim()) { setErroCli('Nome é obrigatório'); return }
-    if (!novoCli.celular.trim()) { setErroCli('Celular é obrigatório para contato/WhatsApp'); return }
+    if (!novoCli.nome.trim()) { setErroCli('Nome é obrigatório'); setAbaCli('pessoal'); return }
+    if (!novoCli.celular.trim()) { setErroCli('Celular é obrigatório'); setAbaCli('contato'); return }
     setSalvandoCli(true)
     try {
       const res = await fetch('/api/clientes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: novoCli.nome.trim(),
-          celular: novoCli.celular.replace(/\D/g, ''),
-          whatsapp: novoCli.celular.replace(/\D/g, ''),
+          ...novoCli,
+          celular: novoCli.celular.replace(/\D/g, '') || null,
+          whatsapp: novoCli.whatsapp.replace(/\D/g, '') || novoCli.celular.replace(/\D/g, '') || null,
           cpf: novoCli.cpf.replace(/\D/g, '') || null,
-          categoria: novoCli.categoria,
+          limite_credito: parseFloat(novoCli.limite_credito) || 0,
+          desconto_familia: parseFloat(novoCli.desconto_familia) || 0,
+          data_casamento: novoCli.data_casamento || null,
+          whatsapp_ativo: !!(novoCli.whatsapp || novoCli.celular),
           ativo: true,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar cliente')
-      // Seleciona o cliente recém-criado
       setCliente(data)
       setMostrarModalCli(false)
-      setNovoCli({ nome: '', celular: '', cpf: '', categoria: 'Avista' })
+      setAbaCli('pessoal')
     } catch (e: any) {
       setErroCli(e.message)
     } finally {
       setSalvandoCli(false)
+    }
+  }
+
+  // ─── CADASTRO RÁPIDO DE PRODUTO ──────────────────────────
+  async function abrirModalProduto() {
+    const res = await fetch('/api/produtos/proximo-codigo')
+    const data = await res.json()
+    setNovoProd({
+      cod_referencia: data.codigo || '',
+      descricao: buscaProduto,
+      grupo: '',
+      preco_venda: '',
+      estoque_inicial: 0,
+      cor: '',
+      tamanho: '',
+      marca: '',
+      preco_custo: '',
+    })
+    setMaisDetalhesProd(false)
+    setMostrarModalProd(true)
+  }
+
+  async function salvarProdutoRapido() {
+    if (!novoProd.descricao.trim()) return
+    setSalvandoProd(true)
+    try {
+      const res = await fetch('/api/produtos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cod_referencia: novoProd.cod_referencia,
+          descricao: novoProd.descricao.trim(),
+          grupo: novoProd.grupo.trim() || 'Geral',
+          preco_venda: parseFloat(novoProd.preco_venda) || 0,
+          preco_custo: parseFloat(novoProd.preco_custo) || 0,
+          estoque: parseInt(novoProd.estoque_inicial) || 0,
+          cor: novoProd.cor || null,
+          tamanho: novoProd.tamanho || null,
+          marca: novoProd.marca || null,
+          ativo: true,
+          cadastrado_no_pdv: true,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.erro || 'Erro ao cadastrar produto')
+      }
+      const prod = await res.json()
+      adicionarProduto(prod)
+      setMostrarModalProd(false)
+      setBuscaProduto('')
+      setSemResultadosProd(false)
+      setToastPDV('Produto cadastrado e adicionado à venda!')
+      setTimeout(() => setToastPDV(''), 3500)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setSalvandoProd(false)
     }
   }
 
@@ -329,18 +448,33 @@ export default function NovaVendaPage() {
         conta_a_receber: p.forma === 'Crediário',
       })),
       crediario: temCrediario ? parcelasCrediario : [],
-      desc_porcentagem: descontoGlobal / 100,
+      desc_porcentagem: descontoPct / 100,
       desc_valor: descontoValor,
       valor_total: totalFinal,
       situacao: 'Venda',
       observacao: observacao || null,
     }
 
-    const res = await fetch('/api/vendas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    let res: Response
+    try {
+      res = await fetch('/api/vendas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } catch {
+      setErro('Sem conexão com o servidor. Verifique a internet e tente novamente.')
+      setSalvando(false)
+      return
+    }
+
+    // Sessão expirada: middleware redireciona para /auth/login e retorna HTML
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      setErro('Sessão expirada. Recarregue a página e faça login novamente antes de finalizar a venda.')
+      setSalvando(false)
+      return
+    }
 
     if (!res.ok) {
       const err = await res.json()
@@ -356,7 +490,7 @@ export default function NovaVendaPage() {
     setModalImprimir(true)
   }
 
-  async function imprimirVendaAtual() {
+  async function imprimirVendaAtual(vias: 1 | 2 = 1) {
     if (!vendaFinalizada) return
     await imprimirRecibo({
       empresa: 'Jeito de Ser — (31) 3741-3668',
@@ -371,11 +505,11 @@ export default function NovaVendaPage() {
       valorTotal: totalFinal,
       crediario: temCrediario ? parcelasCrediario.map(p => ({ parcela: p.parcela, vencimento: p.data_vencimento, valor: p.valor })) : undefined,
       observacao: observacao || undefined,
-    })
+    }, undefined, vias)
   }
 
   function resetarPDV() {
-    setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoGlobal(0)
+    setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoRs(0); setDescontoPct(0)
     setPagamentos([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
     setParcelasCrediario([]); setObservacao(''); setEtapa('carrinho'); setVendaFinalizada(null)
     setModalImprimir(false)
@@ -388,7 +522,7 @@ export default function NovaVendaPage() {
         {/* MODAL: Deseja imprimir? */}
         {modalImprimir && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-            <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 380, textAlign: 'center' }}>
+            <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 400, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🖨</div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Imprimir recibo?</h3>
               {troco > 0 && (
@@ -396,9 +530,19 @@ export default function NovaVendaPage() {
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#C9A84C', fontWeight: 700 }}>Troco: {BRL(troco)}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModalImprimir(false)}>Não imprimir</button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={async () => { await imprimirVendaAtual(); setModalImprimir(false) }}>Imprimir</button>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Quantas vias deseja imprimir?</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModalImprimir(false)}>
+                  Não imprimir
+                </button>
+                <button className="btn btn-ghost" style={{ flex: 1, borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C' }}
+                  onClick={async () => { localStorage.setItem('preferencia_vias','1'); await imprimirVendaAtual(1); setModalImprimir(false) }}>
+                  🖨 1 via
+                </button>
+                <button className="btn btn-primary" style={{ flex: 1 }}
+                  onClick={async () => { localStorage.setItem('preferencia_vias','2'); await imprimirVendaAtual(2); setModalImprimir(false) }}>
+                  🖨 2 vias
+                </button>
               </div>
             </div>
           </div>
@@ -412,7 +556,8 @@ export default function NovaVendaPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-ghost" onClick={imprimirVendaAtual}>🖨 Reimprimir</button>
+            <button className="btn btn-ghost" onClick={() => imprimirVendaAtual(1)}>🖨 1 via</button>
+            <button className="btn btn-ghost" onClick={() => imprimirVendaAtual(2)}>🖨 2 vias</button>
             <button className="btn btn-ghost" onClick={() => router.push(`/clientes/${cliente?.id}`)}>Ver Cliente</button>
             <button className="btn btn-primary" onClick={resetarPDV}>+ Nova Venda</button>
           </div>
@@ -424,70 +569,356 @@ export default function NovaVendaPage() {
   // ─── RENDER PRINCIPAL ───────────────────────────────────
   return (
     <AppLayout>
-      {/* MODAL CADASTRO RÁPIDO DE CLIENTE */}
+      {/* TOAST PRODUTO CADASTRADO */}
+      {toastPDV && (
+        <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 9999, background: 'rgba(76,175,130,0.15)', border: '1px solid rgba(76,175,130,0.35)', borderRadius: 10, padding: '12px 18px', color: '#4CAF82', fontSize: 13, fontWeight: 600, backdropFilter: 'blur(8px)', animation: 'silkFade 0.3s ease forwards' }}>
+          ✓ {toastPDV}
+        </div>
+      )}
+
+      {/* MODAL CADASTRO RÁPIDO DE PRODUTO */}
+      {mostrarModalProd && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'silkFade 0.25s ease forwards' }}
+          onClick={e => { if (e.target === e.currentTarget) setMostrarModalProd(false) }}>
+          <div className="card" style={{ width: '100%', maxWidth: 520, padding: 28, margin: 16, maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 4 }}>
+              Cadastrar Produto
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+              Cadastro rápido feito no PDV. O produto será adicionado ao carrinho automaticamente.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+              {/* Código gerado automaticamente */}
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Código (gerado)</label>
+                <input className="input" value={novoProd.cod_referencia} readOnly
+                  style={{ opacity: 0.65, cursor: 'default', fontFamily: 'monospace', letterSpacing: '0.05em' }} />
+              </div>
+
+              {/* Descrição */}
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Descrição *</label>
+                <input className="input" autoFocus value={novoProd.descricao}
+                  onChange={e => setNovoProd((p: any) => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Ex: Blusa floral manga longa" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                {/* Grupo */}
+                <div>
+                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Grupo</label>
+                  <input className="input" value={novoProd.grupo} list="grupos-lista"
+                    onChange={e => setNovoProd((p: any) => ({ ...p, grupo: e.target.value }))}
+                    placeholder="Ex: Blusas" />
+                  <datalist id="grupos-lista">
+                    {['Blusas','Vestidos','Calças','Saias','Casacos','Acessórios','Calçados','Lingerie','Moda Praia','Camisetas','Conjuntos','Jaquetas','Shorts'].map(g => (
+                      <option key={g} value={g} />
+                    ))}
+                  </datalist>
+                </div>
+                {/* Preço */}
+                <div>
+                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Preço venda (R$)</label>
+                  <input className="input" type="number" min={0} step={0.01} value={novoProd.preco_venda}
+                    onChange={e => setNovoProd((p: any) => ({ ...p, preco_venda: e.target.value }))}
+                    placeholder="0,00" />
+                </div>
+                {/* Estoque inicial */}
+                <div>
+                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Estoque inicial</label>
+                  <input className="input" type="number" min={0} value={novoProd.estoque_inicial}
+                    onChange={e => setNovoProd((p: any) => ({ ...p, estoque_inicial: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* Mais detalhes colapsável */}
+              <button type="button" onClick={() => setMaisDetalhesProd(v => !v)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textAlign: 'left', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {maisDetalhesProd ? '▾' : '▸'} + Mais detalhes (Cor, Tamanho, Marca, Custo)
+              </button>
+
+              {maisDetalhesProd && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+                  {[
+                    ['Cor', 'cor', 'Azul, Rosa...'],
+                    ['Tamanho', 'tamanho', 'P, M, G, 38...'],
+                    ['Marca', 'marca', ''],
+                    ['Preço de custo (R$)', 'preco_custo', '0,00'],
+                  ].map(([label, field, placeholder]) => (
+                    <div key={field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
+                      <input className="input" value={novoProd[field]}
+                        placeholder={placeholder}
+                        onChange={e => setNovoProd((p: any) => ({ ...p, [field]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
+              <button className="btn btn-ghost" onClick={() => setMostrarModalProd(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvarProdutoRapido} disabled={salvandoProd || !novoProd.descricao.trim()}>
+                {salvandoProd ? 'Salvando...' : '✓ Cadastrar e Adicionar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CADASTRO DE CLIENTE */}
       {mostrarModalCli && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
           animation: 'silkFade 0.25s ease forwards',
-        }} onClick={(e) => { if (e.target === e.currentTarget) setMostrarModalCli(false) }}>
-          <div className="card" style={{ width: '100%', maxWidth: 480, padding: 28, margin: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>
-              Cadastrar cliente
-            </h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
-              Cadastro rápido para esta venda. Você pode completar os dados depois em <strong>Clientes</strong>.
-            </p>
-            {erroCli && (
-              <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
-                {erroCli}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                  Nome *
-                </label>
-                <input className="input" value={novoCli.nome}
-                  onChange={e => setNovoCli(c => ({ ...c, nome: e.target.value }))}
-                  autoFocus required />
-              </div>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                  Celular / WhatsApp *
-                </label>
-                <input className="input" inputMode="numeric" value={novoCli.celular}
-                  onChange={e => setNovoCli(c => ({ ...c, celular: e.target.value }))}
-                  placeholder="(31) 99999-9999" required />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        }} onClick={(e) => { if (e.target === e.currentTarget) { setMostrarModalCli(false); setErroCli('') } }}>
+          <div className="card" style={{ width: '100%', maxWidth: 720, padding: 0, margin: 0, display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+
+            {/* Header */}
+            <div style={{ padding: '22px 28px 0', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
-                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                    CPF (opcional)
-                  </label>
-                  <input className="input" inputMode="numeric" value={novoCli.cpf}
-                    onChange={e => setNovoCli(c => ({ ...c, cpf: e.target.value }))} />
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>
+                    Cadastrar Cliente
+                  </h2>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                    Preencha os dados e o cliente será vinculado a esta venda.
+                  </p>
                 </div>
-                <div>
-                  <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>
-                    Categoria
-                  </label>
-                  <select className="input" value={novoCli.categoria}
-                    onChange={e => setNovoCli(c => ({ ...c, categoria: e.target.value }))}>
-                    <option value="Avista">Avista</option>
-                    <option value="Crediário">Crediário</option>
-                  </select>
-                </div>
+                <button type="button" onClick={() => { setMostrarModalCli(false); setErroCli('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
               </div>
+
+              {erroCli && (
+                <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', padding: '8px 12px', borderRadius: 8, fontSize: 12, marginBottom: 12 }}>
+                  {erroCli}
+                </div>
+              )}
+
+              {/* Abas */}
+              <div style={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
+                {([
+                  ['pessoal', 'Pessoal'],
+                  ['familia', 'Família'],
+                  ['contato', 'Contato'],
+                  ['endereco', 'Endereço'],
+                  ['trabalho', 'Trabalho'],
+                  ['credito', 'Crédito'],
+                  ['refs', 'Referências'],
+                ] as [typeof abaCli, string][]).map(([id, label]) => (
+                  <button key={id} type="button" onClick={() => setAbaCli(id)}
+                    style={{
+                      padding: '7px 14px', borderRadius: '8px 8px 0 0', cursor: 'pointer', whiteSpace: 'nowrap',
+                      fontSize: 12, fontWeight: 600,
+                      background: abaCli === id ? 'rgba(201,168,76,0.15)' : 'transparent',
+                      color: abaCli === id ? '#C9A84C' : 'var(--text-muted)',
+                      border: `1px solid ${abaCli === id ? 'rgba(201,168,76,0.3)' : 'transparent'}`,
+                      borderBottom: 'none',
+                    }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ borderBottom: '1px solid rgba(201,168,76,0.2)' }} />
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
-              <button className="btn btn-ghost" onClick={() => { setMostrarModalCli(false); setErroCli('') }}>
-                Cancelar
-              </button>
-              <button className="btn btn-primary" onClick={criarClienteRapido} disabled={salvandoCli}>
-                {salvandoCli ? 'Salvando...' : 'Cadastrar e Usar'}
-              </button>
+
+            {/* Conteúdo rolável */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
+
+              {/* PESSOAL */}
+              {abaCli === 'pessoal' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div style={{ gridColumn: '1 / span 2' }}>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Nome completo *</label>
+                    <input className="input" autoFocus value={novoCli.nome} onChange={fcli('nome')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Data de nascimento</label>
+                    <input className="input" type="date" value={novoCli.data_nascimento} onChange={fcli('data_nascimento')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>CPF</label>
+                    <input className="input" placeholder="000.000.000-00" value={novoCli.cpf} onChange={fcli('cpf')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>RG / Identidade</label>
+                    <input className="input" value={novoCli.identidade} onChange={fcli('identidade')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Estado civil</label>
+                    <select className="input" value={novoCli.estado_civil} onChange={fcli('estado_civil')}>
+                      <option value="">—</option>
+                      {['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* FAMÍLIA */}
+              {abaCli === 'familia' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {([
+                    { label: 'Cônjuge', field: 'conjuge' },
+                    { label: 'Tel. do cônjuge', field: 'conjuge_telefone', type: 'tel' },
+                    { label: 'Data do casamento', field: 'data_casamento', type: 'date' },
+                    null,
+                    { label: 'Filho(a)', field: 'filho' },
+                    { label: 'Tel. do filho(a)', field: 'filho_telefone', type: 'tel' },
+                    { label: 'Filiação (Mãe)', field: 'filiacao_mae' },
+                    { label: 'Tel. da mãe', field: 'filiacao_mae_tel', type: 'tel' },
+                    { label: 'Filiação (Pai)', field: 'filiacao_pai' },
+                    { label: 'Tel. do pai', field: 'filiacao_pai_tel', type: 'tel' },
+                  ] as any[]).map((item, i) => item ? (
+                    <div key={item.field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{item.label}</label>
+                      <input className="input" type={item.type || 'text'} value={(novoCli as any)[item.field]} onChange={fcli(item.field)} />
+                    </div>
+                  ) : <div key={i} />)}
+                </div>
+              )}
+
+              {/* CONTATO */}
+              {abaCli === 'contato' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {([
+                    { label: 'Celular *', field: 'celular', placeholder: '(31) 9 0000-0000' },
+                    { label: 'Telefone', field: 'telefone' },
+                    { label: 'WhatsApp', field: 'whatsapp', placeholder: '(31) 9 0000-0000' },
+                    { label: 'Email', field: 'email', type: 'email' },
+                    { label: 'Rede social', field: 'rede_social', placeholder: '@usuario' },
+                  ] as any[]).map(({ label, field, type, placeholder }: any) => (
+                    <div key={field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
+                      <input className="input" type={type || 'tel'} placeholder={placeholder} value={(novoCli as any)[field]} onChange={fcli(field)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ENDEREÇO */}
+              {abaCli === 'endereco' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>CEP</label>
+                    <input className="input" placeholder="00000-000" value={novoCli.cep} onChange={fcli('cep')} />
+                  </div>
+                  <div style={{ gridColumn: '2 / span 2' }}>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Endereço</label>
+                    <input className="input" placeholder="Rua, Avenida..." value={novoCli.endereco} onChange={fcli('endereco')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Número</label>
+                    <input className="input" value={novoCli.numero} onChange={fcli('numero')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Complemento</label>
+                    <input className="input" value={novoCli.complemento} onChange={fcli('complemento')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Bairro</label>
+                    <input className="input" value={novoCli.bairro} onChange={fcli('bairro')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Cidade</label>
+                    <input className="input" value={novoCli.cidade} onChange={fcli('cidade')} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Estado</label>
+                    <select className="input" value={novoCli.estado} onChange={fcli('estado')}>
+                      {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                        <option key={uf}>{uf}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* TRABALHO */}
+              {abaCli === 'trabalho' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {([
+                    { label: 'Empresa', field: 'trabalho_nome' },
+                    { label: 'Cargo', field: 'trabalho_cargo' },
+                    { label: 'Tel. do trabalho', field: 'trabalho_telefone', type: 'tel' },
+                    { label: 'Renda mensal', field: 'renda', placeholder: 'Ex: R$ 2.000,00' },
+                    { label: 'Tempo no emprego', field: 'trabalho_tempo', placeholder: 'Ex: 3 anos' },
+                  ] as any[]).map(({ label, field, type, placeholder }: any) => (
+                    <div key={field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
+                      <input className="input" type={type || 'text'} placeholder={placeholder} value={(novoCli as any)[field]} onChange={fcli(field)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* CRÉDITO & PERFIL */}
+              {abaCli === 'credito' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Categoria</label>
+                    <select className="input" value={novoCli.categoria} onChange={fcli('categoria')}>
+                      {['Avista', 'Crediário', 'Pendente'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  {([
+                    { label: 'Limite de crédito (R$)', field: 'limite_credito', type: 'number', placeholder: '0,00' },
+                    { label: 'Desconto família (%)', field: 'desconto_familia', type: 'number', placeholder: '0' },
+                    { label: 'Tamanho (roupa)', field: 'tamanho', placeholder: 'P, M, G, 38...' },
+                    { label: 'Tamanho 2', field: 'tamanho2' },
+                    { label: 'Tamanho 3', field: 'tamanho3' },
+                    { label: 'Perfil / Estilo', field: 'perfil', placeholder: 'Moda jovem, clássica...' },
+                  ] as any[]).map(({ label, field, type, placeholder }: any) => (
+                    <div key={field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
+                      <input className="input" type={type || 'text'} placeholder={placeholder} value={(novoCli as any)[field]} onChange={fcli(field)} />
+                    </div>
+                  ))}
+                  <div style={{ gridColumn: '1 / span 2' }}>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Observação</label>
+                    <textarea className="input" rows={3} placeholder="Anotações sobre a cliente..." value={novoCli.observacao} onChange={fcli('observacao')} style={{ resize: 'vertical' }} />
+                  </div>
+                </div>
+              )}
+
+              {/* REFERÊNCIAS */}
+              {abaCli === 'refs' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {([
+                    { label: 'Ref. comercial', field: 'ref_comercial' },
+                    { label: 'Tel. comercial', field: 'ref_comercial_tel', type: 'tel' },
+                    { label: 'Ref. pessoal 1', field: 'ref_pessoal1' },
+                    { label: 'Tel. pessoal 1', field: 'ref_pessoal1_tel', type: 'tel' },
+                    { label: 'Ref. pessoal 2', field: 'ref_pessoal2' },
+                    { label: 'Tel. pessoal 2', field: 'ref_pessoal2_tel', type: 'tel' },
+                  ] as any[]).map(({ label, field, type }: any) => (
+                    <div key={field}>
+                      <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>{label}</label>
+                      <input className="input" type={type || 'text'} value={(novoCli as any)[field]} onChange={fcli(field)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 5 }}>
+                {(['pessoal','familia','contato','endereco','trabalho','credito','refs'] as const).map(tab => (
+                  <div key={tab} onClick={() => setAbaCli(tab)} style={{ width: 8, height: 8, borderRadius: '50%', background: abaCli === tab ? '#C9A84C' : 'var(--border)', cursor: 'pointer' }} />
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-ghost" type="button" onClick={() => { setMostrarModalCli(false); setErroCli('') }}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary" type="button" onClick={criarClienteRapido} disabled={salvandoCli}>
+                  {salvandoCli ? 'Salvando...' : '✓ Cadastrar e Usar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -558,13 +989,13 @@ export default function NovaVendaPage() {
                     <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => { setCliente(null); setBuscaCliente('') }}>✕ Trocar</button>
                   </div>
                 ) : (
-                  <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'relative', overflow: 'visible' }}>
                     <input className="input" placeholder="Buscar cliente por nome, CPF ou telefone..." value={buscaCliente}
                       onChange={e => setBuscaCliente(e.target.value)}
                       onFocus={() => sugestoesCli.length > 0 && setMostrarSugestoesCli(true)}
                     />
                     {mostrarSugestoesCli && sugestoesCli.length > 0 && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
                         {sugestoesCli.map(c => (
                           <div key={c.id} onClick={() => { setCliente(c); setBuscaCliente(''); setMostrarSugestoesCli(false) }}
                             style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)' }}
@@ -594,11 +1025,12 @@ export default function NovaVendaPage() {
               </div>
 
               {/* BUSCA PRODUTO */}
-              <div className="card">
+              <div className="card" style={{ overflow: 'visible', position: 'relative', zIndex: 2 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>Adicionar Produto</h3>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>F2 para focar · Enter no cód. barras</span>
                 </div>
+                {/* position:relative contém TODOS os elementos flutuantes — dropdown e "nenhum resultado" */}
                 <div style={{ position: 'relative' }}>
                   <input ref={inputProdRef} className="input"
                     placeholder="Buscar por nome, código de barras ou referência..."
@@ -611,8 +1043,10 @@ export default function NovaVendaPage() {
                     }}
                     autoFocus
                   />
+
+                  {/* DROPDOWN DE SUGESTÕES — absolute, filho direto do div relative */}
                   {mostrarSugestoesProd && sugestoesProd.length > 0 && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', marginTop: 4, maxHeight: 320, overflowY: 'auto' }}>
                       {sugestoesProd.map(p => (
                         <div key={p.id} onClick={() => adicionarProduto(p)}
                           style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)', display: 'grid', gridTemplateColumns: '1fr auto auto' }}
@@ -633,7 +1067,22 @@ export default function NovaVendaPage() {
                       ))}
                     </div>
                   )}
+
+                  {/* NENHUM RESULTADO — absolute, filho direto do div relative, nunca no fluxo normal */}
+                  {semResultadosProd && !buscandoProd && buscaProduto.length >= 2 && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, marginTop: 4, padding: '12px 14px', background: '#1a1610', border: '1px dashed rgba(201,168,76,0.3)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                        Nenhum produto para <strong style={{ color: '#F2EBD9' }}>"{buscaProduto}"</strong>
+                      </p>
+                      <button type="button" onClick={abrirModalProduto}
+                        className="btn btn-primary"
+                        style={{ fontSize: 12, padding: '7px 14px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        + Cadastrar este produto agora
+                      </button>
+                    </div>
+                  )}
                 </div>
+                {/* NADA MAIS DENTRO DESTE CARD após o div position:relative */}
               </div>
 
               {/* CARRINHO */}
@@ -707,19 +1156,30 @@ export default function NovaVendaPage() {
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{BRL(subtotalBruto)}</span>
                   </div>
 
-                  {podeAlterarDesconto && (
-                    <div>
-                      <Campo label="Desconto (%)">
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input type="number" className="input" style={{ width: 80 }} value={descontoGlobal} min={0} max={100} step={0.5}
-                            onChange={e => setDescontoGlobal(parseFloat(e.target.value) || 0)} />
-                          {descontoValor > 0 && (
-                            <span style={{ fontSize: 12, color: '#E5584A' }}>- {BRL(descontoValor)}</span>
-                          )}
-                        </div>
-                      </Campo>
+                  <div style={{ background: 'rgba(229,88,74,0.04)', border: '1px solid rgba(229,88,74,0.12)', borderRadius: 10, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Desconto</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div>
+                        <label style={{ fontSize: 10, color: 'var(--gold-dim)', display: 'block', marginBottom: 4, fontWeight: 600 }}>R$</label>
+                        <input type="number" className="input" min={0} step={0.01}
+                          value={descontoRs || ''}
+                          onChange={e => handleDescontoRs(parseFloat(e.target.value) || 0)}
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 10, color: 'var(--gold-dim)', display: 'block', marginBottom: 4, fontWeight: 600 }}>%</label>
+                        <input type="number" className="input" min={0} max={100} step={0.5}
+                          value={descontoPct ? parseFloat(descontoPct.toFixed(2)) : ''}
+                          onChange={e => handleDescontoPct(parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
-                  )}
+                    {descontoRs > 0 && (
+                      <div style={{ fontSize: 11, color: '#E5584A', marginTop: 5, textAlign: 'right' }}>- {BRL(descontoRs)} no total</div>
+                    )}
+                  </div>
 
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total</span>
@@ -752,9 +1212,11 @@ export default function NovaVendaPage() {
                 {pagamentos.map((pg, idx) => (
                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, marginBottom: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid var(--border)' }}>
                     <Campo label="Forma">
-                      <select className="input" value={pg.forma} onChange={e => updPagamento(idx, 'forma', e.target.value)}>
-                        {FORMAS.map(f => <option key={f}>{f}</option>)}
-                      </select>
+                      <SelectCustom
+                        value={pg.forma}
+                        onChange={v => updPagamento(idx, 'forma', v)}
+                        options={FORMAS}
+                      />
                     </Campo>
                     <Campo label="Valor (R$)">
                       <input type="number" className="input" value={pg.valor} min={0} step={0.01}
@@ -833,7 +1295,7 @@ export default function NovaVendaPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {descontoValor > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#E5584A' }}>
-                      <span>Desconto ({descontoGlobal}%)</span>
+                      <span>Desconto ({descontoPct > 0 ? `${parseFloat(descontoPct.toFixed(1))}%` : BRL(descontoValor)})</span>
                       <span>- {BRL(descontoValor)}</span>
                     </div>
                   )}

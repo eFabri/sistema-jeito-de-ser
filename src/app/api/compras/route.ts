@@ -2,19 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 
-// ── EAN-13 helpers ──
-function calcCheckDigit(digits12: string): number {
-  let sum = 0
-  for (let i = 0; i < 12; i++) {
-    const d = parseInt(digits12[i], 10)
-    sum += i % 2 === 0 ? d : d * 3
-  }
-  return (10 - (sum % 10)) % 10
-}
-
-function buildEAN13(seq: number): string {
-  const body = '789' + String(seq).padStart(9, '0')
-  return body + calcCheckDigit(body)
+// ── 4-digit sequential barcode helper ──
+function build4d(n: number): string {
+  return String(n).padStart(4, '0')
 }
 
 // ── GET — list purchases with aggregate item data ──
@@ -28,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('compras')
-    .select('id, data, nota_numero, grupo, evento, valor_total, forma_pagamento, status, created_at, fornecedores(nome)', { count: 'exact' })
+    .select('id, data, nota_numero, grupo, evento, valor_total, created_at, fornecedores(nome)', { count: 'exact' })
     .order('id', { ascending: false })
     .range(offset, offset + limite - 1)
 
@@ -61,6 +51,8 @@ export async function GET(req: NextRequest) {
   const resultado = (compras || []).map((c: any) => ({
     ...c,
     fornecedor_nome: (c.fornecedores as any)?.nome || null,
+    forma_pagamento: (c as any).forma_pagamento ?? null,
+    status: (c as any).status ?? 'Finalizada',
     qtd_pecas: aggMap.get(c.id)?.qtd || 0,
     valor_venda_total: aggMap.get(c.id)?.venda_total || 0,
     ganho_previsto: (aggMap.get(c.id)?.venda_total || 0) - (aggMap.get(c.id)?.custo_total || 0),
@@ -105,22 +97,21 @@ export async function POST(req: NextRequest) {
 
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 
-  // Get current max EAN-13 sequence
-  const { data: lastBarcode } = await supabase
+  // Find the current max 4-digit numeric barcode
+  const { data: barcodeRows } = await supabase
     .from('produtos')
     .select('cod_barras')
-    .like('cod_barras', '789%')
+    .like('cod_barras', '____')   // exactly 4 characters
     .order('cod_barras', { ascending: false })
-    .limit(1)
+    .limit(100)
 
-  let seq = 1
-  if (lastBarcode && lastBarcode.length > 0) {
-    const last = lastBarcode[0].cod_barras
-    if (typeof last === 'string' && last.length === 13) {
-      const num = parseInt(last.substring(3, 12), 10)
-      if (!isNaN(num)) seq = num + 1
-    }
-  }
+  const maxCode = (barcodeRows || [])
+    .map(r => r.cod_barras as string)
+    .filter(b => /^\d{4}$/.test(b))
+    .map(b => parseInt(b, 10))
+    .reduce((a, b) => Math.max(a, b), 0)
+
+  let nextCode = (maxCode || 0) + 1
 
   // Process each item: assign barcode, find-or-create product
   let produtos_criados = 0
@@ -148,7 +139,7 @@ export async function POST(req: NextRequest) {
   for (const item of itens) {
     let cod_barras = (item.cod_barras || '').trim()
     if (!cod_barras) {
-      cod_barras = buildEAN13(seq++)
+      cod_barras = build4d(nextCode++)
     }
 
     // Find existing product: by barcode first, then by descricao+cor+tamanho
@@ -258,8 +249,7 @@ export async function POST(req: NextRequest) {
       grupo: cabecalho.grupo || null,
       evento: cabecalho.evento || null,
       valor_total,
-      forma_pagamento: cabecalho.forma_pagamento || null,
-      status: 'Finalizada',
+      // forma_pagamento and status require migration 003 — omitted until columns exist
     })
     .select()
     .single()

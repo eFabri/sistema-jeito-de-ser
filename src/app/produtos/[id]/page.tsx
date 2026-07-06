@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import AutocompleteInput from '@/components/ui/AutocompleteInput'
+
+interface Opcoes {
+  grupos: string[]
+  subGrupos: Record<string, string[]>
+  cores: string[]
+  tamanhos: string[]
+  marcas: string[]
+  localizacoes: string[]
+  fornecedores: string[]
+}
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
@@ -107,12 +118,22 @@ export default function ProdutoDetalhePage() {
   const [salvando, setSalvando] = useState(false)
   const [modalAjuste, setModalAjuste] = useState(false)
   const [aba, setAba]         = useState<'info' | 'vendas' | 'compras'>('info')
+  const [opcoes, setOpcoes]   = useState<Opcoes>({ grupos: [], subGrupos: {}, cores: [], tamanhos: [], marcas: [], localizacoes: [], fornecedores: [] })
 
   useEffect(() => {
     fetch(`/api/produtos/${params.id}`)
       .then(r => r.json())
       .then(d => { setData(d); setForm(d.produto); setLoading(false) })
   }, [params.id])
+
+  useEffect(() => {
+    if (editando && opcoes.grupos.length === 0) {
+      fetch('/api/produtos/opcoes')
+        .then(r => r.json())
+        .then(d => setOpcoes(d))
+        .catch(() => {})
+    }
+  }, [editando])
 
   async function salvar() {
     setSalvando(true)
@@ -124,7 +145,24 @@ export default function ProdutoDetalhePage() {
     setSalvando(false)
   }
 
-  const f = (k: string) => (e: any) => setForm((p: any) => ({ ...p, [k]: e.target.value }))
+  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
+    const val = typeof e === 'string' ? e : e.target.value
+    setForm((prev: any) => {
+      const next = { ...prev, [k]: val }
+      if (k === 'preco_custo' || k === 'margem_lucro') {
+        const custo  = parseFloat(k === 'preco_custo'  ? val : prev.preco_custo)  || 0
+        const margem = parseFloat(k === 'margem_lucro' ? val : prev.margem_lucro) || 0
+        if (custo > 0 && margem > 0) next.preco_venda = (custo * (1 + margem / 100)).toFixed(2)
+      }
+      if (k === 'preco_venda') {
+        const custo = parseFloat(prev.preco_custo) || 0
+        const venda = parseFloat(val) || 0
+        if (custo > 0 && venda > 0) next.margem_lucro = (((venda / custo) - 1) * 100).toFixed(1)
+      }
+      if (k === 'grupo') next.sub_grupo = ''
+      return next
+    })
+  }
 
   if (loading) return <AppLayout><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-muted)' }}>Carregando...</div></AppLayout>
 
@@ -212,13 +250,27 @@ export default function ProdutoDetalhePage() {
                   <Campo label="Descrição" span={2}><input className="input" value={form.descricao || ''} onChange={f('descricao')} /></Campo>
                   <Campo label="Cód. Barras"><input className="input" value={form.cod_barras || ''} onChange={f('cod_barras')} /></Campo>
                   <Campo label="Cód. Referência"><input className="input" value={form.cod_referencia || ''} onChange={f('cod_referencia')} /></Campo>
-                  <Campo label="Grupo"><input className="input" value={form.grupo || ''} onChange={f('grupo')} /></Campo>
-                  <Campo label="Sub-Grupo"><input className="input" value={form.sub_grupo || ''} onChange={f('sub_grupo')} /></Campo>
-                  <Campo label="Marca"><input className="input" value={form.marca || ''} onChange={f('marca')} /></Campo>
-                  <Campo label="Fornecedor"><input className="input" value={form.fornecedor || ''} onChange={f('fornecedor')} /></Campo>
-                  <Campo label="Cor"><input className="input" value={form.cor || ''} onChange={f('cor')} /></Campo>
-                  <Campo label="Tamanho"><input className="input" value={form.tamanho || ''} onChange={f('tamanho')} /></Campo>
-                  <Campo label="Localização"><input className="input" value={form.localizacao || ''} onChange={f('localizacao')} /></Campo>
+                  <Campo label="Grupo">
+                    <AutocompleteInput value={form.grupo || ''} onChange={v => f('grupo')(v)} options={opcoes.grupos} placeholder="Ex: Moda Feminina" />
+                  </Campo>
+                  <Campo label="Sub-Grupo">
+                    <AutocompleteInput value={form.sub_grupo || ''} onChange={v => f('sub_grupo')(v)} options={(opcoes.subGrupos || {})[form.grupo] || []} placeholder="Ex: Vestido Longo" />
+                  </Campo>
+                  <Campo label="Marca">
+                    <AutocompleteInput value={form.marca || ''} onChange={v => f('marca')(v)} options={opcoes.marcas} placeholder="Ex: Animale" />
+                  </Campo>
+                  <Campo label="Fornecedor">
+                    <AutocompleteInput value={form.fornecedor || ''} onChange={v => f('fornecedor')(v)} options={opcoes.fornecedores} placeholder="Ex: Moda Brasil Ltda" />
+                  </Campo>
+                  <Campo label="Cor">
+                    <AutocompleteInput value={form.cor || ''} onChange={v => f('cor')(v)} options={opcoes.cores} placeholder="Ex: PRETO" />
+                  </Campo>
+                  <Campo label="Tamanho">
+                    <AutocompleteInput value={form.tamanho || ''} onChange={v => f('tamanho')(v)} options={opcoes.tamanhos} placeholder="PP, P, M, G..." />
+                  </Campo>
+                  <Campo label="Localização">
+                    <AutocompleteInput value={form.localizacao || ''} onChange={v => f('localizacao')(v)} options={opcoes.localizacoes} placeholder="Araras A, Prateleira 2..." />
+                  </Campo>
                 </div>
               ) : (
                 <>

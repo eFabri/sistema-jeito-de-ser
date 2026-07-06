@@ -185,6 +185,17 @@ body::after {
 .input::placeholder { color: var(--text-muted); }
 .input:disabled { opacity: 0.4; cursor: not-allowed; }
 
+select.input {
+  background-color: #1a1610;
+  color: #F2EBD9;
+  cursor: pointer;
+}
+select.input option {
+  background-color: #1a1610;
+  color: #F2EBD9;
+  padding: 8px;
+}
+
 /* ─── BOTÕES ───────────────────────────────────────────────── */
 .btn {
   position: relative; overflow: hidden; isolation: isolate;

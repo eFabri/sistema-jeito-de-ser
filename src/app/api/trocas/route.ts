@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   // Se diferenca > 0: cliente paga a mais → conta_a_receber
   // Se diferenca < 0: cliente tem crédito → registra crédito como conta_a_pagar (loja deve ao cliente)
   if (diferenca > 0 && cod_cliente) {
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
     await supabase.from('contas_a_receber').insert({
       cod_cliente, parcela: '1/1', valor: diferenca,
       data_vencimento: hoje, pago: false,
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('contas_a_pagar').insert({
       documento: `Crédito troca #${troca.id} - ${nome_cliente}`,
       parcela: '1/1', valor: Math.abs(diferenca),
-      data_vencimento: new Date().toISOString().split('T')[0], pago: false,
+      data_vencimento: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }), pago: false,
     })
   }
 

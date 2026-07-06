@@ -89,7 +89,7 @@ function brl(v: number) {
   return `R$ ${v.toFixed(2).replace('.', ',')}`
 }
 
-export function montarTextoRecibo(d: DadosRecibo): string {
+export function montarTextoRecibo(d: DadosRecibo, labelVia?: string): string {
   let txt = ''
 
   // Cabeçalho
@@ -100,6 +100,7 @@ export function montarTextoRecibo(d: DadosRecibo): string {
   txt += '\x1B\x21\x00'       // Fonte normal
   txt += 'Ouro Branco / MG\n'
   txt += '(31) 3741-3668\n'
+  if (labelVia) txt += `*** ${labelVia} ***\n`
   txt += '\n'
   txt += '\x1B\x61\x00'       // Alinhar esquerda
   txt += linha()
@@ -186,12 +187,11 @@ export function montarTextoRecibo(d: DadosRecibo): string {
 
 // ─── IMPRIMIR ──────────────────────────────────────────────
 
-export async function imprimirRecibo(dados: DadosRecibo, nomeImpressora?: string): Promise<{ ok: boolean; erro?: string }> {
+export async function imprimirRecibo(dados: DadosRecibo, nomeImpressora?: string, vias: 1 | 2 = 1): Promise<{ ok: boolean; erro?: string }> {
   try {
     const ok = await conectarQZ()
     if (!ok) {
-      // Fallback: abrir janela de impressão do navegador
-      imprimirNavegador(dados)
+      imprimirNavegador(dados, vias)
       return { ok: true }
     }
 
@@ -202,55 +202,33 @@ export async function imprimirRecibo(dados: DadosRecibo, nomeImpressora?: string
     }
 
     if (!impressora) {
-      imprimirNavegador(dados)
+      imprimirNavegador(dados, vias)
       return { ok: true }
     }
 
-    const config = window.qz.configs.create(impressora, {
-      encoding: 'Cp1252',
-      copies: 1,
-    })
+    const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
 
-    const texto = montarTextoRecibo(dados)
-
-    await window.qz.print(config, [{
-      type: 'raw',
-      format: 'plain',
-      data: texto,
-    }])
+    if (vias === 1) {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados) }])
+    } else {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados, 'VIA DO CLIENTE') }])
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados, 'VIA DA LOJA') }])
+    }
 
     return { ok: true }
   } catch (e: any) {
     console.error('Erro impressão:', e)
-    imprimirNavegador(dados)
-    return { ok: true } // fallback sempre funciona
+    imprimirNavegador(dados, vias)
+    return { ok: true }
   }
 }
 
 // Fallback: impressão via navegador (formatação HTML)
-function imprimirNavegador(dados: DadosRecibo) {
+function imprimirNavegador(dados: DadosRecibo, vias: 1 | 2 = 1) {
   const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Recibo #${dados.codVenda}</title>
-<style>
-  @page { margin: 0; size: 80mm auto; }
-  body { font-family: monospace; font-size: 11px; width: 72mm; margin: 4mm; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .big { font-size: 14px; font-weight: bold; }
-  hr { border: none; border-top: 1px dashed #000; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 1px 2px; vertical-align: top; }
-  .right { text-align: right; }
-  .total { font-size: 13px; font-weight: bold; }
-</style>
-</head>
-<body>
+  const recibo = (nVia: number, totalVias: number) => `
+<div class="via">
 <div class="center bold big">${dados.empresa}</div>
 <div class="center">Ouro Branco / MG</div>
 <div class="center">(31) 3741-3668</div>
@@ -258,6 +236,7 @@ function imprimirNavegador(dados: DadosRecibo) {
 <div>CLIENTE: ${dados.nomeCliente}</div>
 <div>VENDA Nº: ${dados.codVenda}</div>
 <div>DATA: ${dados.data}</div>
+${totalVias > 1 ? `<div class="via-label">${nVia === 1 ? '★ VIA DO CLIENTE ★' : '★ VIA DA LOJA ★'}</div>` : ''}
 <hr>
 <table>
   <tr><td class="bold">Item</td><td class="right bold">Qtd</td><td class="right bold">Total</td></tr>
@@ -276,6 +255,31 @@ ${dados.crediario.map(p => `<div>${new Date(p.vencimento).toLocaleDateString('pt
 <hr>
 <div class="center">Obrigada pela preferência!</div>
 <div class="center bold">Jeito de Ser Fashion</div>
+</div>`
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Recibo #${dados.codVenda}</title>
+<style>
+  @page { margin: 0; size: 80mm auto; }
+  body { font-family: monospace; font-size: 11px; width: 72mm; margin: 4mm; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .big { font-size: 14px; font-weight: bold; }
+  hr { border: none; border-top: 1px dashed #000; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 1px 2px; vertical-align: top; }
+  .right { text-align: right; }
+  .total { font-size: 13px; font-weight: bold; }
+  .via + .via { margin-top: 6mm; border-top: 2px dashed #000; padding-top: 4mm; }
+  .via-label { text-align: center; font-size: 10px; font-weight: bold; margin: 2px 0; }
+</style>
+</head>
+<body>
+${Array.from({ length: vias }, (_, i) => recibo(i + 1, vias)).join('')}
 </body>
 </html>`
 

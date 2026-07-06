@@ -43,9 +43,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   // Contas a receber (parcelas) desse cliente
   const { data: parcelas } = await supabase
     .from('contas_a_receber')
-    .select('id, parcela, valor, data_vencimento, data_cobranca, pago, cod_venda, historico')
+    .select('id, parcela, valor, saldo_devedor, saldo_devedor_original, valor_pago, parcialmente_pago, data_vencimento, data_cobranca, pago, status, cod_venda, historico')
     .eq('cod_cliente', codCliente)
     .order('data_vencimento', { ascending: true })
+
+  // Saldo real de uma parcela: parcial usa saldo_devedor_original, senão valor completo
+  const saldoReal = (p: any) => p.parcialmente_pago ? Number(p.saldo_devedor_original || p.saldo_devedor || p.valor || 0) : Number(p.valor || 0)
 
   // Agregação de peças mais compradas
   const pecasAgg = new Map<string, { produto: string; qtd: number; valor: number; cod_produto: number | null }>()
@@ -61,12 +64,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
   const pecasTop = [...pecasAgg.values()].sort((a, b) => b.qtd - a.qtd)
 
-  // Totais
-  const hoje = new Date().toISOString().split('T')[0]
-  const em_aberto = (parcelas || []).filter(p => !p.pago).reduce((s, p) => s + Number(p.valor || 0), 0)
-  const em_atraso = (parcelas || []).filter(p => !p.pago && p.data_vencimento && p.data_vencimento < hoje).reduce((s, p) => s + Number(p.valor || 0), 0)
+  // Totais usando saldo real (não valor original para parciais)
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const em_aberto = (parcelas || []).filter(p => !p.pago).reduce((s, p) => s + saldoReal(p), 0)
+  const em_atraso = (parcelas || []).filter(p => !p.pago && p.data_vencimento && p.data_vencimento < hoje).reduce((s, p) => s + saldoReal(p), 0)
   const pago = (parcelas || []).filter(p => p.pago).reduce((s, p) => s + Number(p.valor || 0), 0)
-  const proxima = (parcelas || []).filter(p => !p.pago).sort((a, b) => (a.data_vencimento || '').localeCompare(b.data_vencimento || ''))[0]
+  const proxima = (parcelas || []).filter(p => !p.pago && p.data_vencimento && p.data_vencimento >= hoje).sort((a, b) => (a.data_vencimento || '').localeCompare(b.data_vencimento || ''))[0]
 
   // Anexa itens em cada venda
   const vendasComItens = (vendas || []).map(v => ({ ...v, itens: itensPorVenda[v.id] || [] }))

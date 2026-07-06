@@ -33,16 +33,28 @@ export default function NovoClientePage() {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [form, setForm] = useState({
-    nome: '', data_nascimento: '', cpf: '', identidade: '',
-    estado_civil: '', conjuge: '', conjuge_telefone: '',
+    // Dados Pessoais
+    nome: '', data_nascimento: '', cpf: '', identidade: '', estado_civil: '',
+    // Família
+    conjuge: '', conjuge_telefone: '', data_casamento: '',
+    filho: '', filho_telefone: '',
+    filiacao_mae: '', filiacao_mae_tel: '',
+    filiacao_pai: '', filiacao_pai_tel: '',
+    // Contato
     celular: '', telefone: '', whatsapp: '', email: '', rede_social: '',
-    endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: 'MG', cep: '',
+    // Endereço
+    cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: 'MG',
+    // Trabalho
+    trabalho_nome: '', trabalho_cargo: '', trabalho_telefone: '', renda: '', trabalho_tempo: '',
+    // Crédito & Perfil
     categoria: 'Pendente', limite_credito: '', desconto_familia: '',
     tamanho: '', tamanho2: '', tamanho3: '', perfil: '',
-    trabalho_nome: '', trabalho_telefone: '', trabalho_cargo: '', trabalho_tempo: '',
-    ref_comercial: '', ref_comercial_tel: '', ref_pessoal1: '', ref_pessoal1_tel: '',
-    filiacao_mae: '', filiacao_mae_tel: '', filiacao_pai: '', filiacao_pai_tel: '',
-    renda: '', naturalidade: '', observacao: '',
+    // Referências
+    ref_comercial: '', ref_comercial_tel: '',
+    ref_pessoal1: '', ref_pessoal1_tel: '',
+    ref_pessoal2: '', ref_pessoal2_tel: '',
+    // Observações
+    observacao: '',
   })
 
   const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -59,6 +71,7 @@ export default function NovoClientePage() {
         ...form,
         limite_credito: parseFloat(form.limite_credito) || 0,
         desconto_familia: parseFloat(form.desconto_familia) || 0,
+        data_casamento: form.data_casamento || null,
         whatsapp_ativo: !!form.whatsapp,
       }),
     })
@@ -102,9 +115,11 @@ export default function NovoClientePage() {
           </div>
         )}
 
+        {/* DADOS PESSOAIS */}
         <Section title="Dados Pessoais">
           <Field label="Nome completo *">
-            <input className="input" placeholder="Nome da cliente" value={form.nome} onChange={f('nome')} style={{ borderColor: !form.nome ? 'rgba(201,168,76,0.3)' : undefined }} />
+            <input className="input" placeholder="Nome da cliente" value={form.nome} onChange={f('nome')}
+              style={{ borderColor: !form.nome ? 'rgba(201,168,76,0.3)' : undefined }} />
           </Field>
           <Field label="Data de nascimento">{inp('data_nascimento', 'date')}</Field>
           <Field label="CPF">{inp('cpf', 'text', '000.000.000-00')}</Field>
@@ -115,19 +130,23 @@ export default function NovoClientePage() {
               {['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'].map(o => <option key={o}>{o}</option>)}
             </select>
           </Field>
-          <Field label="Renda">{inp('renda', 'text', 'Ex: R$ 2.000,00 / CLT')}</Field>
-          <Field label="Naturalidade">{inp('naturalidade')}</Field>
+        </Section>
+
+        {/* FAMÍLIA */}
+        <Section title="Família" cols={2}>
           <Field label="Cônjuge">{inp('conjuge')}</Field>
+          <Field label="Tel. do cônjuge">{inp('conjuge_telefone', 'tel')}</Field>
+          <Field label="Data do casamento">{inp('data_casamento', 'date')}</Field>
+          <div />
+          <Field label="Filho(a)">{inp('filho')}</Field>
+          <Field label="Tel. do filho(a)">{inp('filho_telefone', 'tel')}</Field>
+          <Field label="Filiação (Mãe)">{inp('filiacao_mae')}</Field>
+          <Field label="Tel. da mãe">{inp('filiacao_mae_tel', 'tel')}</Field>
+          <Field label="Filiação (Pai)">{inp('filiacao_pai')}</Field>
+          <Field label="Tel. do pai">{inp('filiacao_pai_tel', 'tel')}</Field>
         </Section>
 
-        <Section title="Contato">
-          <Field label="Celular">{inp('celular', 'tel', '(31) 9 0000-0000')}</Field>
-          <Field label="Telefone">{inp('telefone', 'tel')}</Field>
-          <Field label="WhatsApp">{inp('whatsapp', 'tel', '(31) 9 0000-0000')}</Field>
-          <Field label="Email">{inp('email', 'email')}</Field>
-          <Field label="Rede social">{inp('rede_social', 'text', '@usuario')}</Field>
-        </Section>
-
+        {/* ENDEREÇO */}
         <Section title="Endereço" cols={3}>
           <Field label="CEP">{inp('cep', 'text', '00000-000')}</Field>
           <div style={{ gridColumn: '2 / span 2' }}>
@@ -146,6 +165,25 @@ export default function NovoClientePage() {
           </Field>
         </Section>
 
+        {/* CONTATO */}
+        <Section title="Contato">
+          <Field label="Celular">{inp('celular', 'tel', '(31) 9 0000-0000')}</Field>
+          <Field label="Telefone">{inp('telefone', 'tel')}</Field>
+          <Field label="WhatsApp">{inp('whatsapp', 'tel', '(31) 9 0000-0000')}</Field>
+          <Field label="Email">{inp('email', 'email')}</Field>
+          <Field label="Rede social">{inp('rede_social', 'text', '@usuario')}</Field>
+        </Section>
+
+        {/* TRABALHO */}
+        <Section title="Trabalho">
+          <Field label="Empresa">{inp('trabalho_nome')}</Field>
+          <Field label="Cargo">{inp('trabalho_cargo')}</Field>
+          <Field label="Tel. do trabalho">{inp('trabalho_telefone', 'tel')}</Field>
+          <Field label="Renda mensal">{inp('renda', 'text', 'Ex: R$ 2.000,00')}</Field>
+          <Field label="Tempo no emprego">{inp('trabalho_tempo', 'text', 'Ex: 3 anos')}</Field>
+        </Section>
+
+        {/* CRÉDITO & PERFIL */}
         <Section title="Crédito & Perfil">
           <Field label="Categoria">
             <select className="input" value={form.categoria} onChange={f('categoria')}>
@@ -157,27 +195,20 @@ export default function NovoClientePage() {
           <Field label="Tamanho (roupa)">{inp('tamanho', 'text', 'P, M, G, 38...')}</Field>
           <Field label="Tamanho 2">{inp('tamanho2')}</Field>
           <Field label="Tamanho 3">{inp('tamanho3')}</Field>
-          <Field label="Perfil">{inp('perfil', 'text', 'Moda jovem, clássica...')}</Field>
+          <Field label="Perfil / Estilo">{inp('perfil', 'text', 'Moda jovem, clássica...')}</Field>
         </Section>
 
-        <Section title="Trabalho">
-          <Field label="Empresa">{inp('trabalho_nome')}</Field>
-          <Field label="Cargo">{inp('trabalho_cargo')}</Field>
-          <Field label="Telefone">{inp('trabalho_telefone', 'tel')}</Field>
-          <Field label="Tempo no emprego">{inp('trabalho_tempo', 'text', 'Ex: 3 anos')}</Field>
-        </Section>
-
+        {/* REFERÊNCIAS */}
         <Section title="Referências">
-          <Field label="Referência comercial">{inp('ref_comercial')}</Field>
+          <Field label="Ref. comercial">{inp('ref_comercial')}</Field>
           <Field label="Tel. comercial">{inp('ref_comercial_tel', 'tel')}</Field>
-          <Field label="Referência pessoal 1">{inp('ref_pessoal1')}</Field>
+          <Field label="Ref. pessoal 1">{inp('ref_pessoal1')}</Field>
           <Field label="Tel. pessoal 1">{inp('ref_pessoal1_tel', 'tel')}</Field>
-          <Field label="Filiação (Mãe)">{inp('filiacao_mae')}</Field>
-          <Field label="Tel. Mãe">{inp('filiacao_mae_tel', 'tel')}</Field>
-          <Field label="Filiação (Pai)">{inp('filiacao_pai')}</Field>
-          <Field label="Tel. Pai">{inp('filiacao_pai_tel', 'tel')}</Field>
+          <Field label="Ref. pessoal 2">{inp('ref_pessoal2')}</Field>
+          <Field label="Tel. pessoal 2">{inp('ref_pessoal2_tel', 'tel')}</Field>
         </Section>
 
+        {/* OBSERVAÇÕES */}
         <div className="card">
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 12 }}>Observações</h3>
           <textarea className="input" rows={4} placeholder="Anotações sobre a cliente..." value={form.observacao} onChange={f('observacao')} style={{ resize: 'vertical' }} />

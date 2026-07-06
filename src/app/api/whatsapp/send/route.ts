@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { enviarMensagem, processarTemplate } from '@/lib/whatsapp'
+import { hojeNoBrasil } from '@/lib/dates'
 
 // POST — enviar mensagem individual ou em lote
 export async function POST(req: NextRequest) {
@@ -92,7 +93,7 @@ export async function PUT(req: NextRequest) {
   if (!tmpl) return NextResponse.json({ erro: 'Template não encontrado ou inativo' }, { status: 404 })
 
   let lista: any[] = []
-  const hoje = new Date().toISOString().split('T')[0]
+  const hoje = hojeNoBrasil()
 
   if (tipo === 'aniversario') {
     const { data } = await supabase.rpc('aniversariantes_hoje')

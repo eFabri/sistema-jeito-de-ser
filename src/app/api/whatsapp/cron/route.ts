@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { enviarMensagemAniversario, enviarMensagemCobranca } from '@/lib/whatsapp'
+import { hojeNoBrasil } from '@/lib/dates'
 
 export async function GET(request: Request) {
   // Verificar autenticação da cron (Vercel envia header especial)
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
 
       for (const cliente of aniversariantes || []) {
         // Verificar se já enviou hoje
-        const hoje = new Date().toISOString().split('T')[0]
+        const hoje = hojeNoBrasil()
         const { data: jaEnviou } = await supabase
           .from('whatsapp_logs')
           .select('id')

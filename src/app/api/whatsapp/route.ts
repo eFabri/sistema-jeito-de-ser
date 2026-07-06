@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { verificarInstancia, obterQRCode } from '@/lib/whatsapp'
+import { hojeNoBrasil, diasAFrente } from '@/lib/dates'
 
 // GET — status da instância + modelos + logs recentes
 export async function GET(req: NextRequest) {
@@ -51,8 +52,8 @@ export async function GET(req: NextRequest) {
 
   // aniversariantes e vencimentos para disparo manual
   if (aba === 'pendentes') {
-    const hoje = new Date().toISOString().split('T')[0]
-    const em5  = new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0]
+    const hoje = hojeNoBrasil()
+    const em5  = diasAFrente(5)
 
     const { data: aniv } = await supabase.rpc('aniversariantes_hoje')
     const { data: venc } = await supabase.rpc('vencimentos_proximos', { dias: 7 })

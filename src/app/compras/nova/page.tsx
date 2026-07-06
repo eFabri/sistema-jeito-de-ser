@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import AutocompleteInput from '@/components/ui/AutocompleteInput'
 
@@ -81,8 +81,40 @@ export default function NovaCompraPage() {
   const [erros, setErros] = useState<Record<string, string>>({})
   const [concluido, setConcluido] = useState<ResultadoCompra | null>(null)
 
+  // Tracks how many barcodes have been generated this session so each new line gets a unique code
+  const barcodeOffsetRef = useRef(0)
+  // Stable ref to linhas so async handlers can read current state without stale closures
+  const linhasRef = useRef(linhas)
+  useEffect(() => { linhasRef.current = linhas }, [linhas])
+
   useEffect(() => {
     fetch('/api/compras/opcoes').then(r => r.json()).then(d => setOpcoes(d)).catch(() => {})
+  }, [])
+
+  // Pre-fill barcode for the first row on mount
+  useEffect(() => {
+    const id = linhas[0]?.id
+    if (!id) return
+    fetch('/api/compras/proximo-codigo-barras?offset=0')
+      .then(r => r.json())
+      .then(d => {
+        if (d.codigo) {
+          barcodeOffsetRef.current = 1
+          setLinhas(p => p.map(l => l.id === id ? { ...l, cod_barras: d.codigo } : l))
+        }
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const gerarCodBarras = useCallback(async (): Promise<string> => {
+    const off = barcodeOffsetRef.current
+    barcodeOffsetRef.current += 1
+    try {
+      const res = await fetch(`/api/compras/proximo-codigo-barras?offset=${off}`)
+      const d   = await res.json()
+      return d.codigo || ''
+    } catch { return '' }
   }, [])
 
   const setCab2 = (k: keyof Cabecalho, v: string | number | null) =>
@@ -125,44 +157,46 @@ export default function NovaCompraPage() {
     })
   }, [])
 
-  const adicionarLinha = useCallback(() => {
+  const adicionarLinha = useCallback(async () => {
     const nova = novaLinha()
     setLinhas(prev => [...prev, nova])
     setTimeout(() => {
       const el = document.querySelector(`[data-rowid="${nova.id}"] input`) as HTMLInputElement | null
       el?.focus()
     }, 80)
-  }, [])
+    const bc = await gerarCodBarras()
+    if (bc) setLinhas(prev => prev.map(l => l.id === nova.id ? { ...l, cod_barras: bc } : l))
+  }, [gerarCodBarras])
 
   const removerLinha = useCallback((id: string) => {
     setLinhas(prev => prev.filter(l => l.id !== id))
   }, [])
 
-  const duplicarLinha = useCallback((id: string) => {
+  const duplicarLinha = useCallback(async (id: string) => {
+    const novaId = `r${rowSeq++}`
     setLinhas(prev => {
       const idx = prev.findIndex(l => l.id === id)
       if (idx < 0) return prev
-      const nova: ItemRow = { ...prev[idx], id: `r${rowSeq++}`, quantidade: 1, cor: '' }
-      return [...prev.slice(0, idx + 1), nova, ...prev.slice(idx + 1)]
+      const dup: ItemRow = { ...prev[idx], id: novaId, cod_barras: '', quantidade: 1, cor: '' }
+      return [...prev.slice(0, idx + 1), dup, ...prev.slice(idx + 1)]
     })
-  }, [])
+    const bc = await gerarCodBarras()
+    if (bc) setLinhas(prev => prev.map(l => l.id === novaId ? { ...l, cod_barras: bc } : l))
+  }, [gerarCodBarras])
 
-  const handleTabLast = useCallback((e: React.KeyboardEvent, rowId: string) => {
+  const handleTabLast = useCallback(async (e: React.KeyboardEvent, rowId: string) => {
     if (e.key !== 'Tab' || e.shiftKey) return
-    setLinhas(current => {
-      const isLast = current[current.length - 1]?.id === rowId
-      if (isLast) {
-        e.preventDefault()
-        const nova = novaLinha()
-        setTimeout(() => {
-          const el = document.querySelector(`[data-rowid="${nova.id}"] input`) as HTMLInputElement | null
-          el?.focus()
-        }, 80)
-        return [...current, nova]
-      }
-      return current
-    })
-  }, [])
+    if (linhasRef.current[linhasRef.current.length - 1]?.id !== rowId) return
+    e.preventDefault()
+    const nova = novaLinha()
+    setLinhas(prev => [...prev, nova])
+    setTimeout(() => {
+      const el = document.querySelector(`[data-rowid="${nova.id}"] input`) as HTMLInputElement | null
+      el?.focus()
+    }, 80)
+    const bc = await gerarCodBarras()
+    if (bc) setLinhas(prev => prev.map(l => l.id === nova.id ? { ...l, cod_barras: bc } : l))
+  }, [gerarCodBarras])
 
   const totalPecas = linhas.reduce((s, l) => s + Number(l.quantidade), 0)
   const totalCusto = linhas.reduce((s, l) => s + l.sub_total, 0)
@@ -365,7 +399,7 @@ export default function NovaCompraPage() {
               return (
                 <tr key={l.id} style={{ borderBottom: '1px solid #1a1610', background: rowHasErr ? 'rgba(229,88,74,0.06)' : 'transparent' }}>
                   <td style={cell}>
-                    <input value={l.cod_barras} onChange={e => updateLinha(l.id, 'cod_barras', e.target.value)} placeholder="Auto (EAN-13)" style={{ ...input, fontFamily: 'monospace', fontSize: 11 }} />
+                    <input value={l.cod_barras} onChange={e => updateLinha(l.id, 'cod_barras', e.target.value)} placeholder="Automático" style={{ ...input, fontFamily: 'monospace', fontSize: 11 }} />
                   </td>
                   <td style={cell} data-rowid={l.id}>
                     <AutocompleteInput value={l.sub_grupo} onChange={v => updateLinha(l.id, 'sub_grupo', v)} options={opcoes.subgrupos} placeholder="Sub-grupo *" />
@@ -393,6 +427,7 @@ export default function NovaCompraPage() {
                     <input type="number" min={1} value={l.quantidade}
                       onChange={e => updateLinha(l.id, 'quantidade', parseInt(e.target.value) || 0)}
                       style={{ ...errInput('quantidade', l.id), textAlign: 'right' }} />
+                    {erros[`${l.id}-quantidade`] && <div style={{ color: '#E5584A', fontSize: 9, marginTop: 1 }}>Mín 1</div>}
                   </td>
                   <td style={cell}>
                     <input type="number" min={0} step={0.01} value={l.preco_custo || ''}

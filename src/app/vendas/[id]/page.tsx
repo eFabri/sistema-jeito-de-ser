@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
-import { imprimirRecibo } from '@/lib/impressora'
+import { DadosRecibo } from '@/lib/impressora'
+import ModalImpressao from '@/components/ui/ModalImpressao'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'R$ 0,00'
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
@@ -14,6 +15,7 @@ export default function VendaDetalhePage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [cancelando, setCancelando] = useState(false)
+  const [modalImprimir, setModalImprimir] = useState(false)
 
   useEffect(() => {
     fetch(`/api/vendas/${params.id}`)
@@ -33,9 +35,8 @@ export default function VendaDetalhePage() {
     setCancelando(false)
   }
 
-  function reimprimir() {
-    if (!data) return
-    imprimirRecibo({
+  function dadosRecibo(): DadosRecibo {
+    return {
       empresa: 'Jeito de Ser Ltda.',
       nomeCliente: data.venda.nome_cliente,
       codVenda: data.venda.codigo_legado || data.venda.id,
@@ -46,7 +47,7 @@ export default function VendaDetalhePage() {
       valorTotal: data.venda.valor_total,
       crediario: data.crediario?.map((c: any) => ({ parcela: c.parcela, vencimento: c.data_vencimento, valor: c.valor })),
       observacao: data.venda.observacao,
-    })
+    }
   }
 
   if (loading) return <AppLayout><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-muted)' }}>Carregando...</div></AppLayout>
@@ -56,6 +57,9 @@ export default function VendaDetalhePage() {
 
   return (
     <AppLayout>
+      {modalImprimir && data && (
+        <ModalImpressao dados={dadosRecibo()} titulo="Reimprimir Recibo" onClose={() => setModalImprimir(false)} />
+      )}
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 900 }}>
 
         {/* HEADER */}
@@ -71,7 +75,7 @@ export default function VendaDetalhePage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-ghost" onClick={reimprimir}>🖨 Imprimir</button>
+            <button className="btn btn-ghost" onClick={() => setModalImprimir(true)}>🖨 Imprimir</button>
             {!cancelada && (
               <button className="btn btn-danger" onClick={cancelarVenda} disabled={cancelando} style={{ padding: '9px 16px' }}>
                 {cancelando ? 'Cancelando...' : 'Cancelar Venda'}
