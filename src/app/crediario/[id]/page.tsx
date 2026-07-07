@@ -225,6 +225,8 @@ export default function CrediarioDetalhePage() {
   const [erro, setErro] = useState('')
   const [aba, setAba] = useState<'pecas' | 'compras' | 'parcelas'>('pecas')
   const [parcelaModal, setParcelaModal] = useState<any>(null)
+  const [revelar, setRevelar] = useState({ emAberto: false, emAtraso: false, jaPago: false, comprasTotais: false })
+  const [expandidos, setExpandidos] = useState<Set<string> | null>(null)
 
   const carregar = useCallback(async () => {
     const r = await fetch(`/api/crediario/${params.id}`)
@@ -239,6 +241,34 @@ export default function CrediarioDetalhePage() {
 
   const { cliente, totais, vendas, parcelas, pecas_top } = data
   const hoje = hojeNoBrasil()
+
+  // Grupos de parcelas por venda
+  const vendaById = new Map<number, any>((vendas as any[]).map((v: any) => [v.id, v]))
+  const gruposMap = new Map<string, any[]>()
+  for (const p of (parcelas as any[])) {
+    const key = p.cod_venda != null ? String(p.cod_venda) : 'sem-venda'
+    if (!gruposMap.has(key)) gruposMap.set(key, [])
+    gruposMap.get(key)!.push(p)
+  }
+  const grupos = [...gruposMap.entries()].map(([key, ps]) => {
+    const venda = key !== 'sem-venda' ? vendaById.get(Number(key)) : null
+    const temAberto = ps.some((p: any) => !p.pago)
+    const pagas = ps.filter((p: any) => p.pago).length
+    return { key, cod_venda: key !== 'sem-venda' ? Number(key) : null, parcelas: ps, venda, temAberto, pagas }
+  }).sort((a, b) => (a.venda?.data || '').localeCompare(b.venda?.data || ''))
+
+  const getExpandido = (key: string) => {
+    if (expandidos === null) return grupos.find(g => g.key === key)?.temAberto ?? false
+    return expandidos.has(key)
+  }
+  const toggleGrupo = (key: string) => {
+    setExpandidos(prev => {
+      const base = prev ?? new Set<string>(grupos.filter(g => g.temAberto).map(g => g.key))
+      const next = new Set<string>(base)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }
 
   return (
     <AppLayout>
@@ -276,10 +306,10 @@ export default function CrediarioDetalhePage() {
 
         {/* MÉTRICAS DO CLIENTE */}
         <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-          <Metrica label="Em aberto" valor={BRL(totais.em_aberto || 0)} cor="#C9A84C" destaque />
-          <Metrica label="Em atraso" valor={BRL(totais.em_atraso || 0)} cor={totais.em_atraso > 0 ? '#E5584A' : 'var(--text-muted)'} />
-          <Metrica label="Já pago" valor={BRL(totais.pago || 0)} cor="#4CAF82" />
-          <Metrica label="Compras totais" valor={String(totais.total_compras)} cor="#4D9ECC" />
+          <MetricaOcultavel label="Em aberto" valor={BRL(totais.em_aberto || 0)} cor="#C9A84C" destaque visivel={revelar.emAberto} onToggle={() => setRevelar(p => ({ ...p, emAberto: !p.emAberto }))} />
+          <MetricaOcultavel label="Em atraso" valor={BRL(totais.em_atraso || 0)} cor={totais.em_atraso > 0 ? '#E5584A' : 'var(--text-muted)'} visivel={revelar.emAtraso} onToggle={() => setRevelar(p => ({ ...p, emAtraso: !p.emAtraso }))} />
+          <MetricaOcultavel label="Já pago" valor={BRL(totais.pago || 0)} cor="#4CAF82" visivel={revelar.jaPago} onToggle={() => setRevelar(p => ({ ...p, jaPago: !p.jaPago }))} />
+          <MetricaOcultavel label="Compras totais" valor={String(totais.total_compras)} oculto="•••" cor="#4D9ECC" visivel={revelar.comprasTotais} onToggle={() => setRevelar(p => ({ ...p, comprasTotais: !p.comprasTotais }))} />
           <Metrica
             label="Próxima parcela"
             valor={totais.proxima_parcela ? fmtData(totais.proxima_parcela.data_vencimento) : '—'}
@@ -394,63 +424,114 @@ export default function CrediarioDetalhePage() {
               Sem parcelas registradas.
             </div>
           ) : (
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{
-                display: 'grid', gridTemplateColumns: '90px 1fr 160px 130px 120px 110px',
-                padding: '12px 20px', borderBottom: '1px solid var(--border)',
-                background: 'rgba(201,168,76,0.03)',
-              }}>
-                {['Parcela', 'Vencimento', 'Valor / Saldo', 'Pago em', 'Status', ''].map((h, i) => (
-                  <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
-                ))}
-              </div>
-              {parcelas.map((p: any, i: number) => {
-                const atrasada   = !p.pago && p.data_vencimento && p.data_vencimento < hoje
-                const isParcial  = !p.pago && p.parcialmente_pago
-                const saldoExib  = isParcial ? Number(p.saldo_devedor_original || p.saldo_devedor || p.valor) : Number(p.valor)
-                const jaPago     = Number(p.valor_pago || 0)
-                const status     = p.pago ? 'Pago' : isParcial ? 'Parcial' : atrasada ? 'Atrasada' : 'Aberta'
-                const cor        = p.pago ? '#4CAF82' : isParcial ? '#C9A84C' : atrasada ? '#E5584A' : '#E8943A'
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {grupos.map(grupo => {
+                const expandido = getExpandido(grupo.key)
+                const totalGrupo = grupo.parcelas.reduce((s: number, p: any) => s + Number(p.valor || 0), 0)
+                const codLabel = grupo.venda
+                  ? `#${grupo.venda.codigo_legado || grupo.venda.id}`
+                  : grupo.cod_venda ? `#${grupo.cod_venda}` : 'Manual'
+                const dataVenda = grupo.venda?.data ? fmtData(grupo.venda.data) : '—'
+
                 return (
-                  <div key={p.id} style={{
-                    display: 'grid', gridTemplateColumns: '90px 1fr 160px 130px 120px 110px',
-                    padding: '12px 20px', alignItems: 'center',
-                    borderBottom: i < parcelas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
-                    background: isParcial ? 'rgba(201,168,76,0.02)' : atrasada ? 'rgba(229,88,74,0.02)' : 'transparent',
-                  }}>
-                    <div style={{ fontSize: 12, color: '#F2EBD9' }}>{p.parcela || '—'}</div>
-                    <div style={{ fontSize: 13, color: atrasada && !isParcial ? '#E5584A' : '#F2EBD9' }}>{fmtData(p.data_vencimento)}</div>
-                    <div>
-                      <div style={{ fontSize: 13, color: cor, fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-                        {BRL(saldoExib)}
+                  <div key={grupo.key} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                    {/* Cabeçalho do grupo */}
+                    <button
+                      onClick={() => toggleGrupo(grupo.key)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '14px 20px', cursor: 'pointer', gap: 12,
+                        background: expandido ? 'rgba(201,168,76,0.05)' : 'rgba(201,168,76,0.02)',
+                        borderBottom: expandido ? '1px solid var(--border)' : 'none',
+                        border: 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <span style={{
+                          fontSize: 10, color: '#C9A84C', display: 'inline-block',
+                          transform: expandido ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.18s',
+                        }}>▶</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#F2EBD9', letterSpacing: '0.04em' }}>
+                          VENDA {codLabel}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{dataVenda}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#C9A84C' }}>
+                          {BRL(totalGrupo)}
+                        </span>
                       </div>
-                      {isParcial && jaPago > 0 && (
-                        <div style={{ fontSize: 10, color: '#4CAF82' }}>✓ {BRL(jaPago)} pago de {BRL(Number(p.valor))}</div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.pago ? fmtData(p.data_cobranca) : '—'}</div>
-                    <div>
-                      <span style={{
-                        background: `${cor}22`, color: cor, border: `1px solid ${cor}55`,
-                        borderRadius: 6, padding: '2px 10px', fontSize: 10,
-                        fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
-                      }}>{status}</span>
-                    </div>
-                    <div>
-                      {!p.pago && (
-                        <button
-                          onClick={() => setParcelaModal(p)}
-                          style={{
-                            padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
-                            border: '1px solid rgba(76,175,130,0.4)',
-                            background: 'rgba(76,175,130,0.08)', color: '#4CAF82',
-                            fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-body)',
-                          }}
-                        >
-                          ✓ Receber
-                        </button>
-                      )}
-                    </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: grupo.temAberto ? '#E8943A' : '#4CAF82' }}>
+                          {grupo.pagas}/{grupo.parcelas.length} pagas
+                        </span>
+                        {!grupo.temAberto && (
+                          <span style={{
+                            fontSize: 9, background: 'rgba(76,175,130,0.1)', color: '#4CAF82',
+                            border: '1px solid rgba(76,175,130,0.25)', borderRadius: 4,
+                            padding: '2px 7px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                          }}>Quitada</span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Linhas de parcelas */}
+                    {expandido && (
+                      <>
+                        <div style={{
+                          display: 'grid', gridTemplateColumns: '90px 1fr 160px 130px 120px 110px',
+                          padding: '9px 20px', borderBottom: '1px solid rgba(201,168,76,0.05)',
+                          background: 'rgba(201,168,76,0.01)',
+                        }}>
+                          {['Parcela', 'Vencimento', 'Valor / Saldo', 'Pago em', 'Status', ''].map((h, i) => (
+                            <div key={i} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
+                          ))}
+                        </div>
+                        {grupo.parcelas.map((p: any, i: number) => {
+                          const atrasada  = !p.pago && p.data_vencimento && p.data_vencimento < hoje
+                          const isParcial = !p.pago && p.parcialmente_pago
+                          const saldoExib = isParcial ? Number(p.saldo_devedor_original || p.saldo_devedor || p.valor) : Number(p.valor)
+                          const jaPago    = Number(p.valor_pago || 0)
+                          const status    = p.pago ? 'Pago' : isParcial ? 'Parcial' : atrasada ? 'Atrasada' : 'Aberta'
+                          const cor       = p.pago ? '#4CAF82' : isParcial ? '#C9A84C' : atrasada ? '#E5584A' : '#E8943A'
+                          return (
+                            <div key={p.id} style={{
+                              display: 'grid', gridTemplateColumns: '90px 1fr 160px 130px 120px 110px',
+                              padding: '12px 20px', alignItems: 'center',
+                              borderBottom: i < grupo.parcelas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
+                              background: isParcial ? 'rgba(201,168,76,0.02)' : atrasada ? 'rgba(229,88,74,0.02)' : 'transparent',
+                            }}>
+                              <div style={{ fontSize: 12, color: '#F2EBD9' }}>{p.parcela || '—'}</div>
+                              <div style={{ fontSize: 13, color: atrasada && !isParcial ? '#E5584A' : '#F2EBD9' }}>{fmtData(p.data_vencimento)}</div>
+                              <div>
+                                <div style={{ fontSize: 13, color: cor, fontFamily: 'var(--font-display)', fontWeight: 700 }}>{BRL(saldoExib)}</div>
+                                {isParcial && jaPago > 0 && <div style={{ fontSize: 10, color: '#4CAF82' }}>✓ {BRL(jaPago)} pago de {BRL(Number(p.valor))}</div>}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.pago ? fmtData(p.data_cobranca) : '—'}</div>
+                              <div>
+                                <span style={{
+                                  background: `${cor}22`, color: cor, border: `1px solid ${cor}55`,
+                                  borderRadius: 6, padding: '2px 10px', fontSize: 10,
+                                  fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                                }}>{status}</span>
+                              </div>
+                              <div>
+                                {!p.pago && (
+                                  <button
+                                    onClick={() => setParcelaModal(p)}
+                                    style={{
+                                      padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
+                                      border: '1px solid rgba(76,175,130,0.4)',
+                                      background: 'rgba(76,175,130,0.08)', color: '#4CAF82',
+                                      fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-body)',
+                                    }}
+                                  >✓ Receber</button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </>
+                    )}
                   </div>
                 )
               })}
@@ -468,6 +549,31 @@ function Metrica({ label, valor, sub, cor, destaque }: { label: string; valor: s
       <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: destaque ? 24 : 18, fontWeight: 700, color: cor, lineHeight: 1 }}>
         {valor}
+      </div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
+    </div>
+  )
+}
+
+function MetricaOcultavel({ label, valor, oculto = 'R$ •••••', sub, cor, destaque, visivel, onToggle }: {
+  label: string; valor: string; oculto?: string; sub?: string; cor: string; destaque?: boolean; visivel: boolean; onToggle: () => void
+}) {
+  return (
+    <div className="card">
+      <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontSize: destaque ? 24 : 18, fontWeight: 700,
+          color: cor, lineHeight: 1, letterSpacing: visivel ? '-0.01em' : '0.08em',
+        }}>
+          {visivel ? valor : oculto}
+        </div>
+        <button onClick={onToggle} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 14, color: 'rgba(212,175,95,0.5)', padding: '2px 4px', lineHeight: 1,
+        }}>
+          {visivel ? '👁' : '🙈'}
+        </button>
       </div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
     </div>
