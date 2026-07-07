@@ -93,10 +93,11 @@ export async function GET(req: NextRequest) {
 
   // 5. Busca textual
   if (q) {
-    const ql = q.toLowerCase()
+    const ql     = q.toLowerCase()
+    const digits = q.replace(/\D/g, '')
     resultado = resultado.filter(c =>
       c.nome.toLowerCase().includes(ql) ||
-      (c.celular || '').includes(q.replace(/\D/g, ''))
+      (digits && (c.celular || '').includes(digits))
     )
   }
 
