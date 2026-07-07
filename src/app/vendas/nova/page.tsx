@@ -968,7 +968,7 @@ export default function NovaVendaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
               {/* CLIENTE — obrigatório */}
-              <div className="card">
+              <div className="card" style={{ position: 'relative', zIndex: 3 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>
                     Cliente <span style={{ color: '#E5584A', fontSize: 12 }}>*</span>

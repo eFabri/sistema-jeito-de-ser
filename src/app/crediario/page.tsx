@@ -37,7 +37,9 @@ export default function CrediarioPage() {
   )
 
   const todos: any[] = data?.clientes || []
-  const filtrados = filtro === 'aberto'
+  const filtrados = busca
+    ? todos
+    : filtro === 'aberto'
     ? todos.filter(c => c.em_aberto > 0)
     : filtro === 'atraso'
     ? todos.filter(c => c.em_atraso > 0)

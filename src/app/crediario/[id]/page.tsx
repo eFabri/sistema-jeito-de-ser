@@ -1,6 +1,7 @@
 // src/app/crediario/[id]/page.tsx — Detalhe do crediário de UM cliente
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 import { hojeNoBrasil } from '@/lib/dates'
@@ -69,7 +70,7 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
   const box     = { background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 440, boxShadow: 'var(--shadow-dropdown)' }
 
   if (resultado) {
-    return (
+    return createPortal(
       <div style={overlay}>
         <div style={{ ...box, textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>{resultado.quitado ? '✅' : '◉'}</div>
@@ -100,11 +101,12 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
             Fechar sem imprimir
           </button>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
-  return (
+  return createPortal(
     <div style={overlay}>
       <div style={box}>
         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Registrar Recebimento</h3>
@@ -210,7 +212,8 @@ function ModalReceber({ conta, onClose, onSalvo }: any) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

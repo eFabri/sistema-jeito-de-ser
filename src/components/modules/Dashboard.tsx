@@ -113,17 +113,19 @@ export default function Dashboard() {
   // ─── Dashboard Colaboradora (early return só depois de todos os hooks) ──────────
   if (!loading && perfil && !isAdmin) {
     const nomeCompleto = perfil?.nome || ''
+    const apelido     = perfil?.apelido || ''
+    const matchVendedor = (v: any) =>
+      v.vendedor === nomeCompleto || (apelido && v.vendedor === apelido)
     const ranking  = d?.vendedoras_mes || []
-    const minhaPos = ranking.findIndex((v: any) => v.vendedor === nomeCompleto) + 1
-    const meusDados = ranking.find((v: any) => v.vendedor === nomeCompleto)
+    const minhaPos = ranking.findIndex(matchVendedor) + 1
+    const meusDados = ranking.find(matchVendedor)
     const metaIndividualKey = `meta_vendedora_${nomeCompleto}`
     const metaInd = typeof window !== 'undefined'
       ? (Number(localStorage.getItem(metaIndividualKey)) || 5000)
       : 5000
     const pctMeta = metaInd > 0 ? Math.min(100, ((meusDados?.total || 0) / metaInd) * 100) : 0
-    // Chave correta: vendas_recentes (não ultimas_vendas)
     const ultimasVendas = (d?.vendas_recentes || [])
-      .filter((v: any) => v.vendedor === nomeCompleto)
+      .filter(matchVendedor)
       .slice(0, 5)
 
     return (
