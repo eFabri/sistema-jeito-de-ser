@@ -50,6 +50,7 @@ export default function Dashboard() {
     typeof window !== 'undefined' ? localStorage.getItem('jeito-de-ser-valores-visiveis') === 'true' : false
   )
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string | null>(null)
 
   function toggleValores() {
     setValoresVisiveis(v => {
@@ -70,6 +71,7 @@ export default function Dashboard() {
       ])
       setD(dash)
       setPerfil(per)
+      setUltimaAtualizacao(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
     } catch {} finally {
       setLoading(false)
       setIsRefreshing(false)
@@ -85,7 +87,12 @@ export default function Dashboard() {
       if (t) setMetaTicket(Number(t) || 250)
     }
     const interval = setInterval(buscarDados, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    const onVisibility = () => { if (document.visibilityState === 'visible') buscarDados() }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [buscarDados])
 
   function salvarMetaMes(v: number) {
@@ -160,10 +167,17 @@ export default function Dashboard() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-start' }}>
-            <button onClick={buscarDados} title="Atualizar dados" disabled={isRefreshing}
-              style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-              <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <button onClick={buscarDados} title="Atualizar dados" disabled={isRefreshing}
+                style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
+              </button>
+              {ultimaAtualizacao && (
+                <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                  {ultimaAtualizacao}
+                </span>
+              )}
+            </div>
             <button onClick={toggleValores} title={valoresVisiveis ? 'Ocultar valores' : 'Mostrar valores'}
               style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
               {valoresVisiveis ? <EyeOff size={14} strokeWidth={1.8} /> : <Eye size={14} strokeWidth={1.8} />}
@@ -267,10 +281,17 @@ export default function Dashboard() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={buscarDados} title="Atualizar dados" disabled={isRefreshing}
-            style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-            <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <button onClick={buscarDados} title="Atualizar dados" disabled={isRefreshing}
+              style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
+            </button>
+            {ultimaAtualizacao && (
+              <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                {ultimaAtualizacao}
+              </span>
+            )}
+          </div>
           <button onClick={toggleValores} title={valoresVisiveis ? 'Ocultar valores' : 'Mostrar valores'}
             style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
             {valoresVisiveis ? <EyeOff size={14} strokeWidth={1.8} /> : <Eye size={14} strokeWidth={1.8} />}
