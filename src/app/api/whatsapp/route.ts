@@ -64,6 +64,66 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  if (aba === 'whatsapp_hoje') {
+    const hoje = hojeNoBrasil()
+    const em5dias = diasAFrente(5)
+    const monthDay = hoje.slice(5) // 'MM-DD' — para LIKE em data_nascimento/data_casamento
+
+    const [logsRes, carDiaRes, car5dRes, anivRes, casRes] = await Promise.all([
+      supabase
+        .from('whatsapp_logs')
+        .select('id, tipo, status, enviado_em, numero, erro, clientes!cod_cliente(nome)')
+        .in('tipo', ['aniversario', 'aniversario_casamento', 'cobranca_5d', 'cobranca_dia'])
+        .gte('enviado_em', `${hoje}T00:00:00-03:00`)
+        .order('enviado_em', { ascending: true }),
+
+      // Vencimentos hoje sem filtro de WhatsApp (para contar excluídos)
+      supabase
+        .from('contas_a_receber')
+        .select('id, clientes!cod_cliente(whatsapp, whatsapp_ativo)')
+        .eq('data_vencimento', hoje)
+        .eq('pago', false)
+        .eq('msg_dia_enviada', false)
+        .or('inadimplente.is.null,inadimplente.eq.false'),
+
+      // Vencimentos em 5 dias sem filtro de WhatsApp
+      supabase
+        .from('contas_a_receber')
+        .select('id, clientes!cod_cliente(whatsapp, whatsapp_ativo)')
+        .eq('data_vencimento', em5dias)
+        .eq('pago', false)
+        .eq('msg_5d_enviada', false)
+        .or('inadimplente.is.null,inadimplente.eq.false'),
+
+      // Aniversariantes de nascimento hoje sem WhatsApp ativo
+      supabase
+        .from('clientes')
+        .select('id, whatsapp, whatsapp_ativo')
+        .like('data_nascimento', `%-${monthDay}`),
+
+      // Aniversariantes de casamento hoje sem WhatsApp ativo
+      supabase
+        .from('clientes')
+        .select('id, whatsapp, whatsapp_ativo')
+        .like('data_casamento', `%-${monthDay}`),
+    ])
+
+    const semWppCobranca = (p: any) => {
+      const cli = p.clientes
+      return !cli?.whatsapp || cli?.whatsapp_ativo === false
+    }
+    const semWppCliente = (c: any) => !c.whatsapp || c.whatsapp_ativo === false
+
+    const excluidos: Record<string, number> = {
+      cobranca_dia:          (carDiaRes.data || []).filter(semWppCobranca).length,
+      cobranca_5d:           (car5dRes.data  || []).filter(semWppCobranca).length,
+      aniversario:           (anivRes.data   || []).filter(semWppCliente).length,
+      aniversario_casamento: (casRes.data    || []).filter(semWppCliente).length,
+    }
+
+    return NextResponse.json({ hoje, logs: logsRes.data || [], excluidos })
+  }
+
   return NextResponse.json({ erro: 'Aba inválida' }, { status: 400 })
 }
 

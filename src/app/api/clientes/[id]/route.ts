@@ -76,6 +76,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const supabase = await createServerSupabase()
   const body = await req.json()
 
+  // Número de WhatsApp alterado → resetar flag de ativo (será revalidado pelo cron)
+  if ('whatsapp' in body) {
+    const { data: atual } = await supabase
+      .from('clientes')
+      .select('whatsapp')
+      .eq('id', params.id)
+      .single()
+    if (atual && body.whatsapp !== atual.whatsapp) {
+      body.whatsapp_ativo = null
+    }
+  }
+
   const { data, error } = await supabase
     .from('clientes')
     .update({ ...body, updated_at: new Date().toISOString() })
