@@ -1,4 +1,6 @@
 // src/app/api/dashboard/route.ts — agrega tudo que o Dashboard precisa numa só chamada
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { createServerSupabaseAdmin } from '@/lib/supabase/server'
 
@@ -54,6 +56,17 @@ export async function GET() {
 
   const ticketMedioDia = vendasHoje.length > 0 ? totalHoje / vendasHoje.length : 0
   const ticketMedioMes = vendasMes.length > 0 ? totalMes / vendasMes.length : 0
+
+  // Agrupamento de hoje por vendedora (para "Minhas Vendas Hoje" da colaboradora)
+  const aggHoje = new Map<string, { vendedor: string; qtd: number; total: number }>()
+  for (const v of vendasHoje) {
+    const k = v.vendedor || '(sem vendedor)'
+    const cur = aggHoje.get(k) || { vendedor: k, qtd: 0, total: 0 }
+    cur.qtd += 1
+    cur.total += Number(v.valor_total || 0)
+    aggHoje.set(k, cur)
+  }
+  const vendedorasHoje = [...aggHoje.values()]
 
   // ─── 2. Vendas 14d (gráfico) e 30d (mês) ─────────────────
   // Agrupa por data
@@ -146,13 +159,13 @@ export async function GET() {
     if (data) proximos = data.slice(0, 8)
   } catch {}
 
-  // ─── 7. Últimas 8 vendas ─────────────────────────────────
-  const ultimasVendas = vendasPeriodo.slice(0, 8)
+  // ─── 7. Últimas 50 vendas (colaboradora pode precisar filtrar mais que 8) ──
+  const ultimasVendas = vendasPeriodo.slice(0, 50)
 
   // ─── 8. Aniversariantes ──────────────────────────────────
   let aniversariantes: any[] = []
   try {
-    const { data } = await supabase.rpc('aniversariantes_hoje')
+    const { data } = await supabase.rpc('aniversariantes_hoje', { data_ref: dataBR() })
     if (data) aniversariantes = data
   } catch {}
 
@@ -168,6 +181,7 @@ export async function GET() {
     vendas_7d:  vendas7d,
     vendas_30d: vendas30d,
     vendedoras_mes: vendedorasMes,
+    vendas_hoje_vendedoras: vendedorasHoje,
     vencimentos: proximos,
     vendas_recentes: ultimasVendas,
     aniversariantes,
