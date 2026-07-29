@@ -163,7 +163,7 @@ export async function PATCH(req: NextRequest) {
   const supabase = createServerSupabaseAdmin()
   const hoje = hojeNoBrasil()
   const body = await req.json()
-  const { acao, valor_contado, fechado_por, motivo_reabertura, aberto_por, perfil, caixa_id } = body
+  const { acao, valor_contado, fechado_por, motivo_reabertura, aberto_por, perfil, caixa_id, observacoes } = body
 
   // Busca por ID se fornecido (retroativo), senão busca o caixa de hoje
   const { data: caixa } = caixa_id
@@ -211,6 +211,7 @@ export async function PATCH(req: NextRequest) {
         fechado_por:   fechado_por || null,
         fechado_em:    new Date().toISOString(),
         detalhamento:  snapshot,
+        observacoes:   observacoes?.trim() || null,
       })
       .eq('id', caixa.id)
       .select()
