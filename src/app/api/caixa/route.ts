@@ -6,43 +6,50 @@ function hojeNoBrasil(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
-async function calcularEsperado(supabase: ReturnType<typeof createServerSupabaseAdmin>, caixaId: number, valorAbertura: number, hoje: string) {
+// dataCaixa é a data do caixa sendo calculado — pode ser diferente de hoje (retroativo)
+async function calcularEsperado(
+  supabase: ReturnType<typeof createServerSupabaseAdmin>,
+  caixaId: number,
+  valorAbertura: number,
+  dataCaixa: string,
+) {
   const [vpRes, fcCreditoRes, fcDebitoRes, movRes] = await Promise.all([
-    // ① Vendas à vista em Dinheiro hoje (vendas_pagamento JOIN vendas)
+    // ① Vendas à vista em Dinheiro no dia do caixa
     supabase.from('vendas_pagamento')
       .select('valor, vendas!inner(data, situacao)')
       .eq('forma', 'Dinheiro')
-      .eq('vendas.data', hoje)
+      .eq('vendas.data', dataCaixa)
       .neq('vendas.situacao', 'Cancelada'),
 
-    // ② Recebimentos crediário em Dinheiro hoje
+    // ② Recebimentos crediário em Dinheiro no dia do caixa
     supabase.from('fluxo_caixa')
       .select('credito')
       .eq('tipo', 'C')
       .eq('condicao', 'Dinheiro')
       .eq('tipo_caixa', 'Caixa')
-      .eq('data', hoje),
+      .eq('data', dataCaixa),
 
-    // ③ Saídas em Dinheiro hoje (contas pagas, devoluções etc.)
+    // ③ Saídas em Dinheiro no dia do caixa
     supabase.from('fluxo_caixa')
       .select('debito')
       .eq('tipo', 'D')
       .eq('condicao', 'Dinheiro')
       .eq('tipo_caixa', 'Caixa')
-      .eq('data', hoje),
+      .eq('data', dataCaixa),
 
-    // ④ Sangrias e suprimentos do caixa de hoje
+    // ④ Sangrias e suprimentos deste caixa (por id, não por data)
     supabase.from('caixa_movimentos')
-      .select('tipo, valor')
-      .eq('caixa_id', caixaId),
+      .select('*')
+      .eq('caixa_id', caixaId)
+      .order('criado_em'),
   ])
 
-  const vendasDinheiro      = (vpRes.data ?? []).reduce((s: number, r: any) => s + Number(r.valor), 0)
+  const vendasDinheiro       = (vpRes.data ?? []).reduce((s: number, r: any) => s + Number(r.valor), 0)
   const recebimentosDinheiro = (fcCreditoRes.data ?? []).reduce((s: number, r: any) => s + Number(r.credito), 0)
-  const saidasDinheiro      = (fcDebitoRes.data ?? []).reduce((s: number, r: any) => s + Number(r.debito), 0)
-  const movimentos          = movRes.data ?? []
-  const suprimentos         = movimentos.filter((m: any) => m.tipo === 'suprimento').reduce((s: number, m: any) => s + Number(m.valor), 0)
-  const sangrias            = movimentos.filter((m: any) => m.tipo === 'sangria').reduce((s: number, m: any) => s + Number(m.valor), 0)
+  const saidasDinheiro       = (fcDebitoRes.data ?? []).reduce((s: number, r: any) => s + Number(r.debito), 0)
+  const movimentos           = movRes.data ?? []
+  const suprimentos = movimentos.filter((m: any) => m.tipo === 'suprimento').reduce((s: number, m: any) => s + Number(m.valor), 0)
+  const sangrias    = movimentos.filter((m: any) => m.tipo === 'sangria').reduce((s: number, m: any) => s + Number(m.valor), 0)
 
   const valorEsperado = valorAbertura + vendasDinheiro + recebimentosDinheiro + suprimentos - sangrias - saidasDinheiro
 
@@ -58,13 +65,18 @@ async function calcularEsperado(supabase: ReturnType<typeof createServerSupabase
   }
 }
 
-// GET /api/caixa — estado do caixa de hoje + cálculo em tempo real
+// GET /api/caixa
+// ?id=X         → caixa específico por id (retroativo)
+// ?aba=historico → últimos 30 caixas
+// (sem params)  → caixa de hoje + abertos anteriores
 export async function GET(req: NextRequest) {
   const supabase = createServerSupabaseAdmin()
   const hoje = hojeNoBrasil()
-  const url = new URL(req.url)
-  const aba = url.searchParams.get('aba')
+  const url  = new URL(req.url)
+  const aba  = url.searchParams.get('aba')
+  const idParam = url.searchParams.get('id')
 
+  // ── Histórico ────────────────────────────────────────────────
   if (aba === 'historico') {
     const { data } = await supabase
       .from('caixa_diario')
@@ -74,6 +86,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data ?? [])
   }
 
+  // ── Caixa por ID (retroativo) ─────────────────────────────────
+  if (idParam) {
+    const { data: caixa } = await supabase
+      .from('caixa_diario')
+      .select('*')
+      .eq('id', Number(idParam))
+      .maybeSingle()
+
+    if (!caixa) return NextResponse.json({ erro: 'Caixa não encontrado.' }, { status: 404 })
+
+    const detalhe = await calcularEsperado(supabase, caixa.id, Number(caixa.valor_abertura), caixa.data as string)
+    return NextResponse.json({ caixa, ...detalhe, is_retroativo: true })
+  }
+
+  // ── Caixa de hoje ─────────────────────────────────────────────
   const { data: caixa } = await supabase
     .from('caixa_diario')
     .select('*')
@@ -81,12 +108,12 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   if (!caixa) {
-    // Verificar se há caixa de dia anterior esquecido (aberto sem fechar)
     const { data: abertos } = await supabase
       .from('caixa_diario')
       .select('id, data')
       .eq('status', 'aberto')
       .lt('data', hoje)
+      .order('data', { ascending: true })
     return NextResponse.json({ caixa: null, abertos_anteriores: abertos ?? [] })
   }
 
@@ -100,7 +127,6 @@ export async function POST(req: NextRequest) {
   const hoje = hojeNoBrasil()
   const { valor_abertura = 0, aberto_por } = await req.json()
 
-  // Verificar caixa anterior aberto não fechado
   const { data: abertos } = await supabase
     .from('caixa_diario')
     .select('id, data')
@@ -122,7 +148,6 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    // Violação de UNIQUE(data) — caixa de hoje já existe
     if (error.code === '23505') {
       return NextResponse.json({ erro: 'Caixa de hoje já foi aberto.' }, { status: 409 })
     }
@@ -133,26 +158,25 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH /api/caixa — fechar ou reabrir caixa
+// Aceita caixa_id no body para operar em caixas retroativos (não só o de hoje)
 export async function PATCH(req: NextRequest) {
   const supabase = createServerSupabaseAdmin()
   const hoje = hojeNoBrasil()
   const body = await req.json()
-  const { acao, valor_contado, fechado_por, motivo_reabertura, aberto_por, perfil } = body
+  const { acao, valor_contado, fechado_por, motivo_reabertura, aberto_por, perfil, caixa_id } = body
 
-  const { data: caixa } = await supabase
-    .from('caixa_diario')
-    .select('*')
-    .eq('data', hoje)
-    .maybeSingle()
+  // Busca por ID se fornecido (retroativo), senão busca o caixa de hoje
+  const { data: caixa } = caixa_id
+    ? await supabase.from('caixa_diario').select('*').eq('id', Number(caixa_id)).maybeSingle()
+    : await supabase.from('caixa_diario').select('*').eq('data', hoje).maybeSingle()
 
-  if (!caixa) return NextResponse.json({ erro: 'Caixa de hoje não encontrado.' }, { status: 404 })
+  if (!caixa) return NextResponse.json({ erro: 'Caixa não encontrado.' }, { status: 404 })
 
-  // ─── FECHAMENTO ─────────────────────────────────────────────
+  // ─── FECHAMENTO ──────────────────────────────────────────────
   if (acao === 'fechar') {
     if (caixa.status === 'fechado') {
       return NextResponse.json({ erro: 'Caixa já está fechado.' }, { status: 409 })
     }
-    // Validar valor_contado
     if (valor_contado === null || valor_contado === undefined || valor_contado === '') {
       return NextResponse.json({ erro: 'Informe o valor contado para fechar o caixa.' }, { status: 422 })
     }
@@ -161,11 +185,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ erro: 'Valor contado inválido.' }, { status: 422 })
     }
 
-    const detalhe = await calcularEsperado(supabase, caixa.id, Number(caixa.valor_abertura), hoje)
+    // Usa a data do PRÓPRIO caixa — correto para retroativos
+    const detalhe = await calcularEsperado(supabase, caixa.id, Number(caixa.valor_abertura), caixa.data as string)
     const diferenca = contado - detalhe.valor_esperado
 
     const snapshot = {
       calculado_em:          new Date().toISOString(),
+      data_caixa:            caixa.data,
       valor_abertura:        detalhe.valor_abertura,
       vendas_dinheiro:       detalhe.vendas_dinheiro,
       recebimentos_dinheiro: detalhe.recebimentos_dinheiro,
@@ -194,7 +220,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ...fechado, diferenca, valor_esperado: detalhe.valor_esperado })
   }
 
-  // ─── REABERTURA (admin) ──────────────────────────────────────
+  // ─── REABERTURA (admin) ───────────────────────────────────────
   if (acao === 'reabrir') {
     if (perfil !== 'admin') {
       return NextResponse.json({ erro: 'Somente admin pode reabrir o caixa.' }, { status: 403 })
@@ -233,4 +259,3 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ erro: 'acao inválida. Use "fechar" ou "reabrir".' }, { status: 400 })
 }
-

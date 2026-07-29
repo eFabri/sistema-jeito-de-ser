@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'R$ 0,00'
@@ -25,6 +25,9 @@ type Estado = {
 
 export default function CaixaPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const idParam = searchParams.get('id')   // presente quando abrindo caixa retroativo
+
   const [estado, setEstado] = useState<Estado | null>(null)
   const [perfil, setPerfil] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -47,14 +50,15 @@ export default function CaixaPage() {
   const [motivoReabrir, setMotivoReabrir] = useState('')
 
   const buscar = useCallback(async () => {
+    const url = idParam ? `/api/caixa?id=${idParam}` : '/api/caixa'
     const [est, per] = await Promise.all([
-      fetch('/api/caixa').then(r => r.json()),
+      fetch(url).then(r => r.json()),
       fetch('/api/perfil').then(r => r.ok ? r.json() : null),
     ])
     setEstado(est)
     setPerfil(per)
     setLoading(false)
-  }, [])
+  }, [idParam])
 
   useEffect(() => { buscar() }, [buscar])
 
@@ -80,15 +84,19 @@ export default function CaixaPage() {
     setErro('')
     if (!valorContado.trim()) { setErro('Informe o valor contado.'); return }
     setSalvando(true)
+    const body: any = { acao: 'fechar', valor_contado: Number(valorContado.replace(',', '.')), fechado_por: nomePerfil }
+    if (estado?.caixa?.id) body.caixa_id = estado.caixa.id
     const r = await fetch('/api/caixa', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao: 'fechar', valor_contado: Number(valorContado.replace(',', '.')), fechado_por: nomePerfil }),
+      body: JSON.stringify(body),
     })
     const d = await r.json()
     setSalvando(false)
     if (!r.ok) { setErro(d.erro || 'Erro ao fechar caixa.'); return }
     setValorContado('')
+    // Se era retroativo, voltar à tela principal para liberar abertura de hoje
+    if (idParam) { router.push('/caixa'); return }
     buscar()
   }
 
@@ -96,10 +104,12 @@ export default function CaixaPage() {
     setErro('')
     if (!motivoReabrir.trim()) { setErro('Informe o motivo da reabertura.'); return }
     setSalvando(true)
+    const body: any = { acao: 'reabrir', motivo_reabertura: motivoReabrir, aberto_por: nomePerfil, perfil: perfil?.perfil }
+    if (estado?.caixa?.id) body.caixa_id = estado.caixa.id
     const r = await fetch('/api/caixa', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao: 'reabrir', motivo_reabertura: motivoReabrir, aberto_por: nomePerfil, perfil: perfil?.perfil }),
+      body: JSON.stringify(body),
     })
     const d = await r.json()
     setSalvando(false)
@@ -208,26 +218,46 @@ export default function CaixaPage() {
               Caixa
             </h1>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' })}
+              {idParam && estado?.caixa
+                ? `Visualizando caixa de ${fmtData(estado.caixa.data)}`
+                : new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' })
+              }
             </p>
           </div>
-          <button className="btn btn-ghost" onClick={() => router.push('/financeiro')} style={{ fontSize: 12 }}>
-            ← Financeiro
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {idParam && (
+              <button className="btn btn-ghost" onClick={() => router.push('/caixa')} style={{ fontSize: 12 }}>
+                ← Voltar ao caixa de hoje
+              </button>
+            )}
+            <button className="btn btn-ghost" onClick={() => router.push('/financeiro')} style={{ fontSize: 12 }}>
+              ← Financeiro
+            </button>
+          </div>
         </div>
 
-        {/* Aviso caixa anterior esquecido */}
-        {abertos_anteriores.length > 0 && (
-          <div style={{ background: 'rgba(201,169,110,0.1)', border: '1px solid rgba(201,169,110,0.4)', borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-gold)' }}>Caixa anterior não fechado</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                Caixa de {abertos_anteriores.map(a => fmtData(a.data)).join(', ')} está aberto sem fechamento registrado.
+        {/* Aviso caixa anterior não fechado — com botão direto para fechar */}
+        {abertos_anteriores.length > 0 && abertos_anteriores.map((ant: any) => (
+          <div key={ant.id} style={{ background: 'rgba(201,169,110,0.1)', border: '1px solid rgba(201,169,110,0.4)', borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 18 }}>⚠️</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-gold)' }}>Caixa anterior não fechado</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  Caixa de {fmtData(ant.data)} está aberto sem fechamento. Feche-o antes de abrir o de hoje.
+                </div>
               </div>
             </div>
+            <button
+              onClick={() => router.push(`/caixa?id=${ant.id}`)}
+              style={{ padding: '7px 16px', fontSize: 12, fontWeight: 700, background: 'rgba(201,169,110,0.15)', border: '1px solid rgba(201,169,110,0.5)', borderRadius: 8, color: 'var(--accent-gold)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,169,110,0.28)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(201,169,110,0.15)')}
+            >
+              Fechar caixa de {fmtData(ant.data)} →
+            </button>
           </div>
-        )}
+        ))}
 
         {erro && !modalMov && !modalReabrir && (
           <div style={{ background: 'rgba(220,53,69,0.1)', border: '1px solid rgba(220,53,69,0.3)', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: 'var(--danger)' }}>
@@ -262,8 +292,8 @@ export default function CaixaPage() {
             <div className="card" style={{ padding: '20px 24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: 'var(--accent-gold)', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
-                    Caixa aberto
+                  <div style={{ fontSize: 10, color: idParam ? '#E8A838' : 'var(--accent-gold)', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                    {idParam ? `⚠ Caixa retroativo — ${fmtData(caixa.data)}` : 'Caixa aberto'}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                     por {caixa.aberto_por || '—'} às {fmtHora(caixa.aberto_em)}
@@ -325,7 +355,9 @@ export default function CaixaPage() {
 
             {/* Fechamento */}
             <div className="card" style={{ padding: 24 }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 }}>Fechar Caixa</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 }}>
+                {idParam && caixa ? `Fechar Caixa de ${fmtData(caixa.data)}` : 'Fechar Caixa'}
+              </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ fontSize: 10, color: 'var(--accent-gold)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: 6 }}>
