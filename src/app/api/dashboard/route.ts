@@ -185,5 +185,5 @@ export async function GET() {
     vencimentos: proximos,
     vendas_recentes: ultimasVendas,
     aniversariantes,
-  })
+  }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
 }
