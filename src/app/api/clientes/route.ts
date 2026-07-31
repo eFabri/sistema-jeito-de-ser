@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('clientes')
-    .select('id, codigo_legado, nome, celular, whatsapp, cpf, cidade, categoria, limite_credito, data_nascimento, data_cadastro', { count: 'exact' })
+    .select('id, codigo_legado, nome, celular, whatsapp, cpf, cidade, categoria, limite_credito, data_nascimento, data_cadastro, credito_troca', { count: 'exact' })
     .eq('ativo', true)
     .order('nome', { ascending: true })
     .range(offset, offset + limite - 1)

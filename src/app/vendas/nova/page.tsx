@@ -6,8 +6,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import SelectCustom from '@/components/ui/SelectCustom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
-import { imprimirRecibo } from '@/lib/impressora'
+import { DadosRecibo, DadosTalaoCrediario } from '@/lib/impressora'
+import ModalImpressaoVenda from '@/components/ModalImpressaoVenda'
 import { hojeNoBrasil } from '@/lib/dates'
+import { Printer, Check } from 'lucide-react'
 
 // ─── TIPOS ────────────────────────────────────────────────
 interface ItemCarrinho {
@@ -26,6 +28,7 @@ interface Pagamento {
   operadora: string
   valor: number
   conta_a_receber: boolean
+  parcelas?: number
 }
 
 interface ParcelaCrediario {
@@ -74,7 +77,7 @@ export default function NovaVendaPage() {
     cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: 'MG',
     trabalho_nome: '', trabalho_cargo: '', trabalho_telefone: '', renda: '', trabalho_tempo: '',
     categoria: 'Avista', limite_credito: '', desconto_familia: '',
-    tamanho: '', tamanho2: '', tamanho3: '', perfil: '',
+    tamanho: '', tamanho2: '', tamanho3: '', tamanho_calcado: '', perfil: '',
     ref_comercial: '', ref_comercial_tel: '',
     ref_pessoal1: '', ref_pessoal1_tel: '',
     ref_pessoal2: '', ref_pessoal2_tel: '',
@@ -91,12 +94,17 @@ export default function NovaVendaPage() {
   const [mostrarSugestoesProd, setMostrarSugestoesProd] = useState(false)
   const [descontoRs, setDescontoRs]   = useState(0)
   const [descontoPct, setDescontoPct] = useState(0)
+  const [creditoTrocaAplicado, setCreditoTrocaAplicado] = useState(0)
+  const [modalConfirmaTroca, setModalConfirmaTroca] = useState(false)
 
   // Estado do pagamento
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
   const [parcelasCrediario, setParcelasCrediario] = useState<ParcelaCrediario[]>([])
   const [qtdParcelas, setQtdParcelas] = useState(1)
-  const [diaVencimento, setDiaVencimento] = useState(10)
+  const [entradaCrediario, setEntradaCrediario] = useState(0)
+  const [formaEntradaCrediario, setFormaEntradaCrediario] = useState('PIX')
+  const [dataEntradaCrediario, setDataEntradaCrediario] = useState(() => hojeNoBrasil())
+  const [diaVencCrediario, setDiaVencCrediario] = useState(() => parseInt(hojeNoBrasil().split('-')[2]))
 
   // Estado geral
   const [vendedor, setVendedor] = useState('')
@@ -119,6 +127,14 @@ export default function NovaVendaPage() {
   const [maisDetalhesProd, setMaisDetalhesProd] = useState(false)
   const [salvandoProd, setSalvandoProd] = useState(false)
   const [toastPDV, setToastPDV] = useState('')
+  const [tipoVenda, setTipoVenda] = useState<'normal' | 'condicional'>('normal')
+  const [vendaCondFinalizada, setVendaCondFinalizada] = useState<any>(null)
+  const [dataRetornoCondicional, setDataRetornoCondicional] = useState('')
+
+  // Modo manual (inserir venda antiga)
+  const modoManual = searchParams.get('modo') === 'manual'
+  const [dataVendaManual, setDataVendaManual] = useState(() => hojeNoBrasil())
+  const [codigoLegadoManual, setCodigoLegadoManual] = useState('')
 
   const isAdmin = perfilUsuario?.perfil === 'admin'
   const podeAlterarDesconto = isAdmin || perfilUsuario?.alterar_preco_pdv
@@ -137,7 +153,18 @@ export default function NovaVendaPage() {
   }
 
   // Pré-carregar cliente da URL e perfil
+  // beforeunload: alerta ao tentar fechar com carrinho não vazio
   useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (carrinho.length > 0) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [carrinho])
+
+  useEffect(() => {
+    const obs = searchParams.get('obs')
+    if (obs) setObservacao(obs)
     if (clientePreId) {
       fetch(`/api/clientes/${clientePreId}`)
         .then(r => r.json())
@@ -145,7 +172,7 @@ export default function NovaVendaPage() {
     }
     fetch('/api/perfil').then(r => r.json()).then(d => {
       setPerfilUsuario(d)
-      if (d?.nome) setVendedor(d.apelido || d.nome)
+      if (d?.nome) setVendedor(d.nome)
     }).catch(() => {})
 
     // Verificar QZ Tray
@@ -163,15 +190,13 @@ export default function NovaVendaPage() {
     return () => window.removeEventListener('keydown', handleF2)
   }, [clientePreId])
 
-  // Carregar lista de vendedoras (para admin selecionar)
+  // Carregar lista de vendedoras (todos podem ver e trocar)
   useEffect(() => {
-    if (isAdmin) {
-      fetch('/api/configuracoes?aba=usuarios')
-        .then(r => r.json())
-        .then(d => setVendedoras((d.usuarios || []).filter((u: any) => u.ativo !== false)))
-        .catch(() => {})
-    }
-  }, [isAdmin])
+    fetch('/api/configuracoes?aba=usuarios')
+      .then(r => r.json())
+      .then(d => setVendedoras((d.usuarios || []).filter((u: any) => u.ativo !== false)))
+      .catch(() => {})
+  }, [])
 
   // ─── BUSCA CLIENTE ──────────────────────────────────────
   useEffect(() => {
@@ -255,13 +280,20 @@ export default function NovaVendaPage() {
   // ─── TOTAIS ─────────────────────────────────────────────
   const subtotalBruto = carrinho.reduce((s, i) => s + i.quantidade * i.preco_venda, 0)
   const descontoValor = descontoRs
-  const totalFinal    = subtotalBruto - descontoValor
+  const totalFinal    = subtotalBruto - descontoValor - creditoTrocaAplicado
+  const creditoTrocaDisponivel = (cliente?.credito_troca || 0) - creditoTrocaAplicado
 
   // ─── PAGAMENTO ──────────────────────────────────────────
-  const totalPago = pagamentos.reduce((s, p) => s + (p.valor || 0), 0)
-  const troco     = Math.max(0, totalPago - totalFinal)
-  const falta     = Math.max(0, totalFinal - totalPago)
   const temCrediario = pagamentos.some(p => p.forma === 'Crediário')
+  // Crediário cobre o restante automaticamente; valor do campo não é necessário
+  const nonCrediarioSum = pagamentos.filter(p => p.forma !== 'Crediário').reduce((s, p) => s + (p.valor || 0), 0)
+  const crediarioValorTotal = temCrediario ? Math.max(0, totalFinal - nonCrediarioSum) : 0
+  const valorAParcelar = Math.max(0, crediarioValorTotal - entradaCrediario)
+  const totalPago = temCrediario
+    ? nonCrediarioSum + entradaCrediario + valorAParcelar
+    : pagamentos.reduce((s, p) => s + (p.valor || 0), 0)
+  const troco = Math.max(0, totalPago - totalFinal)
+  const falta = Math.max(0, totalFinal - totalPago)
 
   function addPagamento() {
     setPagamentos(p => [...p, { forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
@@ -275,38 +307,37 @@ export default function NovaVendaPage() {
     setPagamentos(p => p.filter((_, i) => i !== idx))
   }
 
-  // Gerar parcelas do crediário
+  // Gerar parcelas do crediário — usa valorAParcelar já computado acima
   function gerarParcelas() {
     if (!temCrediario) return
-    const valorCrediario = pagamentos.find(p => p.forma === 'Crediário')?.valor || totalFinal
-    const valorParcela = valorCrediario / qtdParcelas
+    if (valorAParcelar <= 0 || qtdParcelas < 1) { setParcelasCrediario([]); return }
+    const valorBase = Math.floor((valorAParcelar / qtdParcelas) * 100) / 100
     const parcelas: ParcelaCrediario[] = []
-    // Usar data Brasília como base para não deslocar 1 dia após 21h
     const [anoBase, mesBase, diaBase] = hojeNoBrasil().split('-').map(Number)
     const hoje = new Date(anoBase, mesBase - 1, diaBase)
 
     for (let i = 0; i < qtdParcelas; i++) {
       const venc = new Date(hoje)
       venc.setMonth(venc.getMonth() + i + 1)
-      venc.setDate(diaVencimento)
+      venc.setDate(diaVencCrediario)
+      if (venc.getDate() !== diaVencCrediario) venc.setDate(0)
       const ano = venc.getFullYear()
       const mes = String(venc.getMonth() + 1).padStart(2, '0')
       const dia = String(venc.getDate()).padStart(2, '0')
       parcelas.push({
         parcela: `${i + 1}/${qtdParcelas}`,
         data_vencimento: `${ano}-${mes}-${dia}`,
-        valor: parseFloat(valorParcela.toFixed(2)),
+        valor: valorBase,
       })
     }
-    // Ajuste centavos na última parcela
     const soma = parcelas.reduce((s, p) => s + p.valor, 0)
-    const diff = parseFloat((valorCrediario - soma).toFixed(2))
-    if (parcelas.length > 0) parcelas[parcelas.length - 1].valor += diff
+    const diff = parseFloat((valorAParcelar - soma).toFixed(2))
+    if (parcelas.length > 0) parcelas[parcelas.length - 1].valor = parseFloat((parcelas[parcelas.length - 1].valor + diff).toFixed(2))
 
     setParcelasCrediario(parcelas)
   }
 
-  useEffect(() => { if (temCrediario) gerarParcelas() }, [qtdParcelas, diaVencimento, pagamentos])
+  useEffect(() => { if (temCrediario) gerarParcelas() }, [qtdParcelas, diaVencCrediario, pagamentos, entradaCrediario, totalFinal])
 
   // ─── CADASTRO DE CLIENTE ────────────────────────────────
   const fcli = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -426,6 +457,17 @@ export default function NovaVendaPage() {
     setSalvando(true)
     setErro('')
 
+    // Pagamentos não-crediário são enviados normalmente
+    const pgBackend: any[] = pagamentos
+      .filter(p => p.forma !== 'Crediário')
+      .map(p => ({ forma: p.forma, operadora: p.operadora || null, conta: null, valor: p.valor, parcela: null, parcelas: p.forma === 'Cartão Crédito' ? (p.parcelas || 1) : null, conta_a_receber: false }))
+    if (temCrediario) {
+      if (entradaCrediario > 0) {
+        pgBackend.unshift({ forma: formaEntradaCrediario, operadora: null, conta: null, valor: entradaCrediario, data: dataEntradaCrediario, parcela: null, parcelas: null, conta_a_receber: false })
+      }
+      pgBackend.push({ forma: 'Crediário', operadora: null, conta: null, valor: valorAParcelar, parcela: null, parcelas: qtdParcelas, conta_a_receber: true })
+    }
+
     const payload = {
       vendedor,
       cod_cliente: cliente.id,
@@ -439,20 +481,16 @@ export default function NovaVendaPage() {
         desconto_valor: i.desconto_valor,
         desconto_pct: i.desconto_pct,
       })),
-      pagamentos: pagamentos.map(p => ({
-        forma: p.forma,
-        operadora: p.operadora || null,
-        conta: null,
-        valor: p.valor,
-        parcela: null,
-        conta_a_receber: p.forma === 'Crediário',
-      })),
+      pagamentos: pgBackend,
       crediario: temCrediario ? parcelasCrediario : [],
       desc_porcentagem: descontoPct / 100,
-      desc_valor: descontoValor,
+      desc_valor: descontoValor + creditoTrocaAplicado,
       valor_total: totalFinal,
+      abatimento_credito_troca: creditoTrocaAplicado || undefined,
       situacao: 'Venda',
       observacao: observacao || null,
+      ...(modoManual && dataVendaManual ? { data: dataVendaManual } : {}),
+      ...(modoManual && codigoLegadoManual ? { codigo_legado: codigoLegadoManual } : {}),
     }
 
     let res: Response
@@ -490,65 +528,133 @@ export default function NovaVendaPage() {
     setModalImprimir(true)
   }
 
-  async function imprimirVendaAtual(vias: 1 | 2 = 1) {
-    if (!vendaFinalizada) return
-    await imprimirRecibo({
-      empresa: 'Jeito de Ser — (31) 3741-3668',
+  function dadosCupomAtual(): DadosRecibo {
+    return {
+      empresa: 'JEITO DE SER LTDA.',
       nomeCliente: cliente?.nome || 'Cliente',
       nomeVendedora: vendedor,
-      codVenda: vendaFinalizada.codigo_legado || vendaFinalizada.id,
+      codVenda: vendaFinalizada?.codigo_legado || vendaFinalizada?.id || '',
       data: new Date().toLocaleDateString('pt-BR'),
-      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       itens: carrinho.map(i => ({ produto: i.produto, quantidade: i.quantidade, preco: i.preco_venda, subtotal: i.sub_total })),
-      pagamentos: pagamentos.map(p => ({ forma: p.forma, valor: p.valor })),
+      pagamentos: pagamentos.filter(p => p.forma !== 'Crediário').map(p => ({ forma: p.forma, valor: p.valor })),
       desconto: descontoValor > 0 ? descontoValor : undefined,
       valorTotal: totalFinal,
-      crediario: temCrediario ? parcelasCrediario.map(p => ({ parcela: p.parcela, vencimento: p.data_vencimento, valor: p.valor })) : undefined,
+      situacao: 'Venda',
       observacao: observacao || undefined,
-    }, undefined, vias)
+    }
+  }
+
+  function dadosTalaoAtual(): DadosTalaoCrediario | undefined {
+    if (!temCrediario || parcelasCrediario.length === 0) return undefined
+    return {
+      nomeCliente: cliente?.nome || 'Cliente',
+      cpf: cliente?.cpf || undefined,
+      codVenda: vendaFinalizada?.codigo_legado || vendaFinalizada?.id || '',
+      data: new Date().toLocaleDateString('pt-BR'),
+      valorTotal: totalFinal,
+      parcelas: parcelasCrediario.map(p => ({ parcela: p.parcela, vencimento: p.data_vencimento, valor: p.valor })),
+    }
   }
 
   function resetarPDV() {
-    setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoRs(0); setDescontoPct(0)
+    setCarrinho([]); setCliente(null); setBuscaCliente(''); setDescontoRs(0); setDescontoPct(0); setCreditoTrocaAplicado(0)
     setPagamentos([{ forma: 'Dinheiro', operadora: '', valor: 0, conta_a_receber: false }])
     setParcelasCrediario([]); setObservacao(''); setEtapa('carrinho'); setVendaFinalizada(null)
-    setModalImprimir(false)
+    setModalImprimir(false); setTipoVenda('normal'); setVendaCondFinalizada(null); setDataRetornoCondicional('')
+  }
+
+  async function registrarCondicional() {
+    if (!cliente) { setErro('Selecione um cliente'); return }
+    if (carrinho.length === 0) { setErro('Adicione pelo menos um produto'); return }
+    if (!vendedor.trim()) { setErro('Informe o nome do vendedor'); return }
+    setSalvando(true); setErro('')
+    try {
+      const res = await fetch('/api/condicionais', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cod_cliente: cliente.id,
+          nome_cliente: cliente.nome,
+          vendedor,
+          itens: carrinho.map(i => ({
+            cod_produto: i.cod_produto,
+            produto: i.produto,
+            preco_venda: i.preco_venda,
+            quantidade: i.quantidade,
+          })),
+          observacao: observacao || null,
+          data_retorno_prevista: dataRetornoCondicional || null,
+        }),
+      })
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('application/json')) {
+        setErro('Sessão expirada. Recarregue a página e faça login novamente.')
+        setSalvando(false); return
+      }
+      if (!res.ok) {
+        const err = await res.json()
+        setErro(err.erro || 'Erro ao registrar condicional')
+        setSalvando(false); return
+      }
+      const cond = await res.json()
+      setVendaCondFinalizada(cond)
+      setEtapa('confirmado')
+    } catch {
+      setErro('Sem conexão com o servidor')
+    } finally {
+      setSalvando(false)
+    }
   }
 
   // ─── RENDER: CONFIRMADO ─────────────────────────────────
   if (etapa === 'confirmado') {
+    // ── Saída Condicional registrada ──
+    if (tipoVenda === 'condicional') {
+      return (
+        <AppLayout>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 20 }}>
+            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '2px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>◑</div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: '#C9A84C' }}>Saída Condicional Registrada!</h2>
+              <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
+                Condicional #{vendaCondFinalizada?.id} · {cliente?.nome}
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
+                A cliente devolve ou confirma em até 24h
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-ghost" onClick={() => router.push(`/condicionais/${vendaCondFinalizada?.id}`)}>
+                Ver Condicional
+              </button>
+              <button className="btn btn-ghost" onClick={() => router.push('/condicionais')}>
+                Lista de Condicionais
+              </button>
+              <button className="btn btn-primary" onClick={resetarPDV}>+ Nova Venda</button>
+            </div>
+          </div>
+        </AppLayout>
+      )
+    }
+
+    // ── Venda Normal registrada ──
     return (
       <AppLayout>
-        {/* MODAL: Deseja imprimir? */}
-        {modalImprimir && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-            <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 400, textAlign: 'center' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🖨</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Imprimir recibo?</h3>
-              {troco > 0 && (
-                <div style={{ margin: '12px 0', padding: '12px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#C9A84C', fontWeight: 700 }}>Troco: {BRL(troco)}</span>
-                </div>
-              )}
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Quantas vias deseja imprimir?</p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModalImprimir(false)}>
-                  Não imprimir
-                </button>
-                <button className="btn btn-ghost" style={{ flex: 1, borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C' }}
-                  onClick={async () => { localStorage.setItem('preferencia_vias','1'); await imprimirVendaAtual(1); setModalImprimir(false) }}>
-                  🖨 1 via
-                </button>
-                <button className="btn btn-primary" style={{ flex: 1 }}
-                  onClick={async () => { localStorage.setItem('preferencia_vias','2'); await imprimirVendaAtual(2); setModalImprimir(false) }}>
-                  🖨 2 vias
-                </button>
-              </div>
-            </div>
+        {modalImprimir && vendaFinalizada && (
+          <ModalImpressaoVenda
+            dadosCupom={dadosCupomAtual()}
+            dadosTalao={dadosTalaoAtual()}
+            titulo="Imprimir recibo"
+            onClose={() => setModalImprimir(false)}
+          />
+        )}
+        {troco > 0 && !modalImprimir && (
+          <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 900, background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', borderRadius: 12, padding: '12px 24px', backdropFilter: 'blur(8px)' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>Troco: {BRL(troco)}</span>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 20 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, rgba(76,175,130,0.2), rgba(76,175,130,0.05))', border: '2px solid rgba(76,175,130,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>✓</div>
+          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, rgba(76,175,130,0.2), rgba(76,175,130,0.05))', border: '2px solid rgba(76,175,130,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={32} color="#4CAF82" strokeWidth={2} /></div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: '#4CAF82' }}>Venda Registrada!</h2>
             <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
@@ -556,9 +662,16 @@ export default function NovaVendaPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-ghost" onClick={() => imprimirVendaAtual(1)}>🖨 1 via</button>
-            <button className="btn btn-ghost" onClick={() => imprimirVendaAtual(2)}>🖨 2 vias</button>
+            <button className="btn btn-ghost" onClick={() => setModalImprimir(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Printer size={13} strokeWidth={1.8} /> Reimprimir</button>
             <button className="btn btn-ghost" onClick={() => router.push(`/clientes/${cliente?.id}`)}>Ver Cliente</button>
+            <button className="btn btn-ghost" onClick={() => {
+              const clienteId = cliente?.id
+              const vendaId = vendaFinalizada?.codigo_legado || vendaFinalizada?.id
+              resetarPDV()
+              router.push(`/vendas/nova?cliente=${clienteId}&obs=${encodeURIComponent(`Complemento da Venda #${vendaId}`)}`)
+            }}>
+              + Venda Complementar
+            </button>
             <button className="btn btn-primary" onClick={resetarPDV}>+ Nova Venda</button>
           </div>
         </div>
@@ -572,16 +685,16 @@ export default function NovaVendaPage() {
       {/* TOAST PRODUTO CADASTRADO */}
       {toastPDV && (
         <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 9999, background: 'rgba(76,175,130,0.15)', border: '1px solid rgba(76,175,130,0.35)', borderRadius: 10, padding: '12px 18px', color: '#4CAF82', fontSize: 13, fontWeight: 600, backdropFilter: 'blur(8px)', animation: 'silkFade 0.3s ease forwards' }}>
-          ✓ {toastPDV}
+          <Check size={13} strokeWidth={2.5} style={{ flexShrink: 0 }} /> {toastPDV}
         </div>
       )}
 
       {/* MODAL CADASTRO RÁPIDO DE PRODUTO */}
       {mostrarModalProd && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'silkFade 0.25s ease forwards' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(30,27,75,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'silkFade 0.25s ease forwards' }}
           onClick={e => { if (e.target === e.currentTarget) setMostrarModalProd(false) }}>
           <div className="card" style={{ width: '100%', maxWidth: 520, padding: 28, margin: 16, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 4 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', marginBottom: 4 }}>
               Cadastrar Produto
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
@@ -660,7 +773,7 @@ export default function NovaVendaPage() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
               <button className="btn btn-ghost" onClick={() => setMostrarModalProd(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={salvarProdutoRapido} disabled={salvandoProd || !novoProd.descricao.trim()}>
-                {salvandoProd ? 'Salvando...' : '✓ Cadastrar e Adicionar'}
+                {salvandoProd ? 'Salvando...' : <><Check size={13} strokeWidth={2.5} /> Cadastrar e Adicionar</>}
               </button>
             </div>
           </div>
@@ -671,7 +784,7 @@ export default function NovaVendaPage() {
       {mostrarModalCli && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+          background: 'rgba(30,27,75,0.45)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 16,
           animation: 'silkFade 0.25s ease forwards',
@@ -682,7 +795,7 @@ export default function NovaVendaPage() {
             <div style={{ padding: '22px 28px 0', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', margin: 0 }}>
                     Cadastrar Cliente
                   </h2>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
@@ -867,9 +980,10 @@ export default function NovaVendaPage() {
                   {([
                     { label: 'Limite de crédito (R$)', field: 'limite_credito', type: 'number', placeholder: '0,00' },
                     { label: 'Desconto família (%)', field: 'desconto_familia', type: 'number', placeholder: '0' },
-                    { label: 'Tamanho (roupa)', field: 'tamanho', placeholder: 'P, M, G, 38...' },
-                    { label: 'Tamanho 2', field: 'tamanho2' },
-                    { label: 'Tamanho 3', field: 'tamanho3' },
+                    { label: 'Tamanho Roupa', field: 'tamanho', placeholder: 'P, M, G, 38...' },
+                    { label: 'Tops', field: 'tamanho2' },
+                    { label: 'Botons', field: 'tamanho3' },
+                    { label: 'Calçado', field: 'tamanho_calcado', placeholder: '35, 36, 37...' },
                     { label: 'Perfil / Estilo', field: 'perfil', placeholder: 'Moda jovem, clássica...' },
                   ] as any[]).map(({ label, field, type, placeholder }: any) => (
                     <div key={field}>
@@ -916,7 +1030,7 @@ export default function NovaVendaPage() {
                   Cancelar
                 </button>
                 <button className="btn btn-primary" type="button" onClick={criarClienteRapido} disabled={salvandoCli}>
-                  {salvandoCli ? 'Salvando...' : '✓ Cadastrar e Usar'}
+                  {salvandoCli ? 'Salvando...' : <><Check size={13} strokeWidth={2.5} /> Cadastrar e Usar</>}
                 </button>
               </div>
             </div>
@@ -930,7 +1044,7 @@ export default function NovaVendaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <button onClick={() => router.push('/vendas')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 4 }}>‹ Vendas</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Nova Venda</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>Nova Venda</h1>
           </div>
           {/* Status impressora */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: impressoraStatus === 'conectada' ? '#4CAF82' : impressoraStatus === 'offline' ? '#E5584A' : 'var(--text-muted)' }}>
@@ -962,6 +1076,44 @@ export default function NovaVendaPage() {
 
         {/* ETAPA: CARRINHO */}
         {etapa === 'carrinho' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* TOGGLE TIPO DE VENDA */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+              <button onClick={() => setTipoVenda('normal')}
+                style={{ padding: '7px 18px', background: tipoVenda === 'normal' ? 'rgba(201,168,76,0.15)' : 'none', color: tipoVenda === 'normal' ? '#C9A84C' : 'var(--text-muted)', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.2s' }}>
+                Venda Normal
+              </button>
+              <button onClick={() => setTipoVenda('condicional')}
+                style={{ padding: '7px 18px', background: tipoVenda === 'condicional' ? 'rgba(201,168,76,0.15)' : 'none', color: tipoVenda === 'condicional' ? '#C9A84C' : 'var(--text-muted)', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.2s' }}>
+                Saída Condicional
+              </button>
+            </div>
+            {tipoVenda === 'condicional' && (
+              <span style={{ fontSize: 11, color: 'var(--gold-dim)', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', padding: '4px 12px', borderRadius: 6 }}>
+                A cliente leva para experimentar e devolve em até 24h
+              </span>
+            )}
+          </div>
+
+          {/* MODO MANUAL — campos extras */}
+          {modoManual && (
+            <div style={{ padding: '14px 16px', background: 'rgba(77,158,204,0.06)', border: '1px solid rgba(77,158,204,0.2)', borderRadius: 10, display: 'flex', gap: 16, alignItems: 'flex-end', position: 'relative', zIndex: 10 }}>
+              <div style={{ fontSize: 12, color: '#4D9ECC', fontWeight: 700, letterSpacing: '0.04em', flexShrink: 0, alignSelf: 'center' }}>
+                Venda Antiga
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Data da Venda</label>
+                <input className="input" type="date" value={dataVendaManual} onChange={e => setDataVendaManual(e.target.value)} style={{ maxWidth: 180 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Nº Venda Original</label>
+                <input className="input" type="text" value={codigoLegadoManual} onChange={e => setCodigoLegadoManual(e.target.value)} placeholder="ex: 1234" style={{ maxWidth: 180 }} />
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
 
             {/* COLUNA ESQUERDA */}
@@ -970,7 +1122,7 @@ export default function NovaVendaPage() {
               {/* CLIENTE — obrigatório */}
               <div className="card" style={{ position: 'relative', zIndex: 3 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A' }}>
                     Cliente <span style={{ color: '#E5584A', fontSize: 12 }}>*</span>
                   </h3>
                   {!cliente && (
@@ -983,7 +1135,7 @@ export default function NovaVendaPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 16 }}>{cliente.nome?.charAt(0)}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{cliente.nome}</div>
+                      <div style={{ fontSize: 14, color: '#332F3A', fontWeight: 600 }}>{cliente.nome}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{cliente.celular || cliente.whatsapp || '—'} · {cliente.categoria || '—'}</div>
                     </div>
                     <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => { setCliente(null); setBuscaCliente('') }}>✕ Trocar</button>
@@ -995,14 +1147,14 @@ export default function NovaVendaPage() {
                       onFocus={() => sugestoesCli.length > 0 && setMostrarSugestoesCli(true)}
                     />
                     {mostrarSugestoesCli && sugestoesCli.length > 0 && (
-                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-dropdown)', marginTop: 4 }}>
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-clay-lg)', marginTop: 4 }}>
                         {sugestoesCli.map(c => (
                           <div key={c.id} onClick={() => { setCliente(c); setBuscaCliente(''); setMostrarSugestoesCli(false) }}
                             style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)' }}
                             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.06)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{c.nome}</div>
+                            <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{c.nome}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.celular || c.cpf || '—'}</div>
                           </div>
                         ))}
@@ -1027,7 +1179,7 @@ export default function NovaVendaPage() {
               {/* BUSCA PRODUTO */}
               <div className="card" style={{ overflow: 'visible', position: 'relative', zIndex: 2 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>Adicionar Produto</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A' }}>Adicionar Produto</h3>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>F2 para focar · Enter no cód. barras</span>
                 </div>
                 {/* position:relative contém TODOS os elementos flutuantes — dropdown e "nenhum resultado" */}
@@ -1046,7 +1198,7 @@ export default function NovaVendaPage() {
 
                   {/* DROPDOWN DE SUGESTÕES — absolute, filho direto do div relative */}
                   {mostrarSugestoesProd && sugestoesProd.length > 0 && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.7)', marginTop: 4, maxHeight: 320, overflowY: 'auto' }}>
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 10, overflow: 'hidden', boxShadow: 'var(--shadow-clay-lg)', marginTop: 4, maxHeight: 320, overflowY: 'auto' }}>
                       {sugestoesProd.map(p => (
                         <div key={p.id} onClick={() => adicionarProduto(p)}
                           style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid rgba(201,168,76,0.06)', display: 'grid', gridTemplateColumns: '1fr auto auto' }}
@@ -1054,7 +1206,7 @@ export default function NovaVendaPage() {
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <div>
-                            <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{p.descricao}</div>
+                            <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{p.descricao}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.grupo}{p.cor ? ` · ${p.cor}` : ''}{p.tamanho ? ` · ${p.tamanho}` : ''}</div>
                           </div>
                           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#C9A84C', padding: '0 12px', alignSelf: 'center' }}>
@@ -1070,9 +1222,9 @@ export default function NovaVendaPage() {
 
                   {/* NENHUM RESULTADO — absolute, filho direto do div relative, nunca no fluxo normal */}
                   {semResultadosProd && !buscandoProd && buscaProduto.length >= 2 && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, marginTop: 4, padding: '12px 14px', background: '#1a1610', border: '1px dashed rgba(201,168,76,0.3)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, marginTop: 4, padding: '12px 14px', background: 'rgba(255,255,255,0.85)', border: '1px dashed rgba(201,168,76,0.3)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
                       <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
-                        Nenhum produto para <strong style={{ color: '#F2EBD9' }}>"{buscaProduto}"</strong>
+                        Nenhum produto para <strong style={{ color: '#332F3A' }}>"{buscaProduto}"</strong>
                       </p>
                       <button type="button" onClick={abrirModalProduto}
                         className="btn btn-primary"
@@ -1088,10 +1240,17 @@ export default function NovaVendaPage() {
               {/* CARRINHO */}
               {carrinho.length > 0 && (
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 90px 120px 44px', gap: 8, background: 'rgba(201,168,76,0.03)' }}>
-                    {['Produto', 'Qtd', 'Preço unit.', ''].map(h => (
-                      <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</div>
-                    ))}
+                  <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(201,168,76,0.03)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 120px 44px', gap: 8, flex: 1 }}>
+                      {['Produto', 'Qtd', 'Preço unit.', ''].map(h => (
+                        <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => { if (confirm('Limpar todos os itens do carrinho?')) { setCarrinho([]); setDescontoRs(0); setDescontoPct(0) } }}
+                      style={{ flexShrink: 0, background: 'none', border: '1px solid rgba(229,88,74,0.3)', borderRadius: 6, padding: '3px 10px', fontSize: 10, color: '#E5584A', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                      Limpar
+                    </button>
                   </div>
                   {carrinho.map((item, i) => (
                     <div key={item.id} style={{
@@ -1100,17 +1259,17 @@ export default function NovaVendaPage() {
                       borderBottom: i < carrinho.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
                     }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{item.produto}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{item.produto}</div>
                         <div style={{ fontSize: 12, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                           {BRL(item.sub_total)}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => alterarQtd(item.id, item.quantidade - 1)}
-                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>−</button>
-                        <span style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600, minWidth: 22, textAlign: 'center' }}>{item.quantidade}</span>
+                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#332F3A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: 14, color: '#332F3A', fontWeight: 600, minWidth: 22, textAlign: 'center' }}>{item.quantidade}</span>
                         <button onClick={() => alterarQtd(item.id, item.quantidade + 1)}
-                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>+</button>
+                          style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', color: '#332F3A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>+</button>
                       </div>
                       <input type="number" className="input" style={{ padding: '5px 8px', fontSize: 13 }}
                         value={item.preco_venda} min={0} step={0.01}
@@ -1127,7 +1286,7 @@ export default function NovaVendaPage() {
               <div className="card">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Campo label="Vendedor(a) *">
-                    {isAdmin && vendedoras.length > 0 ? (
+                    {vendedoras.length > 0 ? (
                       <select className="input" value={vendedor} onChange={e => setVendedor(e.target.value)}>
                         <option value="">Selecionar vendedora...</option>
                         {vendedoras.map((v: any) => (
@@ -1135,7 +1294,7 @@ export default function NovaVendaPage() {
                         ))}
                       </select>
                     ) : (
-                      <input className="input" value={vendedor} readOnly={!isAdmin} onChange={e => isAdmin && setVendedor(e.target.value)} placeholder="Nome da vendedora" />
+                      <input className="input" value={vendedor} onChange={e => setVendedor(e.target.value)} placeholder="Nome da vendedora" />
                     )}
                   </Campo>
                   <Campo label="Observação">
@@ -1148,7 +1307,7 @@ export default function NovaVendaPage() {
             {/* COLUNA DIREITA — RESUMO */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'sticky', top: 20 }}>
               <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Resumo</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A', marginBottom: 16 }}>Resumo</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -1158,6 +1317,16 @@ export default function NovaVendaPage() {
 
                   <div style={{ background: 'rgba(229,88,74,0.04)', border: '1px solid rgba(229,88,74,0.12)', borderRadius: 10, padding: '10px 12px' }}>
                     <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Desconto</div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                      {[5, 10].map(pct => (
+                        <button key={pct} type="button"
+                          onClick={() => handleDescontoPct(pct)}
+                          disabled={!podeAlterarDesconto || subtotalBruto === 0}
+                          style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'var(--accent-gold)', cursor: 'pointer', opacity: (!podeAlterarDesconto || subtotalBruto === 0) ? 0.4 : 1 }}>
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <div>
                         <label style={{ fontSize: 10, color: 'var(--gold-dim)', display: 'block', marginBottom: 4, fontWeight: 600 }}>R$</label>
@@ -1181,19 +1350,63 @@ export default function NovaVendaPage() {
                     )}
                   </div>
 
+                  {/* CRÉDITO DE TROCA */}
+                  {cliente && (cliente.credito_troca || 0) > 0 && creditoTrocaAplicado === 0 && (
+                    <div style={{ background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.25)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: '#2E7D57' }}>
+                        💰 Crédito de troca disponível: <strong>{BRL(cliente.credito_troca)}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={subtotalBruto === 0}
+                        onClick={() => setModalConfirmaTroca(true)}
+                        style={{ background: '#2E7D57', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: subtotalBruto === 0 ? 'not-allowed' : 'pointer', opacity: subtotalBruto === 0 ? 0.4 : 1, whiteSpace: 'nowrap' }}>
+                        Abater nesta compra
+                      </button>
+                    </div>
+                  )}
+                  {creditoTrocaAplicado > 0 && (
+                    <div style={{ background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.25)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#2E7D57' }}>✓ Crédito de troca abatido: <strong>- {BRL(creditoTrocaAplicado)}</strong></span>
+                      <button type="button" onClick={() => setCreditoTrocaAplicado(0)}
+                        style={{ background: 'none', border: '1px solid rgba(76,175,130,0.4)', borderRadius: 6, padding: '3px 10px', fontSize: 11, color: '#2E7D57', cursor: 'pointer' }}>
+                        Remover
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#C9A84C' }}>{BRL(totalFinal)}</span>
                   </div>
                 </div>
 
-                <button className="btn btn-primary" style={{ width: '100%', marginTop: 16, padding: '13px', fontSize: 15, justifyContent: 'center' }}
-                  disabled={carrinho.length === 0}
-                  onClick={() => { if (carrinho.length > 0) setEtapa('pagamento') }}>
-                  Ir para Pagamento →
-                </button>
+                {tipoVenda === 'condicional' && (
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Data de Retorno (opcional)</label>
+                    <input type="datetime-local" className="input" value={dataRetornoCondicional}
+                      onChange={e => setDataRetornoCondicional(e.target.value)}
+                      style={{ fontSize: 13 }} />
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Padrão: 24h a partir de agora</p>
+                  </div>
+                )}
+                {tipoVenda === 'normal' ? (
+                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 16, padding: '13px', fontSize: 15, justifyContent: 'center' }}
+                    disabled={carrinho.length === 0}
+                    onClick={() => { if (carrinho.length > 0) setEtapa('pagamento') }}>
+                    Ir para Pagamento →
+                  </button>
+                ) : (
+                  <button className="btn btn-primary"
+                    style={{ width: '100%', marginTop: 16, padding: '13px', fontSize: 15, justifyContent: 'center', background: 'linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.10))', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.35)' }}
+                    disabled={carrinho.length === 0 || salvando}
+                    onClick={registrarCondicional}>
+                    {salvando ? 'Registrando...' : '↗ Registrar Saída Condicional'}
+                  </button>
+                )}
               </div>
             </div>
+          </div>
           </div>
         )}
 
@@ -1205,28 +1418,46 @@ export default function NovaVendaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9' }}>Formas de Pagamento</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A' }}>Formas de Pagamento</h3>
                   <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }} onClick={addPagamento}>+ Adicionar</button>
                 </div>
 
                 {pagamentos.map((pg, idx) => (
-                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, marginBottom: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                    <Campo label="Forma">
-                      <SelectCustom
-                        value={pg.forma}
-                        onChange={v => updPagamento(idx, 'forma', v)}
-                        options={FORMAS}
-                      />
-                    </Campo>
-                    <Campo label="Valor (R$)">
-                      <input type="number" className="input" value={pg.valor} min={0} step={0.01}
-                        onChange={e => updPagamento(idx, 'valor', parseFloat(e.target.value) || 0)} />
-                    </Campo>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
-                      {pagamentos.length > 1 && (
-                        <button onClick={() => remPagamento(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>✕</button>
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12, padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10 }}>
+                      <Campo label="Forma">
+                        <SelectCustom
+                          value={pg.forma}
+                          onChange={v => updPagamento(idx, 'forma', v)}
+                          options={FORMAS}
+                        />
+                      </Campo>
+                      {pg.forma === 'Crediário' ? (
+                        <Campo label="Valor (auto)">
+                          <div className="input" style={{ color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700, cursor: 'default', userSelect: 'none' }}>
+                            {BRL(crediarioValorTotal)}
+                          </div>
+                        </Campo>
+                      ) : (
+                        <Campo label="Valor (R$)">
+                          <input type="number" className="input" value={pg.valor} min={0} step={0.01}
+                            onChange={e => updPagamento(idx, 'valor', parseFloat(e.target.value) || 0)} />
+                        </Campo>
                       )}
+                      <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+                        {pagamentos.length > 1 && (
+                          <button onClick={() => remPagamento(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>✕</button>
+                        )}
+                      </div>
                     </div>
+                    {pg.forma === 'Cartão Crédito' && (
+                      <Campo label="Parcelas">
+                        <select className="input" value={pg.parcelas || 1} onChange={e => updPagamento(idx, 'parcelas', parseInt(e.target.value))}>
+                          <option value={1}>À vista (1x)</option>
+                          {[2,3,4,5,6,7,8,9,10,11,12].map(n => <option key={n} value={n}>{n}x</option>)}
+                        </select>
+                      </Campo>
+                    )}
                   </div>
                 ))}
 
@@ -1240,7 +1471,37 @@ export default function NovaVendaPage() {
               {/* CREDIÁRIO — configuração de parcelas */}
               {temCrediario && (
                 <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Configurar Crediário</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A', marginBottom: 16 }}>Configurar Crediário</h3>
+
+                  {/* Entrada: valor + data + forma */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <Campo label="Entrada (R$)">
+                      <input type="number" className="input" value={entradaCrediario || ''} min={0} step={0.01} placeholder="0,00"
+                        onChange={e => setEntradaCrediario(parseFloat(e.target.value) || 0)} />
+                    </Campo>
+                    <Campo label="Data da entrada">
+                      <input type="date" className="input" value={dataEntradaCrediario}
+                        onChange={e => setDataEntradaCrediario(e.target.value)} />
+                    </Campo>
+                    <Campo label="Forma da entrada">
+                      <SelectCustom
+                        value={formaEntradaCrediario}
+                        onChange={setFormaEntradaCrediario}
+                        options={FORMAS.filter(f => f !== 'Crediário')}
+                      />
+                    </Campo>
+                  </div>
+
+                  {/* Valor a parcelar — calculado automaticamente */}
+                  <div style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Valor a parcelar</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total crediário {BRL(crediarioValorTotal)} − entrada {BRL(entradaCrediario)}</div>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: valorAParcelar > 0 ? '#C9A84C' : '#E5584A' }}>{BRL(valorAParcelar)}</span>
+                  </div>
+
+                  {/* Nº parcelas + Dia vencimento */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                     <Campo label="Nº de parcelas">
                       <select className="input" value={qtdParcelas} onChange={e => setQtdParcelas(parseInt(e.target.value))}>
@@ -1248,9 +1509,8 @@ export default function NovaVendaPage() {
                       </select>
                     </Campo>
                     <Campo label="Dia do vencimento">
-                      <select className="input" value={diaVencimento} onChange={e => setDiaVencimento(parseInt(e.target.value))}>
-                        {[1,5,10,15,20,25,30].map(d => <option key={d} value={d}>Dia {d}</option>)}
-                      </select>
+                      <input type="number" className="input" value={diaVencCrediario} min={1} max={31}
+                        onChange={e => setDiaVencCrediario(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))} />
                     </Campo>
                   </div>
 
@@ -1263,7 +1523,7 @@ export default function NovaVendaPage() {
                         {parcelasCrediario.map((p, i) => (
                           <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px', gap: 12, padding: '9px 0', borderBottom: i < parcelasCrediario.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.parcela}</span>
-                            <span style={{ fontSize: 12, color: '#F2EBD9' }}>{new Date(p.data_vencimento).toLocaleDateString('pt-BR')}</span>
+                            <span style={{ fontSize: 12, color: '#332F3A' }}>{new Date(p.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                             <input type="number" className="input" style={{ padding: '4px 8px', fontSize: 12 }}
                               value={p.valor} step={0.01}
                               onChange={e => setParcelasCrediario(prev => prev.map((pp, ii) => ii === i ? { ...pp, valor: parseFloat(e.target.value) || 0 } : pp))}
@@ -1280,14 +1540,14 @@ export default function NovaVendaPage() {
             {/* RESUMO FINAL */}
             <div style={{ position: 'sticky', top: 20 }}>
               <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 16 }}>Resumo da Venda</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A', marginBottom: 16 }}>Resumo da Venda</h3>
 
                 {/* Itens resumidos */}
                 <div style={{ marginBottom: 16, maxHeight: 160, overflowY: 'auto' }}>
                   {carrinho.map(item => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{item.produto} x{item.quantidade}</span>
-                      <span style={{ color: '#F2EBD9', flexShrink: 0 }}>{BRL(item.sub_total)}</span>
+                      <span style={{ color: '#332F3A', flexShrink: 0 }}>{BRL(item.sub_total)}</span>
                     </div>
                   ))}
                 </div>
@@ -1297,6 +1557,12 @@ export default function NovaVendaPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#E5584A' }}>
                       <span>Desconto ({descontoPct > 0 ? `${parseFloat(descontoPct.toFixed(1))}%` : BRL(descontoValor)})</span>
                       <span>- {BRL(descontoValor)}</span>
+                    </div>
+                  )}
+                  {creditoTrocaAplicado > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#2E7D57' }}>
+                      <span>Crédito de troca</span>
+                      <span>- {BRL(creditoTrocaAplicado)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#C9A84C', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
@@ -1323,7 +1589,7 @@ export default function NovaVendaPage() {
                     style={{ flex: 2, justifyContent: 'center', padding: '13px', fontSize: 15, opacity: (falta > 0.01 || salvando) ? 0.5 : 1 }}
                     disabled={falta > 0.01 || salvando}
                     onClick={finalizarVenda}>
-                    {salvando ? 'Finalizando...' : '✓ Finalizar Venda'}
+                    {salvando ? 'Finalizando...' : <><Check size={13} strokeWidth={2.5} /> Finalizar Venda</>}
                   </button>
                 </div>
               </div>
@@ -1331,6 +1597,34 @@ export default function NovaVendaPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL CONFIRMAR ABATIMENTO DE CRÉDITO DE TROCA */}
+      {modalConfirmaTroca && cliente && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--card-bg)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 16, padding: 28, width: 360, maxWidth: '90vw' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A', marginBottom: 8 }}>Abater crédito de troca?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
+              {BRL(Math.min(cliente.credito_troca || 0, subtotalBruto))} serão abatidos do valor desta compra.
+              <br />
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                Total atual: {BRL(subtotalBruto - descontoValor)} → Novo total: {BRL(Math.max(0, subtotalBruto - descontoValor - Math.min(cliente.credito_troca || 0, Math.max(0, subtotalBruto - descontoValor))))}
+              </span>
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setModalConfirmaTroca(false)}>Cancelar</button>
+              <button className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', background: '#2E7D57', borderColor: '#2E7D57' }}
+                onClick={() => {
+                  const disponivel = cliente.credito_troca || 0
+                  const restante   = Math.max(0, subtotalBruto - descontoValor)
+                  setCreditoTrocaAplicado(Math.min(disponivel, restante))
+                  setModalConfirmaTroca(false)
+                }}>
+                ✓ Confirmar abatimento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }
