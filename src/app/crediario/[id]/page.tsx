@@ -171,6 +171,9 @@ function ModalReceber({ conta, onClose, onSalvo, isAdmin = true }: any) {
           </div>
         )}
 
+        {/* DESATIVADO TEMPORARIAMENTE — saldo_credito e creditos_clientes existem mas estão vazios;
+            credito_troca (trocas) é um campo separado e não alimenta este saldo.
+            Reativar somente após definir como os dois sistemas se conectam.
         {saldoCredito > 0 && (
           <div style={{ background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: '#4CAF82' }}>Crédito disponível: <strong>{BRL(saldoCredito)}</strong></span>
@@ -180,6 +183,7 @@ function ModalReceber({ conta, onClose, onSalvo, isAdmin = true }: any) {
             </button>
           </div>
         )}
+        */}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
           {(['total', 'parcial'] as const).map(t => (
