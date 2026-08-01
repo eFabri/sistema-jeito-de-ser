@@ -47,6 +47,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .eq('cod_cliente', codCliente)
     .order('data_vencimento', { ascending: true })
 
+  // Busca data real de pagamento via recebimentos (cod_conta → contas_a_receber.id)
+  const parcelaIds = (parcelas || []).map((p: any) => p.id)
+  const recebimentosMap: Record<number, string> = {}
+  if (parcelaIds.length > 0) {
+    const { data: recbs } = await supabase
+      .from('recebimentos')
+      .select('cod_conta, data_pgto')
+      .in('cod_conta', parcelaIds)
+      .order('data_pgto', { ascending: false })
+    for (const r of (recbs || []) as any[]) {
+      if (r.cod_conta && r.data_pgto && !recebimentosMap[r.cod_conta]) {
+        recebimentosMap[r.cod_conta] = r.data_pgto
+      }
+    }
+  }
+  const parcelasComPgto = (parcelas || []).map((p: any) => ({
+    ...p,
+    data_pagamento: recebimentosMap[p.id] || null,
+  }))
+
   // Saldo real de uma parcela: parcial usa saldo_devedor_original, senão valor completo
   const saldoReal = (p: any) => p.parcialmente_pago ? Number(p.saldo_devedor_original || p.saldo_devedor || p.valor || 0) : Number(p.valor || 0)
 
@@ -78,7 +98,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     cliente,
     totais: { em_aberto, em_atraso, pago, total_compras: vendasComItens.length, proxima_parcela: proxima || null },
     vendas: vendasComItens,
-    parcelas: parcelas || [],
+    parcelas: parcelasComPgto,
     pecas_top: pecasTop,
   })
 }

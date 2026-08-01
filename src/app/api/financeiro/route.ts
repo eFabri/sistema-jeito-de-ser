@@ -28,18 +28,35 @@ export async function GET(req: NextRequest) {
       .order('data_vencimento', { ascending: filtro !== 'pago' })
       .range(offset, offset + limite - 1)
 
-    if (filtro === 'aberto')        query = query.eq('pago', false).gte('data_vencimento', hoje).eq('parcialmente_pago', false)
-    if (filtro === 'vencido')       query = query.eq('pago', false).lt('data_vencimento', hoje)
-    if (filtro === 'parcial')       query = query.eq('pago', false).eq('parcialmente_pago', true)
-    if (filtro === 'pago')          query = query.eq('pago', true)
-    if (filtro === 'todos')         {}
-    if (filtro === 'todos_abertos') query = query.eq('pago', false)
-    if (filtro === 'vence_hoje')    query = query.eq('pago', false).eq('data_vencimento', hoje)
-    if (filtro === 'proximos_7_dias') {
-      const d7 = new Date(hoje + 'T12:00:00')
-      d7.setDate(d7.getDate() + 7)
-      const em7 = d7.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-      query = query.eq('pago', false).gte('data_vencimento', hoje).lte('data_vencimento', em7)
+    if (filtro === 'inadimplente') {
+      query = query.eq('inadimplente', true).eq('pago', false)
+    } else {
+      // Excluir inadimplentes de todas as listagens normais
+      query = query.or('inadimplente.is.null,inadimplente.eq.false')
+
+      if (filtro === 'aberto')        query = query.eq('pago', false).gte('data_vencimento', hoje).eq('parcialmente_pago', false)
+      if (filtro === 'vencido')       query = query.eq('pago', false).lt('data_vencimento', hoje)
+      if (filtro === 'parcial')       query = query.eq('pago', false).eq('parcialmente_pago', true)
+      if (filtro === 'pago')          query = query.eq('pago', true)
+      if (filtro === 'todos')         {}
+      if (filtro === 'todos_abertos') query = query.eq('pago', false)
+      if (filtro === 'vence_hoje')    query = query.eq('pago', false).eq('data_vencimento', hoje)
+      if (filtro === 'proximos_7_dias') {
+        const d7 = new Date(hoje + 'T12:00:00')
+        d7.setDate(d7.getDate() + 7)
+        const em7 = d7.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+        query = query.eq('pago', false).gte('data_vencimento', hoje).lte('data_vencimento', em7)
+      }
+      if (filtro === 'vencido_mes_atual') {
+        // Vencidas + mês atual = tudo não pago até fim do mês
+        const fimMes = hoje.substring(0, 7) + '-31'
+        query = query.eq('pago', false).lte('data_vencimento', fimMes)
+      }
+      if (filtro === 'mes_atual') {
+        const inicioMes = hoje.substring(0, 7) + '-01'
+        const fimMes    = hoje.substring(0, 7) + '-31'
+        query = query.eq('pago', false).gte('data_vencimento', inicioMes).lte('data_vencimento', fimMes)
+      }
     }
 
     if (q) {

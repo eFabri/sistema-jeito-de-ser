@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { Search, ChevronRight } from 'lucide-react'
 
 interface Compra {
   id: string
@@ -33,8 +34,8 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       style={{
-        background: isFinalizada ? '#1a1610' : 'rgba(255,255,255,0.05)',
-        border: isFinalizada ? '1px solid #2a2418' : '1px solid rgba(255,255,255,0.08)',
+        background: isFinalizada ? 'rgba(201,168,76,0.04)' : 'rgba(255,255,255,0.05)',
+        border: isFinalizada ? '1px solid rgba(124,58,237,0.12)' : '1px solid rgba(255,255,255,0.08)',
         color: isFinalizada ? '#C9A84C' : '#a0a0a0',
         borderRadius: 99,
         padding: '2px 8px',
@@ -89,7 +90,7 @@ export default function ComprasPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A', letterSpacing: '-0.01em' }}>
               Compras
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -102,7 +103,7 @@ export default function ComprasPage() {
         </div>
 
         <div style={{ position: 'relative', maxWidth: 420 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 14 }}>⊙</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><Search size={13} strokeWidth={1.8} /></span>
           <input
             className="input"
             style={{ paddingLeft: 34 }}
@@ -152,10 +153,10 @@ export default function ComprasPage() {
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               {/* Data */}
-              <div style={{ fontSize: 12, color: '#F2EBD9' }}>{formatarData(c.data)}</div>
+              <div style={{ fontSize: 12, color: '#332F3A' }}>{formatarData(c.data)}</div>
 
               {/* Fornecedor */}
-              <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 13, color: '#332F3A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {c.fornecedor_nome || <span style={{ color: 'var(--text-muted)' }}>—</span>}
               </div>
 
@@ -175,7 +176,7 @@ export default function ComprasPage() {
               </div>
 
               {/* Valor Venda */}
-              <div style={{ fontSize: 12, color: '#F2EBD9', textAlign: 'right' }}>
+              <div style={{ fontSize: 12, color: '#332F3A', textAlign: 'right' }}>
                 {BRL(Number(c.valor_venda_total))}
               </div>
 
@@ -190,7 +191,7 @@ export default function ComprasPage() {
               </div>
 
               {/* Ações */}
-              <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+              <div style={{ color: 'var(--text-muted)', textAlign: 'right' }}><ChevronRight size={16} strokeWidth={1.5} /></div>
             </div>
           ))}
         </div>
@@ -204,7 +205,7 @@ export default function ComprasPage() {
               {pagina} de {totalPaginas}
             </span>
             <button className="btn btn-ghost" disabled={pagina === totalPaginas} onClick={() => setPagina(p => p + 1)} style={{ padding: '7px 14px' }}>
-              Próxima ›
+              Próxima <ChevronRight size={13} strokeWidth={2} />
             </button>
           </div>
         )}

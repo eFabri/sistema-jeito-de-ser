@@ -18,7 +18,7 @@ function Section({ title, subtitle, children }: any) {
   return (
     <div className="card">
       <div style={{ marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9' }}>{title}</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A' }}>{title}</h3>
         {subtitle && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{subtitle}</p>}
       </div>
       {children}
@@ -123,9 +123,9 @@ function ModalNovoUsuario({ onClose, onSalvo }: any) {
   const labelStyle = { fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5, fontWeight: 700 }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 20 }}>Novo Usuário</h3>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 20, padding: '28px 32px', width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', marginBottom: 20 }}>Novo Usuário</h3>
 
         {erro && <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 8, padding: '10px 14px', color: '#E5584A', fontSize: 13, marginBottom: 14 }}>{erro}</div>}
 
@@ -283,7 +283,7 @@ function PainelPermissoes({ usuario, onSalvo }: any) {
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{usuario.nome}</span>
+              <span style={{ fontSize: 14, color: '#332F3A', fontWeight: 600 }}>{usuario.nome}</span>
               <span style={{ padding: '1px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: isAdmin ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.05)', color: isAdmin ? '#C9A84C' : 'var(--text-muted)' }}>
                 {isAdmin ? 'Admin' : 'Colaboradora'}
               </span>
@@ -346,7 +346,7 @@ function PainelPermissoes({ usuario, onSalvo }: any) {
                             }}>
                             {perms[p.key] && <span style={{ fontSize: 11, color: '#080608', fontWeight: 900 }}>✓</span>}
                           </div>
-                          <span style={{ fontSize: 12, color: perms[p.key] ? '#F2EBD9' : 'var(--text-muted)', transition: 'color 0.15s' }}>{p.label}</span>
+                          <span style={{ fontSize: 12, color: perms[p.key] ? '#332F3A' : 'var(--text-muted)', transition: 'color 0.15s' }}>{p.label}</span>
                         </label>
                       ))}
                     </div>
@@ -471,7 +471,7 @@ function AbaMetas({ usuarios }: { usuarios: any[] }) {
       {/* Navegação mês/ano */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button className="btn btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navMes(-1)}>←</button>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#F2EBD9', minWidth: 180, textAlign: 'center' }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#332F3A', minWidth: 180, textAlign: 'center' }}>
           {MESES[mesAtual - 1]} {anoAtual}
         </span>
         <button className="btn btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navMes(1)}>→</button>
@@ -515,7 +515,7 @@ function AbaMetas({ usuarios }: { usuarios: any[] }) {
 
                   {/* Nome e cargo */}
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{u.apelido || u.nome}</div>
+                    <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 600 }}>{u.apelido || u.nome}</div>
                     {u.cargo && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{u.cargo}</div>}
                   </div>
 
@@ -558,7 +558,7 @@ function AbaMetas({ usuarios }: { usuarios: any[] }) {
               const individuais = metasList.filter((m: any) => m.tipo === 'individual')
               return (
                 <div key={`${mes}-${ano}`} className="card" style={{ padding: '14px 16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#F2EBD9', marginBottom: 10 }}>{MESES[mes - 1]} {ano}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#332F3A', marginBottom: 10 }}>{MESES[mes - 1]} {ano}</div>
                   {global && (
                     <div style={{ fontSize: 12, color: '#C9A84C', marginBottom: 6 }}>
                       <span style={{ color: 'var(--text-muted)' }}>Global: </span>
@@ -690,12 +690,12 @@ export default function ConfiguracoesPage() {
 
         {/* HEADER */}
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Configurações</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>Configurações</h1>
           <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Empresa, usuários e preferências</p>
         </div>
 
         {/* ABAS */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
           {ABAS.map(tab => (
             <button key={tab.id} onClick={() => setAba(tab.id as any)} style={{
               padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
@@ -814,7 +814,7 @@ export default function ConfiguracoesPage() {
                 <div style={{ marginBottom: 16, padding: '14px 16px', background: 'rgba(77,158,204,0.06)', border: '1px solid rgba(77,158,204,0.2)', borderRadius: 10 }}>
                   <div style={{ fontSize: 13, color: '#4D9ECC', fontWeight: 600, marginBottom: 6 }}>ℹ Requisito: QZ Tray</div>
                   <div style={{ fontSize: 12, color: 'rgba(242,235,217,0.6)', lineHeight: 1.6 }}>
-                    Para imprimir diretamente na impressora térmica, o <strong style={{ color: '#F2EBD9' }}>QZ Tray</strong> precisa estar instalado e rodando neste computador.
+                    Para imprimir diretamente na impressora térmica, o <strong style={{ color: '#332F3A' }}>QZ Tray</strong> precisa estar instalado e rodando neste computador.
                     <br />
                     <a href="https://qz.io/download" target="_blank" rel="noopener noreferrer" style={{ color: '#4D9ECC', marginTop: 4, display: 'inline-block' }}>
                       Baixar QZ Tray gratuitamente →
@@ -891,7 +891,7 @@ export default function ConfiguracoesPage() {
                     </div>
                   )}
                   <div>
-                    <div style={{ fontSize: 16, color: '#F2EBD9', fontWeight: 600 }}>{perfil?.nome}</div>
+                    <div style={{ fontSize: 16, color: '#332F3A', fontWeight: 600 }}>{perfil?.nome}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{perfil?.email}</div>
                     <div style={{ fontSize: 11, marginTop: 3 }}>
                       <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: perfil?.perfil === 'admin' ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.05)', color: perfil?.perfil === 'admin' ? '#C9A84C' : 'var(--text-muted)' }}>

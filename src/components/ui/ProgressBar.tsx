@@ -47,7 +47,6 @@ export function ProgressBar({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10, fontWeight: 700, color: 'var(--text-primary)',
           letterSpacing: '0.06em', fontFamily: 'var(--font-mono)',
-          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
         }}>
           {pct.toFixed(1)}%
         </div>

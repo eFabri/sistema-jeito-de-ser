@@ -52,7 +52,7 @@ export default function CrediarioPage() {
 
         {/* HEADER */}
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
             Crediário
           </h1>
           <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -135,7 +135,7 @@ export default function CrediarioPage() {
                   {c.nome?.charAt(0) || '?'}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.nome}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -162,7 +162,7 @@ export default function CrediarioPage() {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {c.pago_acumulado > 0 ? BRL(c.pago_acumulado) : '—'}
               </div>
-              <div style={{ fontSize: 12, color: c.proxima_vencimento && c.proxima_vencimento < hojeNoBrasil() ? '#E5584A' : '#F2EBD9' }}>
+              <div style={{ fontSize: 12, color: c.proxima_vencimento && c.proxima_vencimento < hojeNoBrasil() ? '#E5584A' : '#332F3A' }}>
                 {formatarData(c.proxima_vencimento)}
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>

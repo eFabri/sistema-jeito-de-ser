@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import AutocompleteInput from '@/components/ui/AutocompleteInput'
+import { Printer, Check, ArrowLeft, X } from 'lucide-react'
 
 const BRL = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const PARTES_OPCOES = ['', 'TOPS', 'INTEIRO', 'BOOTONS', 'CONJUNTO']
@@ -246,7 +247,7 @@ export default function NovaCompraPage() {
   }
 
   const input: React.CSSProperties = {
-    background: '#111', color: '#F2EBD9', border: '1px solid #2a2418',
+    background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)',
     borderRadius: 6, padding: '6px 8px', fontSize: 12, width: '100%', outline: 'none', boxSizing: 'border-box',
   }
   const errInput = (field: string, rowId: string): React.CSSProperties =>
@@ -261,8 +262,8 @@ export default function NovaCompraPage() {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px', fontFamily: 'inherit' }}>
         <style>{`@media print { .no-print { display: none !important; } }`}</style>
-        <div style={{ background: '#1a1610', border: '1px solid #C9A84C', borderRadius: 12, padding: 28, marginBottom: 24 }}>
-          <div style={{ fontSize: 28, marginBottom: 6, color: '#C9A84C' }}>✓</div>
+        <div style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid #C9A84C', borderRadius: 12, padding: 28, marginBottom: 24 }}>
+          <div style={{ marginBottom: 6, color: '#C9A84C' }}><Check size={28} strokeWidth={2} /></div>
           <h2 style={{ color: '#C9A84C', margin: '0 0 20px', fontSize: 20 }}>Compra Finalizada!</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {([
@@ -275,27 +276,27 @@ export default function NovaCompraPage() {
             ] as [string, string | number][]).map(([label, val]) => (
               <div key={label}>
                 <div style={{ fontSize: 10, color: '#8a7a60', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
-                <div style={{ fontSize: 17, color: '#F2EBD9', fontWeight: 700 }}>{val}</div>
+                <div style={{ fontSize: 17, color: '#332F3A', fontWeight: 700 }}>{val}</div>
               </div>
             ))}
           </div>
         </div>
-        <div style={{ background: '#111', borderRadius: 8, overflow: 'auto', marginBottom: 20 }}>
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 8, overflow: 'auto', marginBottom: 20 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr style={{ background: '#1a1610' }}>
+              <tr style={{ background: 'rgba(255,255,255,0.85)' }}>
                 {['Produto','Cód. Barras','Qtd','Custo (R$)','Venda (R$)'].map(h => (
-                  <th key={h} style={{ ...th, borderBottom: '1px solid #2a2418' }}>{h}</th>
+                  <th key={h} style={{ ...th, borderBottom: '1px solid rgba(201,168,76,0.06)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {concluido.itens.map((it, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #1a1610' }}>
-                  <td style={{ padding: '6px 6px', color: '#F2EBD9' }}>{it.produto}</td>
+                <tr key={i} style={{ borderBottom: '1px solid rgba(201,168,76,0.06)' }}>
+                  <td style={{ padding: '6px 6px', color: '#332F3A' }}>{it.produto}</td>
                   <td style={{ padding: '6px 6px', color: '#8a7a60', fontFamily: 'monospace', fontSize: 11 }}>{it.cod_barras}</td>
-                  <td style={{ padding: '6px 6px', color: '#F2EBD9', textAlign: 'right' }}>{it.quantidade}</td>
-                  <td style={{ padding: '6px 6px', color: '#F2EBD9', textAlign: 'right' }}>{BRL(it.preco_custo)}</td>
+                  <td style={{ padding: '6px 6px', color: '#332F3A', textAlign: 'right' }}>{it.quantidade}</td>
+                  <td style={{ padding: '6px 6px', color: '#332F3A', textAlign: 'right' }}>{BRL(it.preco_custo)}</td>
                   <td style={{ padding: '6px 6px', color: '#C9A84C', textAlign: 'right', fontWeight: 600 }}>{BRL(it.preco_venda)}</td>
                 </tr>
               ))}
@@ -303,9 +304,9 @@ export default function NovaCompraPage() {
           </table>
         </div>
         <div className="no-print" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => window.print()} style={{ padding: '10px 18px', background: '#222', color: '#F2EBD9', border: '1px solid #444', borderRadius: 8, cursor: 'pointer' }}>🖨 Imprimir relatório</button>
+          <button onClick={() => window.print()} style={{ padding: '10px 18px', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Printer size={13} strokeWidth={1.8} /> Imprimir relatório</button>
           <button onClick={resetar} style={{ padding: '10px 20px', background: '#C9A84C', color: '#111', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>+ Nova Compra</button>
-          <button onClick={() => router.push('/produtos')} style={{ padding: '10px 18px', background: '#1a1610', color: '#F2EBD9', border: '1px solid #333', borderRadius: 8, cursor: 'pointer' }}>Ver estoque atualizado</button>
+          <button onClick={() => router.push('/produtos')} style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.85)', color: '#332F3A', border: '1px solid rgba(124,58,237,0.12)', borderRadius: 8, cursor: 'pointer' }}>Ver estoque atualizado</button>
         </div>
       </div>
     )
@@ -321,11 +322,11 @@ export default function NovaCompraPage() {
       `}</style>
 
       <div className="no-print" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
-        <button onClick={() => router.push('/compras')} style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', fontSize: 18, padding: 0 }}>←</button>
+        <button onClick={() => router.push('/compras')} style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}><ArrowLeft size={18} strokeWidth={2} /></button>
         <h1 style={{ margin: 0, fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>Nova Compra</h1>
       </div>
 
-      <div className="no-print" style={{ background: '#1a1610', border: '1px solid #2a2418', borderRadius: 10, padding: 18, marginBottom: 18 }}>
+      <div className="no-print" style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(124,58,237,0.12)', borderRadius: 10, padding: 18, marginBottom: 18 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14 }}>
           <div>
             <label style={{ display: 'block', color: '#8a7a60', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Fornecedor</label>
@@ -375,7 +376,7 @@ export default function NovaCompraPage() {
       <div style={{ overflowX: 'auto', marginBottom: 14 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1280 }}>
           <thead>
-            <tr style={{ background: '#111', borderBottom: '2px solid #2a2418' }}>
+            <tr style={{ background: 'rgba(201,168,76,0.04)', borderBottom: '2px solid rgba(201,168,76,0.15)' }}>
               <th style={{ ...th, minWidth: 130 }}>Cód. Barras</th>
               <th style={{ ...th, minWidth: 148 }}>Sub-Grupo *</th>
               <th style={{ ...th, minWidth: 130 }}>Marca</th>
@@ -397,7 +398,7 @@ export default function NovaCompraPage() {
               const rowHasErr = ['sub_grupo','produto','preco_custo','preco_venda','quantidade'].some(f => erros[`${l.id}-${f}`])
               const isLast = idx === linhas.length - 1
               return (
-                <tr key={l.id} style={{ borderBottom: '1px solid #1a1610', background: rowHasErr ? 'rgba(229,88,74,0.06)' : 'transparent' }}>
+                <tr key={l.id} style={{ borderBottom: '1px solid rgba(201,168,76,0.06)', background: rowHasErr ? 'rgba(229,88,74,0.06)' : 'transparent' }}>
                   <td style={cell}>
                     <input value={l.cod_barras} onChange={e => updateLinha(l.id, 'cod_barras', e.target.value)} placeholder="Automático" style={{ ...input, fontFamily: 'monospace', fontSize: 11 }} />
                   </td>
@@ -460,7 +461,7 @@ export default function NovaCompraPage() {
                   </td>
                   <td style={{ ...cell, whiteSpace: 'nowrap' }}>
                     <button onClick={() => duplicarLinha(l.id)} title="Duplicar" style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', fontSize: 13, padding: '4px 5px' }}>⧉</button>
-                    <button onClick={() => removerLinha(l.id)} title="Remover" style={{ background: 'none', border: 'none', color: '#E5584A', cursor: 'pointer', fontSize: 13, padding: '4px 5px' }}>✕</button>
+                    <button onClick={() => removerLinha(l.id)} title="Remover" style={{ background: 'none', border: 'none', color: '#E5584A', cursor: 'pointer', padding: '4px 5px', display: 'inline-flex', alignItems: 'center' }}><X size={13} strokeWidth={2.5} /></button>
                   </td>
                 </tr>
               )
@@ -470,12 +471,12 @@ export default function NovaCompraPage() {
       </div>
 
       <div className="no-print" style={{ marginBottom: 20 }}>
-        <button onClick={adicionarLinha} style={{ padding: '8px 18px', background: '#1a1610', border: '1px solid #C9A84C', color: '#C9A84C', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+        <button onClick={adicionarLinha} style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.85)', border: '1px solid #C9A84C', color: '#C9A84C', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
           + Adicionar linha
         </button>
       </div>
 
-      <div style={{ background: '#1a1610', border: '1px solid #2a2418', borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(124,58,237,0.12)', borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {([
           ['Total de peças',  String(totalPecas),       false],
           ['Valor da compra', `R$ ${BRL(totalCusto)}`,  false],
@@ -484,7 +485,7 @@ export default function NovaCompraPage() {
         ] as [string, string, boolean][]).map(([label, val, gold]) => (
           <div key={label}>
             <div style={{ fontSize: 10, color: '#8a7a60', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: gold ? '#C9A84C' : '#F2EBD9' }}>{val}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: gold ? '#C9A84C' : '#332F3A' }}>{val}</div>
           </div>
         ))}
       </div>
@@ -495,7 +496,7 @@ export default function NovaCompraPage() {
           disabled={salvando}
           style={{ padding: '12px 36px', background: salvando ? '#444' : '#C9A84C', color: '#111', border: 'none', borderRadius: 10, cursor: salvando ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 16 }}
         >
-          {salvando ? 'Salvando...' : '✓ Finalizar Compra'}
+          {salvando ? 'Salvando...' : <><Check size={13} strokeWidth={2.5} /> Finalizar Compra</>}
         </button>
       </div>
     </div>

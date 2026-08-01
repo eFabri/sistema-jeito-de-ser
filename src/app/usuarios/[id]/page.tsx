@@ -46,7 +46,7 @@ export default function EditarUsuarioPage() {
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 920 }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>
             {inicial?.nome || 'Editar Usuário'}
           </h1>
           {inicial?.email && (

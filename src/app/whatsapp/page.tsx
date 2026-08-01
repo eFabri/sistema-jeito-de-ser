@@ -8,18 +8,31 @@ const fmtDT = (d: string) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-d
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
 
 const VARS_INFO: Record<string, string[]> = {
-  aniversario:        ['{nome}', '{nome_completo}'],
-  cobranca_5d:        ['{nome}', '{parcela}', '{valor}', '{data_vencimento}', '{dias}'],
-  cobranca_vencimento:['{nome}', '{parcela}', '{valor}', '{data_vencimento}'],
-  cobranca_atraso:    ['{nome}', '{parcela}', '{valor}', '{data_vencimento}'],
+  aniversario:              ['{nome}', '{nome_completo}'],
+  aniversario_casamento:    ['{nome}', '{nome_completo}'],
+  aniversario_nascimento_1: ['{nome}', '{nome_completo}'],
+  aniversario_nascimento_2: ['{nome}', '{nome_completo}'],
+  aniversario_nascimento_3: ['{nome}', '{nome_completo}'],
+  aniversario_nascimento_4: ['{nome}', '{nome_completo}'],
+  aniversario_nascimento_5: ['{nome}', '{nome_completo}'],
+  cobranca_5d:              ['{nome}', '{parcela}', '{valor}', '{data_vencimento}', '{dias}'],
+  cobranca_vencimento:      ['{nome}', '{parcela}', '{valor}', '{data_vencimento}'],
+  cobranca_atraso:          ['{nome}', '{parcela}', '{valor}', '{data_vencimento}'],
 }
 
 const TIPO_LABELS: Record<string, string> = {
-  aniversario:         '🎂 Aniversário',
-  cobranca_5d:         '💰 Cobrança — 5 dias antes',
-  cobranca_vencimento: '⏰ Cobrança — No vencimento',
-  cobranca_atraso:     '🚨 Cobrança — Em atraso',
-  manual:              '💬 Manual',
+  aniversario:              '🎂 Aniversário (nascimento)',
+  aniversario_casamento:    '💍 Aniversário (casamento)',
+  aniversario_nascimento_1: '🎂 Aniversário — Variante 1',
+  aniversario_nascimento_2: '🎂 Aniversário — Variante 2',
+  aniversario_nascimento_3: '🎂 Aniversário — Variante 3',
+  aniversario_nascimento_4: '🎂 Aniversário — Variante 4',
+  aniversario_nascimento_5: '🎂 Aniversário — Variante 5',
+  cron_resumo:              '📋 Resumo automático',
+  cobranca_5d:              '💰 Cobrança — 5 dias antes',
+  cobranca_vencimento:      '⏰ Cobrança — No vencimento',
+  cobranca_atraso:          '🚨 Cobrança — Em atraso',
+  manual:                   '💬 Manual',
 }
 
 // ─── EDITOR DE TEMPLATE ───────────────────────────────────
@@ -51,7 +64,7 @@ function EditorTemplate({ modelo, onSalvo }: any) {
     <div style={{ border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px', background: 'rgba(255,255,255,0.02)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>{TIPO_LABELS[modelo.tipo] || modelo.nome}</div>
+          <div style={{ fontSize: 14, color: '#332F3A', fontWeight: 600 }}>{TIPO_LABELS[modelo.tipo] || modelo.nome}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{modelo.nome}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -124,7 +137,7 @@ function StatusConexao({ status, onConectar }: any) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${cor}30` }}>
       <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor, boxShadow: `0 0 8px ${cor}60`, flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>WhatsApp Business</div>
+        <div style={{ fontSize: 14, color: '#332F3A', fontWeight: 600 }}>WhatsApp Business</div>
         <div style={{ fontSize: 12, color: cor, marginTop: 2 }}>{label}</div>
       </div>
       {!conectado && (
@@ -156,11 +169,11 @@ function ModalQR({ onClose }: any) {
   const qrString = qrData?.code || null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '32px', width: 380, textAlign: 'center' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Conectar WhatsApp</h3>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 20, padding: '32px', width: 380, textAlign: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', marginBottom: 8 }}>Conectar WhatsApp</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
-          Abra o WhatsApp no celular da loja → toque nos três pontinhos → <strong style={{ color: '#F2EBD9' }}>Dispositivos conectados</strong> → <strong style={{ color: '#F2EBD9' }}>Conectar dispositivo</strong> → escaneie o QR Code
+          Abra o WhatsApp no celular da loja → toque nos três pontinhos → <strong style={{ color: '#332F3A' }}>Dispositivos conectados</strong> → <strong style={{ color: '#332F3A' }}>Conectar dispositivo</strong> → escaneie o QR Code
         </p>
 
         {loading ? (
@@ -261,7 +274,7 @@ export default function WhatsAppPage() {
 
         {/* HEADER */}
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>WhatsApp</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>WhatsApp</h1>
           <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Mensagens automáticas e manuais</p>
         </div>
 
@@ -272,7 +285,7 @@ export default function WhatsAppPage() {
         )}
 
         {/* ABAS */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
           {ABAS.map(tab => (
             <button key={tab.id} onClick={() => setAba(tab.id as any)} style={{
               padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
@@ -295,7 +308,7 @@ export default function WhatsAppPage() {
               <StatusConexao status={data?.status} onConectar={() => setMostrarQR(true)} />
 
               <div className="card">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>Como funciona</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14 }}>Como funciona</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[
                     ['Todo dia às 9h', 'O sistema verifica automaticamente aniversariantes e parcelas que vencem em 5 dias e envia as mensagens configuradas'],
@@ -306,7 +319,7 @@ export default function WhatsAppPage() {
                     <div key={titulo} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C9A84C', marginTop: 6, flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{titulo}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 600 }}>{titulo}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.5 }}>{desc}</div>
                       </div>
                     </div>
@@ -315,7 +328,7 @@ export default function WhatsAppPage() {
               </div>
 
               <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Configuração do Vercel Cron</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 6 }}>Configuração do Vercel Cron</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
                   Para os disparos automáticos funcionarem, o arquivo <code style={{ color: '#C9A84C', background: 'rgba(201,168,76,0.08)', padding: '1px 5px', borderRadius: 4 }}>vercel.json</code> já está configurado. Adicione a variável abaixo no Vercel:
                 </p>
@@ -347,7 +360,7 @@ export default function WhatsAppPage() {
                 <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#F2EBD9' }}>🎂 Aniversariantes Hoje</div>
+                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#332F3A' }}>🎂 Aniversariantes Hoje</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
                         {pendentes?.aniversariantes?.length || 0} com WhatsApp cadastrado
                       </div>
@@ -365,7 +378,7 @@ export default function WhatsAppPage() {
                   ) : pendentes?.aniversariantes?.map((a: any) => (
                     <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{a.nome?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A' }}>{a.nome?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.whatsapp || a.celular}</div>
                       </div>
                       <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
@@ -380,7 +393,7 @@ export default function WhatsAppPage() {
                 <div className="card" style={{ borderColor: 'rgba(229,88,74,0.15)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#F2EBD9' }}>💰 Vencimentos em 5 dias</div>
+                      <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#332F3A' }}>💰 Vencimentos em 5 dias</div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
                         {pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer === 5).length || 0} parcelas
                       </div>
@@ -398,7 +411,7 @@ export default function WhatsAppPage() {
                   ) : pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer === 5).map((v: any, i: number) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{BRL(v.valor)} · {fmtData(v.data_vencimento)}</div>
                       </div>
                       <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
@@ -414,13 +427,13 @@ export default function WhatsAppPage() {
               {/* Todos os vencimentos dos próximos 7 dias */}
               {(pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer !== 5)?.length || 0) > 0 && (
                 <div className="card">
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14 }}>
                     Outros Vencimentos (próximos 7 dias)
                   </h3>
                   {pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer !== 5).map((v: any, i: number) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 100px auto', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(201,168,76,0.05)', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A' }}>{v.nome_cliente?.split(' ').slice(0, 2).join(' ')}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Parcela {v.parcela}</div>
                       </div>
                       <div style={{ fontSize: 12, color: v.dias_para_vencer === 0 ? '#E5584A' : '#E8943A' }}>
@@ -452,7 +465,7 @@ export default function WhatsAppPage() {
                 <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 80px 80px', padding: '12px 20px', borderBottom: i < data.logs.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtDT(log.enviado_em)}</div>
                   <div>
-                    <div style={{ fontSize: 13, color: '#F2EBD9' }}>{log.clientes?.nome || 'Sem cliente'}</div>
+                    <div style={{ fontSize: 13, color: '#332F3A' }}>{log.clientes?.nome || 'Sem cliente'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340 }}>
                       {log.mensagem?.substring(0, 60)}...
                     </div>

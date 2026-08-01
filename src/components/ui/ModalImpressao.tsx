@@ -24,15 +24,15 @@ export default function ModalImpressao({ dados, titulo = 'Imprimir Recibo', onCl
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1100,
+      position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1100,
       display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20,
-        padding: '32px', width: 380, boxShadow: 'var(--shadow-dropdown)', textAlign: 'center',
+        background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 20,
+        padding: '32px', width: 380, boxShadow: 'var(--shadow-clay)', textAlign: 'center',
       }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🖨</div>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#332F3A', marginBottom: 6 }}>
           {titulo}
         </h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 22 }}>
@@ -45,7 +45,7 @@ export default function ModalImpressao({ dados, titulo = 'Imprimir Recibo', onCl
               padding: '16px 12px', borderRadius: 12, cursor: 'pointer',
               border: `1px solid ${preferencia === n ? 'rgba(201,168,76,0.5)' : 'var(--border)'}`,
               background: preferencia === n ? 'rgba(201,168,76,0.1)' : 'rgba(255,255,255,0.02)',
-              color: preferencia === n ? '#C9A84C' : '#F2EBD9',
+              color: preferencia === n ? '#C9A84C' : '#332F3A',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
               transition: 'all 0.15s',
             }}>

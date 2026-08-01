@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { ChevronRight } from 'lucide-react'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const formatarData = (d: string) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
@@ -29,7 +30,7 @@ export default function TrocasPage() {
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A', letterSpacing: '-0.01em' }}>
               Trocas
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -79,8 +80,8 @@ export default function TrocasPage() {
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <div style={{ fontSize: 12, color: '#F2EBD9' }}>{formatarData(t.data)}</div>
-                <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 12, color: '#332F3A' }}>{formatarData(t.data)}</div>
+                <div style={{ fontSize: 13, color: '#332F3A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.nome_cliente || '—'}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.cod_venda_orig ? `#${t.cod_venda_orig}` : '—'}</div>
@@ -89,7 +90,7 @@ export default function TrocasPage() {
                 <div style={{ fontSize: 13, fontWeight: 700, color: diff > 0 ? '#C9A84C' : diff < 0 ? '#4D9ECC' : 'var(--text-muted)' }}>
                   {diff > 0 ? '+' : ''}{BRL(diff)}
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+                <div style={{ color: 'var(--text-muted)', textAlign: 'right' }}><ChevronRight size={16} strokeWidth={1.5} /></div>
               </div>
             )
           })}
@@ -102,7 +103,7 @@ export default function TrocasPage() {
             </button>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', padding: '0 8px' }}>{pagina} de {totalPaginas}</span>
             <button className="btn btn-ghost" disabled={pagina === totalPaginas} onClick={() => setPagina(p => p + 1)} style={{ padding: '7px 14px' }}>
-              Próxima ›
+              Próxima <ChevronRight size={13} strokeWidth={2} />
             </button>
           </div>
         )}

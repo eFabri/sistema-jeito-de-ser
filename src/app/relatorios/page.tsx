@@ -53,10 +53,10 @@ function calcPeriodo(id: string): { ini: string; fim: string } {
 function TooltipCustom({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#1a1610', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '10px 14px', boxShadow: 'var(--shadow-dropdown)' }}>
+    <div style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '10px 14px', boxShadow: 'var(--shadow-clay)' }}>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ fontSize: 13, color: p.color || '#F2EBD9', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+        <div key={i} style={{ fontSize: 13, color: p.color || '#332F3A', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
           {p.name}: {typeof p.value === 'number' && p.name !== 'Qtd' ? BRL(p.value) : p.value}
         </div>
       ))}
@@ -69,7 +69,7 @@ function MetricCard({ label, value, sub, gold, alert }: any) {
   return (
     <div className="card">
       <div style={{ fontSize: 10, color: alert ? '#E5584A' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: alert ? '#E5584A' : gold ? '#C9A84C' : '#F2EBD9', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: alert ? '#E5584A' : gold ? '#C9A84C' : '#332F3A', lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
     </div>
   )
@@ -80,7 +80,7 @@ function Section({ title, children, action, onAction }: any) {
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: '#F2EBD9' }}>{title}</h3>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: '#332F3A' }}>{title}</h3>
         {action && <button onClick={onAction} style={{ fontSize: 11, color: '#C9A84C', background: 'none', border: 'none', cursor: 'pointer' }}>{action} →</button>}
       </div>
       {children}
@@ -154,7 +154,7 @@ export default function RelatoriosPage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Relatórios</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>Relatórios</h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
               {ini && fim ? `${new Date(ini+'T12:00:00').toLocaleDateString('pt-BR')} — ${new Date(fim+'T12:00:00').toLocaleDateString('pt-BR')}` : ''}
             </p>
@@ -162,7 +162,7 @@ export default function RelatoriosPage() {
         </div>
 
         {/* ABAS RELATÓRIO */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, flexWrap: 'wrap', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: 4, flexWrap: 'wrap', width: 'fit-content' }}>
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setRelatorio(tab.id as any)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
@@ -312,7 +312,7 @@ export default function RelatoriosPage() {
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: CORES[i % CORES.length] }} />
                               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{f.forma}</span>
                             </div>
-                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#F2EBD9' }}>{BRL(f.total)}</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#332F3A' }}>{BRL(f.total)}</span>
                           </div>
                         ))}
                       </div>
@@ -347,7 +347,7 @@ export default function RelatoriosPage() {
                 {data.produtos?.slice(0, 20).map((p: any, i: number) => (
                   <div key={i} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 80px 130px', gap: 12, padding: '12px 20px', borderBottom: i < 19 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700 }}>{i + 1}</div>
-                    <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.produto}</div>
+                    <div style={{ fontSize: 13, color: '#332F3A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.produto}</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{p.qtd} un.</div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(p.receita)}</div>
                   </div>
@@ -363,7 +363,7 @@ export default function RelatoriosPage() {
                   <div key={v.vendedor} className="card" style={{ borderColor: i === 0 ? 'rgba(201,168,76,0.3)' : undefined }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 600 }}>{v.vendedor}</div>
+                        <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 600 }}>{v.vendedor}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{v.qtd} vendas</div>
                       </div>
                       {i === 0 && <span style={{ fontSize: 16 }}>🏆</span>}
@@ -410,7 +410,7 @@ export default function RelatoriosPage() {
                 {data.inadimplentes?.map((item: any, i: number) => (
                   <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px 80px', padding: '12px 20px', borderBottom: i < data.inadimplentes.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, cursor: 'pointer' }}
+                      <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, cursor: 'pointer' }}
                         onClick={() => router.push(`/clientes/${item.cliente.id}`)}>
                         {item.cliente.nome?.split(' ').slice(0, 3).join(' ')}
                       </div>
@@ -447,7 +447,7 @@ export default function RelatoriosPage() {
                     {data.semEstoque.map((p: any) => (
                       <div key={p.id} onClick={() => router.push(`/produtos/${p.id}`)}
                         style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(229,88,74,0.06)', border: '1px solid rgba(229,88,74,0.2)', cursor: 'pointer' }}>
-                        <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
+                        <div style={{ fontSize: 12, color: '#332F3A', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.grupo}{p.cor ? ` · ${p.cor}` : ''}{p.tamanho ? ` · ${p.tamanho}` : ''}</div>
                         <div style={{ fontSize: 13, color: '#E5584A', fontWeight: 700, marginTop: 6 }}>Estoque: 0 un.</div>
                       </div>
@@ -462,7 +462,7 @@ export default function RelatoriosPage() {
                     {data.estoqueBaixo.map((p: any) => (
                       <div key={p.id} onClick={() => router.push(`/produtos/${p.id}`)}
                         style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(232,148,58,0.05)', border: '1px solid rgba(232,148,58,0.2)', cursor: 'pointer' }}>
-                        <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
+                        <div style={{ fontSize: 12, color: '#332F3A', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.grupo}{p.localizacao ? ` · ${p.localizacao}` : ''}</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
                           <span style={{ fontSize: 13, color: '#E8943A', fontWeight: 700 }}>Estoque: {p.estoque} un.</span>
@@ -558,7 +558,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
             boxShadow: `0 0 18px ${med.glow}, inset 0 -2px 0 rgba(0,0,0,0.2)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700,
-            color: '#1a1610',
+            color: '#332F3A',
           }}>
             {med.label}
           </div>
@@ -585,7 +585,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
             <span className="badge badge-gold" style={{ fontSize: 9 }}>{cliente.categoria}</span>
           )}
         </div>
-        <div style={{ fontSize: 15, color: '#F2EBD9', fontWeight: 600, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 15, color: '#332F3A', fontWeight: 600, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {cliente.nome}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -604,7 +604,7 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
       {/* Qtd compras */}
       <div style={{ textAlign: 'right' }}>
         <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Compras</div>
-        <div style={{ fontSize: 15, color: '#F2EBD9', fontWeight: 600, marginTop: 2 }}>
+        <div style={{ fontSize: 15, color: '#332F3A', fontWeight: 600, marginTop: 2 }}>
           {cliente.qtd_compras}
         </div>
       </div>
@@ -681,7 +681,7 @@ function InativosBlock({ data, router, dias }: { data: any; router: any; dias: n
                       {c.nome?.charAt(0)}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {c.nome}
                       </div>
                     </div>

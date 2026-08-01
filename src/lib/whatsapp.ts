@@ -12,13 +12,12 @@ interface SendMessageParams {
   mensagem: string
 }
 
-// Formata número para padrão Evolution API (55 + DDD + número)
+// Formata número para padrão Evolution API (55 + DDD + número, sem sufixo JID)
 function formatarNumero(numero: string): string {
-  const limpo = numero.replace(/\D/g, '')
-  if (limpo.startsWith('55')) return `${limpo}@s.whatsapp.net`
-  if (limpo.length === 11) return `55${limpo}@s.whatsapp.net`
-  if (limpo.length === 10) return `55${limpo}@s.whatsapp.net`
-  return `55${limpo}@s.whatsapp.net`
+  let limpo = numero.replace(/\D/g, '')
+  if (limpo.startsWith('0')) limpo = limpo.slice(1)
+  if (!limpo.startsWith('55')) limpo = `55${limpo}`
+  return limpo
 }
 
 // Substituir variáveis no template

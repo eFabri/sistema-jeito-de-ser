@@ -1,20 +1,13 @@
 // src/lib/impressora.ts
-// ============================================================
-// Integração com QZ Tray para impressão térmica ESC/POS
-// Instalar QZ Tray em: https://qz.io/download
-// ============================================================
-
 declare global {
   interface Window { qz: any }
 }
 
 let qzConectado = false
 
-// Carregar o script do QZ Tray dinamicamente
 export async function carregarQZ(): Promise<boolean> {
   if (typeof window === 'undefined') return false
   if (window.qz) return true
-
   return new Promise((resolve) => {
     const script = document.createElement('script')
     script.src = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js'
@@ -24,18 +17,14 @@ export async function carregarQZ(): Promise<boolean> {
   })
 }
 
-// Conectar ao QZ Tray (precisa estar rodando no PC)
 export async function conectarQZ(): Promise<boolean> {
   const carregou = await carregarQZ()
   if (!carregou) return false
   if (qzConectado) return true
-
   try {
-    // Desabilitar verificação de certificado para dev local
     window.qz.security.setCertificatePromise(() => Promise.resolve())
     window.qz.security.setSignatureAlgorithm('SHA512')
     window.qz.security.setSignaturePromise(() => Promise.resolve())
-
     await window.qz.websocket.connect()
     qzConectado = true
     return true
@@ -45,16 +34,13 @@ export async function conectarQZ(): Promise<boolean> {
   }
 }
 
-// Listar impressoras disponíveis
 export async function listarImpressoras(): Promise<string[]> {
   const ok = await conectarQZ()
   if (!ok) return []
-  try {
-    return await window.qz.printers.find()
-  } catch { return [] }
+  try { return await window.qz.printers.find() } catch { return [] }
 }
 
-// ─── MONTAR RECIBO ─────────────────────────────────────────
+// ─── INTERFACES ────────────────────────────────────────────
 
 export interface DadosRecibo {
   empresa: string
@@ -63,158 +49,165 @@ export interface DadosRecibo {
   data: string
   hora?: string
   nomeVendedora?: string
-  itens: { produto: string; quantidade: number; preco: number; subtotal: number }[]
-  pagamentos: { forma: string; valor: number }[]
+  itens: { produto: string; codigo?: string; quantidade: number; preco: number; subtotal: number }[]
+  pagamentos: { forma: string; valor: number; data?: string }[]
   desconto?: number
   valorTotal: number
-  crediario?: { parcela: string; vencimento: string; valor: number }[]
+  crediario?: { parcela?: string; vencimento: string; valor: number }[]
   observacao?: string
+  situacao?: string
 }
 
-function linha(char = '-', tamanho = 40) {
-  return char.repeat(tamanho) + '\n'
+export interface DadosTalaoCrediario {
+  nomeCliente: string
+  cpf?: string
+  codVenda: number | string
+  data: string
+  valorTotal: number
+  parcelas: { parcela?: string; vencimento: string; valor: number }[]
 }
 
-function centralizar(texto: string, tamanho = 40) {
-  const pad = Math.max(0, Math.floor((tamanho - texto.length) / 2))
+// ─── HELPERS ───────────────────────────────────────────────
+
+// 42 colunas = largura padrão para impressora 80mm
+const COL = 42
+
+function linha(char = '=', n = COL): string { return char.repeat(n) + '\n' }
+
+function center(texto: string, n = COL): string {
+  const pad = Math.max(0, Math.floor((n - texto.length) / 2))
   return ' '.repeat(pad) + texto + '\n'
 }
 
-function colunas(esq: string, dir: string, tamanho = 40) {
-  const espaco = tamanho - esq.length - dir.length
-  return esq + ' '.repeat(Math.max(1, espaco)) + dir + '\n'
+function ponteado(esq: string, dir: string, n = COL): string {
+  const dots = n - esq.length - dir.length
+  return esq + '.'.repeat(Math.max(1, dots)) + dir + '\n'
 }
 
-function brl(v: number) {
-  return `R$ ${v.toFixed(2).replace('.', ',')}`
+// R$ com espaço após: "R$ 249,99"
+function brl(v: number): string {
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+// Remove bytes de controle ESC/POS do texto para exibição em HTML <pre>
+function stripEscPos(s: string): string {
+  return s
+    .replace(/\x1B\x40/g, '')          // ESC @ reset
+    .replace(/\x1B\x61[\s\S]/g, '')    // ESC a N align
+    .replace(/\x1B\x21[\s\S]/g, '')    // ESC ! N font size
+    .replace(/\x1D\x56[\s\S]/g, '')    // GS V N cut
+}
+
+// ─── CUPOM DE VENDA ────────────────────────────────────────
 
 export function montarTextoRecibo(d: DadosRecibo, labelVia?: string): string {
-  let txt = ''
+  let t = ''
 
-  // Cabeçalho
-  txt += '\x1B\x40'           // Reset impressora
-  txt += '\x1B\x61\x01'       // Centralizar
-  txt += '\x1B\x21\x10'       // Fonte dupla altura
-  txt += d.empresa + '\n'
-  txt += '\x1B\x21\x00'       // Fonte normal
-  txt += 'Ouro Branco / MG\n'
-  txt += '(31) 3741-3668\n'
-  if (labelVia) txt += `*** ${labelVia} ***\n`
-  txt += '\n'
-  txt += '\x1B\x61\x00'       // Alinhar esquerda
-  txt += linha()
+  t += '\x1B\x40'           // reset
+  t += '\x1B\x21\x10'       // fonte dupla altura para nome da loja
+  t += center('JEITO DE SER LTDA.')
+  t += '\x1B\x21\x00'       // fonte normal
+  t += center('Mariza de Souza Mendes, 650')
+  t += center('Siderurgia - Ouro Branco')
+  t += center('Fone: 31 37413668')
+  if (labelVia) t += center(`*** ${labelVia} ***`)
+  t += linha()
 
-  // Dados da venda
-  txt += `CLIENTE  : ${d.nomeCliente}\n`
-  if (d.nomeVendedora) txt += `VENDEDORA: ${d.nomeVendedora}\n`
-  txt += `VENDA Nº : ${d.codVenda}\n`
-  txt += `DATA     : ${d.data}${d.hora ? ` ${d.hora}` : ''}\n`
-  txt += linha()
+  if (d.nomeVendedora) t += `Atendente: ${d.nomeVendedora}\n`
+  t += `PEDIDO N .: ${d.codVenda}\n`
+  t += `Data: ${d.data}\n`
+  t += linha('-')
 
-  // Itens
-  txt += '\x1B\x21\x01'       // Negrito
-  txt += 'ITEM                    QTD    VALOR\n'
-  txt += '\x1B\x21\x00'
-  txt += linha()
+  t += 'Produto\n'
+  t += ponteado('Qtde', 'Sub Total(R$)')
+  t += linha('-')
 
   for (const item of d.itens) {
-    const nome = item.produto.length > 22 ? item.produto.substring(0, 22) : item.produto.padEnd(22)
-    const qtd = String(item.quantidade).padStart(3)
-    const sub = brl(item.subtotal).padStart(9)
-    txt += `${nome} ${qtd} ${sub}\n`
-    if (item.preco > 0) {
-      txt += `  Unitário: ${brl(item.preco)}\n`
-    }
+    const nomeLinha = item.codigo
+      ? `${item.produto.substring(0, 28)}...Cod.: ${item.codigo}`.substring(0, COL)
+      : item.produto.substring(0, COL)
+    t += nomeLinha + '\n'
+    t += ponteado(String(item.quantidade), brl(item.subtotal))
+    t += '\n'
   }
+  t += linha('-')
 
-  txt += linha()
-
-  // Descontos
   if (d.desconto && d.desconto > 0) {
-    txt += colunas('DESCONTO:', brl(d.desconto))
+    t += ponteado('Desconto(s)', ':' + brl(d.desconto))
   }
+  t += '\x1B\x21\x10'
+  t += ponteado('Total', ':' + brl(d.valorTotal))
+  t += '\x1B\x21\x00'
+  t += linha('-')
 
-  // Total
-  txt += '\x1B\x21\x10'       // Negrito + dupla altura
-  txt += colunas('TOTAL:', brl(d.valorTotal))
-  txt += '\x1B\x21\x00'
-  txt += linha()
-
-  // Pagamentos
-  txt += '\x1B\x21\x01'
-  txt += 'PAGAMENTO\n'
-  txt += '\x1B\x21\x00'
+  t += `Cliente: ${d.nomeCliente}\n\n`
   for (const p of d.pagamentos) {
-    txt += colunas(`  ${p.forma}:`, brl(p.valor))
+    const dataPart = p.data ? `${p.data}..` : ''
+    t += `${p.forma}..${dataPart}${brl(p.valor)}\n`
   }
 
-  // Crediário
-  if (d.crediario && d.crediario.length > 0) {
-    txt += '\n'
-    txt += linha()
-    txt += '\x1B\x21\x01'
-    txt += 'PARCELAS DO CREDIÁRIO\n'
-    txt += '\x1B\x21\x00'
-    txt += linha('-', 40)
-    txt += 'Venc.       Parcela           Valor\n'
-    txt += linha('-', 40)
-    for (const p of d.crediario) {
-      const venc = new Date(p.vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      const parc = p.parcela.padEnd(18)
-      const val  = brl(p.valor).padStart(9)
-      txt += `${venc}  ${parc} ${val}\n`
-      txt += linha('-', 40)
-    }
+  if (d.situacao) {
+    t += `\n${d.situacao}\n`
   }
 
-  // Observação
-  if (d.observacao) {
-    txt += '\n'
-    txt += `OBS: ${d.observacao}\n`
-  }
+  t += '\n'
+  t += linha('-')
+  t += center('Volte Sempre!')
+  t += center('Prazo para troca: 7 dias.')
+  t += linha()
+  t += '\n\n'
+  t += '\x1D\x56\x00'    // cortar papel
 
-  // Rodapé
-  txt += '\n'
-  txt += '\x1B\x61\x01'       // Centralizar
-  txt += 'Obrigada pela preferencia!\n'
-  txt += 'Jeito de Ser Fashion\n'
-  txt += '\n\n\n'
-  txt += '\x1D\x56\x00'       // Cortar papel
-
-  return txt
+  return t
 }
 
-// ─── IMPRIMIR ──────────────────────────────────────────────
+// Fallback: impressão via navegador usando <pre> com o mesmo texto ESC/POS,
+// garantindo fonte monospace e alinhamento correto por pontos
+function imprimirNavegador(dados: DadosRecibo, vias: 1 | 2 = 1) {
+  function texto(labelVia?: string) {
+    return stripEscPos(montarTextoRecibo(dados, labelVia))
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
 
-export async function imprimirRecibo(dados: DadosRecibo, nomeImpressora?: string, vias: 1 | 2 = 1): Promise<{ ok: boolean; erro?: string }> {
+  const conteudo = vias === 1
+    ? `<pre>${texto()}</pre>`
+    : `<pre>${texto('VIA DO CLIENTE')}</pre><div style="page-break-before:always"></div><pre>${texto('VIA DA LOJA')}</pre>`
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Cupom #${dados.codVenda}</title>
+<style>
+@page { size: 80mm auto; margin: 3mm; }
+body { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.4; margin: 0; padding: 0; }
+pre { white-space: pre; margin: 0; }
+</style></head><body>${conteudo}</body></html>`
+
+  const w = window.open('', '_blank', 'width=420,height=620')
+  if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.print(); w.close() } }
+}
+
+export async function imprimirRecibo(
+  dados: DadosRecibo,
+  nomeImpressora?: string,
+  vias: 1 | 2 = 1
+): Promise<{ ok: boolean; erro?: string }> {
   try {
     const ok = await conectarQZ()
-    if (!ok) {
-      imprimirNavegador(dados, vias)
-      return { ok: true }
-    }
+    if (!ok) { imprimirNavegador(dados, vias); return { ok: true } }
 
     let impressora = nomeImpressora
     if (!impressora) {
-      const impressoras = await listarImpressoras()
-      impressora = impressoras[0]
+      const lista = await listarImpressoras()
+      impressora = lista[0]
     }
-
-    if (!impressora) {
-      imprimirNavegador(dados, vias)
-      return { ok: true }
-    }
+    if (!impressora) { imprimirNavegador(dados, vias); return { ok: true } }
 
     const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
-
     if (vias === 1) {
       await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados) }])
     } else {
       await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados, 'VIA DO CLIENTE') }])
       await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(dados, 'VIA DA LOJA') }])
     }
-
     return { ok: true }
   } catch (e: any) {
     console.error('Erro impressão:', e)
@@ -223,70 +216,103 @@ export async function imprimirRecibo(dados: DadosRecibo, nomeImpressora?: string
   }
 }
 
-// Fallback: impressão via navegador (formatação HTML)
-function imprimirNavegador(dados: DadosRecibo, vias: 1 | 2 = 1) {
-  const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
+// ─── TALÃO DE CREDIÁRIO ────────────────────────────────────
 
-  const recibo = (nVia: number, totalVias: number) => `
-<div class="via">
-<div class="center bold big">${dados.empresa}</div>
-<div class="center">Ouro Branco / MG</div>
-<div class="center">(31) 3741-3668</div>
-<hr>
-<div>CLIENTE: ${dados.nomeCliente}</div>
-<div>VENDA Nº: ${dados.codVenda}</div>
-<div>DATA: ${dados.data}</div>
-${totalVias > 1 ? `<div class="via-label">${nVia === 1 ? '★ VIA DO CLIENTE ★' : '★ VIA DA LOJA ★'}</div>` : ''}
-<hr>
-<table>
-  <tr><td class="bold">Item</td><td class="right bold">Qtd</td><td class="right bold">Total</td></tr>
-  ${dados.itens.map(i => `<tr><td>${i.produto.substring(0,24)}</td><td class="right">${i.quantidade}</td><td class="right">${brl(i.subtotal)}</td></tr>`).join('')}
-</table>
-<hr>
-${dados.desconto ? `<div>Desconto: <span class="right">${brl(dados.desconto)}</span></div>` : ''}
-<div class="total">TOTAL: ${brl(dados.valorTotal)}</div>
-<hr>
-${dados.pagamentos.map(p => `<div>${p.forma}: <span>${brl(p.valor)}</span></div>`).join('')}
-${dados.crediario?.length ? `
-<hr>
-<div class="bold">PARCELAS DO CREDIÁRIO</div>
-${dados.crediario.map(p => `<div>${new Date(p.vencimento).toLocaleDateString('pt-BR')} — ${p.parcela} — ${brl(p.valor)}</div>`).join('')}
-` : ''}
-<hr>
-<div class="center">Obrigada pela preferência!</div>
-<div class="center bold">Jeito de Ser Fashion</div>
-</div>`
+export function montarTalaoCrediario(d: DadosTalaoCrediario, labelVia?: string): string {
+  // colunas do talão
+  const VCOL   = 9   // vencimento (DD/MM) + espaço
+  const VALCOL = 14  // valor (R$ X.XXX,XX) + espaço
+  const ALTCOL = 7   // alteração + espaço
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Recibo #${dados.codVenda}</title>
+  let t = ''
+
+  t += '\x1B\x40'
+  t += '\x1B\x21\x10'
+  t += center('JEITO DE SER LTDA.')
+  t += '\x1B\x21\x00'
+  t += center('Talão de Crediário')
+  if (labelVia) t += center(`*** ${labelVia} ***`)
+  t += linha()
+
+  t += `CLIENTE : ${d.nomeCliente}\n`
+  t += `CPF     : ${d.cpf || ''}\n`
+  t += `VENDA N.: ${d.codVenda}\n`
+  t += `DATA    : ${d.data}\n`
+  t += `VALOR   : ${brl(d.valorTotal)}\n`
+  t += linha()
+
+  t += 'Venc.'.padEnd(VCOL) + 'Valor'.padEnd(VALCOL) + 'Alter.'.padEnd(ALTCOL) + 'Receb.\n'
+  t += linha('-')
+
+  for (const p of d.parcelas) {
+    const v = p.vencimento.includes('-')
+      ? p.vencimento.split('-').reverse().join('/')
+      : p.vencimento
+    t += v.slice(0, 5).padEnd(VCOL) + brl(p.valor).padEnd(VALCOL) + '___'.padEnd(ALTCOL) + '___\n'
+  }
+  t += linha()
+
+  t += 'OBSERVACOES:\n'
+  t += '_'.repeat(COL) + '\n'
+  t += '_'.repeat(COL) + '\n'
+  t += '\n'
+  t += `Assinatura:${'_'.repeat(COL - 11)}\n`
+  t += linha()
+  t += '\n\n'
+  t += '\x1D\x56\x00'
+
+  return t
+}
+
+function imprimirTalaoNavegador(dados: DadosTalaoCrediario, vias: 1 | 2 = 1) {
+  function texto(labelVia?: string) {
+    return stripEscPos(montarTalaoCrediario(dados, labelVia))
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  const conteudo = vias === 1
+    ? `<pre>${texto()}</pre>`
+    : `<pre>${texto('VIA DO CLIENTE')}</pre><div style="page-break-before:always"></div><pre>${texto('VIA DA LOJA')}</pre>`
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Talão Crediário #${dados.codVenda}</title>
 <style>
-  @page { margin: 0; size: 80mm auto; }
-  body { font-family: monospace; font-size: 11px; width: 72mm; margin: 4mm; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .big { font-size: 14px; font-weight: bold; }
-  hr { border: none; border-top: 1px dashed #000; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 1px 2px; vertical-align: top; }
-  .right { text-align: right; }
-  .total { font-size: 13px; font-weight: bold; }
-  .via + .via { margin-top: 6mm; border-top: 2px dashed #000; padding-top: 4mm; }
-  .via-label { text-align: center; font-size: 10px; font-weight: bold; margin: 2px 0; }
-</style>
-</head>
-<body>
-${Array.from({ length: vias }, (_, i) => recibo(i + 1, vias)).join('')}
-</body>
-</html>`
+@page { size: 80mm auto; margin: 3mm; }
+body { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.4; margin: 0; padding: 0; }
+pre { white-space: pre; margin: 0; }
+</style></head><body>${conteudo}</body></html>`
 
-  const janela = window.open('', '_blank', 'width=400,height=600')
-  if (janela) {
-    janela.document.write(html)
-    janela.document.close()
-    janela.onload = () => { janela.print(); janela.close() }
+  const w = window.open('', '_blank', 'width=420,height=620')
+  if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.print(); w.close() } }
+}
+
+export async function imprimirTalaoCrediario(
+  dados: DadosTalaoCrediario,
+  nomeImpressora?: string,
+  vias: 1 | 2 = 1
+): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const ok = await conectarQZ()
+    if (!ok) { imprimirTalaoNavegador(dados, vias); return { ok: true } }
+
+    let impressora = nomeImpressora
+    if (!impressora) {
+      const lista = await listarImpressoras()
+      impressora = lista[0]
+    }
+    if (!impressora) { imprimirTalaoNavegador(dados, vias); return { ok: true } }
+
+    const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
+    if (vias === 1) {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(dados) }])
+    } else {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(dados, 'VIA DO CLIENTE') }])
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(dados, 'VIA DA LOJA') }])
+    }
+    return { ok: true }
+  } catch (e: any) {
+    console.error('Erro impressão talão:', e)
+    imprimirTalaoNavegador(dados, vias)
+    return { ok: true }
   }
 }

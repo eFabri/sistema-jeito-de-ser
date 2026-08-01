@@ -57,7 +57,7 @@ export default function ProdutosPage() {
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9' }}>Produtos</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>Produtos</h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>{total.toLocaleString('pt-BR')} produtos</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -127,7 +127,7 @@ export default function ProdutosPage() {
               >
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.cod_referencia || p.cod_barras?.substring(0, 8) || `#${p.id}`}</div>
                 <div>
-                  <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>{p.descricao}</div>
+                  <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>{p.descricao}</div>
                   {p.marca && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.marca}</div>}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -176,7 +176,7 @@ export default function ProdutosPage() {
                     <span style={{ fontSize: 11, letterSpacing: '0.06em' }}>{(p.grupo || 'PRODUTO').charAt(0)}</span>
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: '#F2EBD9', fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                <div style={{ fontSize: 12, color: '#332F3A', fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {p.descricao}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -18,7 +18,7 @@ function Field({ label, children }: any) {
 function Section({ title, children, cols = 2 }: any) {
   return (
     <div className="card">
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
         {title}
       </h3>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>
@@ -48,7 +48,7 @@ export default function NovoClientePage() {
     trabalho_nome: '', trabalho_cargo: '', trabalho_telefone: '', renda: '', trabalho_tempo: '',
     // Crédito & Perfil
     categoria: 'Pendente', limite_credito: '', desconto_familia: '',
-    tamanho: '', tamanho2: '', tamanho3: '', perfil: '',
+    tamanho: '', tamanho2: '', tamanho3: '', tamanho_calcado: '', perfil: '',
     // Referências
     ref_comercial: '', ref_comercial_tel: '',
     ref_pessoal1: '', ref_pessoal1_tel: '',
@@ -99,7 +99,7 @@ export default function NovoClientePage() {
             <button onClick={() => router.push('/clientes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>
               ‹ Clientes
             </button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>Novo Cliente</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>Novo Cliente</h1>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={() => router.push('/clientes')}>Cancelar</button>
@@ -192,9 +192,10 @@ export default function NovoClientePage() {
           </Field>
           <Field label="Limite de crédito (R$)">{inp('limite_credito', 'number', '0,00')}</Field>
           <Field label="Desconto família (%)">{inp('desconto_familia', 'number', '0')}</Field>
-          <Field label="Tamanho (roupa)">{inp('tamanho', 'text', 'P, M, G, 38...')}</Field>
-          <Field label="Tamanho 2">{inp('tamanho2')}</Field>
-          <Field label="Tamanho 3">{inp('tamanho3')}</Field>
+          <Field label="Tamanho Roupa">{inp('tamanho', 'text', 'P, M, G, 38...')}</Field>
+          <Field label="Tops">{inp('tamanho2')}</Field>
+          <Field label="Botons">{inp('tamanho3')}</Field>
+          <Field label="Calçado">{inp('tamanho_calcado', 'text', '35, 36, 37...')}</Field>
           <Field label="Perfil / Estilo">{inp('perfil', 'text', 'Moda jovem, clássica...')}</Field>
         </Section>
 
@@ -210,7 +211,7 @@ export default function NovoClientePage() {
 
         {/* OBSERVAÇÕES */}
         <div className="card">
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 12 }}>Observações</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A', marginBottom: 12 }}>Observações</h3>
           <textarea className="input" rows={4} placeholder="Anotações sobre a cliente..." value={form.observacao} onChange={f('observacao')} style={{ resize: 'vertical' }} />
         </div>
 

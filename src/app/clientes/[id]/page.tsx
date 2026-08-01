@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 import { hojeNoBrasil } from '@/lib/dates'
+import { FileText } from 'lucide-react'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'R$ 0,00'
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
@@ -11,13 +12,14 @@ const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString(
 function SummaryCard({ label, value, sub, alert, success }: any) {
   return (
     <div style={{
-      background: 'var(--bg-card)', border: `1px solid ${alert ? 'rgba(229,88,74,0.25)' : success ? 'rgba(76,175,130,0.2)' : 'var(--border)'}`,
-      borderRadius: 14, padding: '16px 18px',
+      background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      border: `1px solid ${alert ? 'rgba(229,88,74,0.25)' : success ? 'rgba(76,175,130,0.2)' : 'var(--border)'}`,
+      borderRadius: 32, padding: '16px 18px', boxShadow: 'var(--shadow-clay)',
     }}>
       <div style={{ fontSize: 10, color: alert ? '#E5584A' : success ? '#4CAF82' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: alert ? '#E5584A' : '#F2EBD9', lineHeight: 1 }}>
+      <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: alert ? '#E5584A' : '#332F3A', lineHeight: 1 }}>
         {value}
       </div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{sub}</div>}
@@ -30,7 +32,7 @@ function InfoRow({ label, value }: any) {
   return (
     <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 160, flexShrink: 0, paddingTop: 1 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#F2EBD9' }}>{value}</span>
+      <span style={{ fontSize: 13, color: '#332F3A' }}>{value}</span>
     </div>
   )
 }
@@ -47,7 +49,7 @@ function EditField({ label, children }: any) {
 function Section({ title, children }: any) {
   return (
     <div className="card">
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
         {title}
       </h3>
       {children}
@@ -66,6 +68,10 @@ export default function ClienteDetalhePage() {
   const [salvando, setSalvando] = useState(false)
   const [modalFinanceiro, setModalFinanceiro] = useState(false)
   const [modalReceber, setModalReceber] = useState<any>(null)
+  const [modalCredito, setModalCredito] = useState(false)
+  const [creditoValor, setCreditoValor] = useState('')
+  const [creditoJust, setCreditoJust] = useState('')
+  const [salvandoCredito, setSalvandoCredito] = useState(false)
 
   useEffect(() => {
     fetch(`/api/clientes/${params.id}`)
@@ -106,6 +112,24 @@ export default function ClienteDetalhePage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _vencido = crediario.filter((p: any) => new Date(p.data_vencimento) < new Date())
 
+  async function lancarCredito() {
+    const v = parseFloat(creditoValor)
+    if (!v || v <= 0) return
+    setSalvandoCredito(true)
+    await fetch(`/api/clientes/${params.id}/credito`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'entrada', valor: v, descricao: creditoJust || 'Crédito lançado manualmente' }),
+    })
+    const updated = await fetch(`/api/clientes/${params.id}`).then(r => r.json())
+    setData(updated)
+    setForm(updated.cliente)
+    setModalCredito(false)
+    setCreditoValor('')
+    setCreditoJust('')
+    setSalvandoCredito(false)
+  }
+
   return (
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -125,7 +149,7 @@ export default function ClienteDetalhePage() {
                 {cliente.nome?.charAt(0)}
               </div>
               <div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2EBD9', lineHeight: 1 }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#332F3A', lineHeight: 1 }}>
                   {cliente.nome}
                 </h1>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -144,6 +168,7 @@ export default function ClienteDetalhePage() {
             ) : (
               <>
                 <button className="btn btn-ghost" onClick={() => router.push(`/vendas/nova?cliente=${cliente.id}`)}>+ Nova Venda</button>
+                <button className="btn btn-ghost" onClick={() => setModalCredito(true)}>+ Lançar Crédito</button>
                 <button className="btn btn-primary" onClick={() => setEditando(true)}>Editar</button>
               </>
             )}
@@ -159,10 +184,11 @@ export default function ClienteDetalhePage() {
           {resumo.qtdParciais > 0 && <SummaryCard label="Parciais" value={`${resumo.qtdParciais}`} sub="parcelas com baixa parcial" />}
           <SummaryCard label="Limite de Crédito" value={BRL(cliente.limite_credito || 0)} />
           {cliente.credito_troca > 0 && <SummaryCard label="Crédito de Troca" value={BRL(cliente.credito_troca)} />}
+          {(cliente.saldo_credito || 0) > 0 && <SummaryCard label="Saldo de Crédito" value={BRL(cliente.saldo_credito || 0)} success />}
         </div>
 
         {/* ABAS */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
           {[
             { id: 'dados', label: 'Dados Cadastrais' },
             { id: 'compras', label: `Compras (${vendas.length})` },
@@ -319,10 +345,11 @@ export default function ClienteDetalhePage() {
                   </EditField>
                   <EditField label="Limite de crédito (R$)">{editInp('limite_credito', 'number')}</EditField>
                   <EditField label="Desconto família (%)">{editInp('desconto_familia', 'number')}</EditField>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                    <EditField label="Tamanho">{editInp('tamanho')}</EditField>
-                    <EditField label="Tamanho 2">{editInp('tamanho2')}</EditField>
-                    <EditField label="Tamanho 3">{editInp('tamanho3')}</EditField>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <EditField label="Tamanho Roupa">{editInp('tamanho')}</EditField>
+                    <EditField label="Tops">{editInp('tamanho2')}</EditField>
+                    <EditField label="Botons">{editInp('tamanho3')}</EditField>
+                    <EditField label="Calçado">{editInp('tamanho_calcado')}</EditField>
                   </div>
                   <EditField label="Perfil / Estilo">{editInp('perfil')}</EditField>
                   <EditField label="Observação">
@@ -334,7 +361,10 @@ export default function ClienteDetalhePage() {
                   <InfoRow label="Categoria" value={c.categoria} />
                   <InfoRow label="Limite de crédito" value={c.limite_credito ? BRL(c.limite_credito) : null} />
                   <InfoRow label="Desconto família" value={c.desconto_familia ? `${c.desconto_familia}%` : null} />
-                  <InfoRow label="Tamanho" value={[c.tamanho, c.tamanho2, c.tamanho3].filter(Boolean).join(' / ')} />
+                  <InfoRow label="Tamanho Roupa" value={c.tamanho} />
+                  <InfoRow label="Tops" value={c.tamanho2} />
+                  <InfoRow label="Botons" value={c.tamanho3} />
+                  <InfoRow label="Calçado" value={c.tamanho_calcado} />
                   <InfoRow label="Perfil / Estilo" value={c.perfil} />
                   <InfoRow label="Observação" value={c.observacao} />
                 </>
@@ -392,7 +422,7 @@ export default function ClienteDetalhePage() {
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>#{v.codigo_legado || v.id}</div>
-                <div style={{ fontSize: 13, color: '#F2EBD9' }}>{fmtData(v.data)}</div>
+                <div style={{ fontSize: 13, color: '#332F3A' }}>{fmtData(v.data)}</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(v.valor_total)}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v.forma_pagamento || '—'}</div>
                 <div style={{ fontSize: 11, color: v.situacao === 'Cancelada' ? '#E5584A' : '#4CAF82' }}>{v.situacao}</div>
@@ -412,8 +442,9 @@ export default function ClienteDetalhePage() {
                     <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
                   ))}
                 </div>
-                <button className="btn btn-ghost" style={{ fontSize: 12, padding: '6px 14px', flexShrink: 0 }} onClick={() => setModalFinanceiro(true)}>
-                  📋 Histórico Completo
+                <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 14px', flexShrink: 0 }} onClick={() => setModalFinanceiro(true)}>
+                  <FileText size={13} strokeWidth={1.8} />
+                  Histórico Completo
                 </button>
               </div>
               {/* Resumo financeiro do crediário */}
@@ -425,7 +456,7 @@ export default function ClienteDetalhePage() {
                     { label: 'Saldo Devedor', val: resumo.saldoDevedorReal, cor: '#E5584A' },
                     { label: 'Parciais', val: null, qtd: resumo.qtdParciais, cor: '#C9A84C' },
                   ].map(({ label, val, qtd, cor }) => (
-                    <div key={label} style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 8, padding: '8px 10px' }}>
+                    <div key={label} style={{ background: 'rgba(255,255,255,0.5)', borderRadius: 8, padding: '8px 10px' }}>
                       <div style={{ fontSize: 9, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{label}</div>
                       <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: cor }}>
                         {val != null ? BRL(val) : `${qtd} parcelas`}
@@ -454,7 +485,7 @@ export default function ClienteDetalhePage() {
                   background: atrasado ? 'rgba(229,88,74,0.02)' : isParcial ? 'rgba(201,168,76,0.02)' : 'transparent',
                 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.parcela || '—'}</div>
-                  <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#F2EBD9', fontWeight: atrasado ? 600 : 400 }}>
+                  <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#332F3A', fontWeight: atrasado ? 600 : 400 }}>
                     {fmtData(p.data_vencimento)}
                   </div>
                   <div>
@@ -532,7 +563,7 @@ export default function ClienteDetalhePage() {
         )
 
         return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}
             onClick={e => { if (e.target === e.currentTarget) setModalFinanceiro(false) }}>
             <div className="card" style={{ width: '100%', maxWidth: 740, padding: 0, display: 'flex', flexDirection: 'column', maxHeight: '88vh' }}>
 
@@ -540,7 +571,7 @@ export default function ClienteDetalhePage() {
               <div style={{ padding: '22px 28px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', margin: 0 }}>
                       Histórico Financeiro
                     </h2>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>{cliente.nome}</p>
@@ -586,6 +617,47 @@ export default function ClienteDetalhePage() {
           </div>
         )
       })()}
+
+      {/* suppress unused var warning */}
+      {modalReceber && null}
+
+      {/* MODAL LANÇAR CRÉDITO */}
+      {modalCredito && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setModalCredito(false) }}>
+          <div style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 20, padding: '28px 32px', width: 400, boxShadow: 'var(--shadow-clay)' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#332F3A', marginBottom: 6 }}>Lançar Crédito</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>{cliente.nome}</p>
+
+            {(cliente.saldo_credito || 0) > 0 && (
+              <div style={{ background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.2)', borderRadius: 8, padding: '8px 14px', marginBottom: 16, fontSize: 12, color: '#4CAF82' }}>
+                Saldo atual: <strong>{BRL(cliente.saldo_credito || 0)}</strong>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Valor (R$)</label>
+                <input type="number" className="input" min={0.01} step={0.01} value={creditoValor}
+                  onChange={e => setCreditoValor(e.target.value)} placeholder="0,00" autoFocus />
+              </div>
+              <div>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5, fontWeight: 700 }}>Justificativa</label>
+                <input type="text" className="input" value={creditoJust}
+                  onChange={e => setCreditoJust(e.target.value)} placeholder="Ex: Devolução de mercadoria" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setModalCredito(false); setCreditoValor(''); setCreditoJust('') }}>Cancelar</button>
+              <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: '11px' }}
+                onClick={lancarCredito} disabled={salvandoCredito || !creditoValor || parseFloat(creditoValor) <= 0}>
+                {salvandoCredito ? 'Salvando...' : '+ Lançar Crédito'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

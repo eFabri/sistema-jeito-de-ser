@@ -5,7 +5,11 @@
   "crons": [
     {
       "path": "/api/whatsapp/cron",
-      "schedule": "0 9 * * *"
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/condicionais/alertas",
+      "schedule": "0 12 * * *"
     }
   ]
 }

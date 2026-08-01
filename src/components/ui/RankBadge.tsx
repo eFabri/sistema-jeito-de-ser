@@ -18,7 +18,7 @@ export function RankBadge({ pos, size = 36 }: { pos: number; size?: number }) {
         boxShadow: `0 0 18px ${m.glow}, inset 0 -2px 0 rgba(0,0,0,0.2)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: 'var(--font-display)', fontSize: size * 0.45, fontWeight: 700,
-        color: '#1a1610', flexShrink: 0,
+        color: '#332F3A', flexShrink: 0,
       }}>
         {m.label}
       </div>

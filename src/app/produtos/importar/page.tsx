@@ -190,7 +190,7 @@ export default function ImportarProdutosPage() {
         {/* Header */}
         <div>
           <button onClick={() => router.push('/produtos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6, padding: 0 }}>‹ Produtos</button>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>Importar Produtos</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A', margin: 0 }}>Importar Produtos</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>Cadastre múltiplos produtos de uma vez via planilha Excel ou CSV.</p>
         </div>
 
@@ -198,7 +198,7 @@ export default function ImportarProdutosPage() {
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
             <span style={stepLabelStyle}>1</span>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>Baixe o modelo de planilha</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', margin: 0 }}>Baixe o modelo de planilha</h3>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
             Use o modelo oficial para garantir que os dados sejam importados corretamente.
@@ -213,7 +213,7 @@ export default function ImportarProdutosPage() {
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
             <span style={stepLabelStyle}>2</span>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>Selecione sua planilha preenchida</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', margin: 0 }}>Selecione sua planilha preenchida</h3>
           </div>
 
           <div
@@ -239,12 +239,12 @@ export default function ImportarProdutosPage() {
             <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>
             {fileName ? (
               <>
-                <div style={{ color: '#F2EBD9', fontWeight: 600, marginBottom: 4 }}>{fileName}</div>
+                <div style={{ color: '#332F3A', fontWeight: 600, marginBottom: 4 }}>{fileName}</div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Clique para trocar o arquivo</div>
               </>
             ) : (
               <>
-                <div style={{ color: '#F2EBD9', fontWeight: 600, marginBottom: 4 }}>Arraste o arquivo aqui ou clique para selecionar</div>
+                <div style={{ color: '#332F3A', fontWeight: 600, marginBottom: 4 }}>Arraste o arquivo aqui ou clique para selecionar</div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Aceita .xlsx e .csv</div>
               </>
             )}
@@ -263,7 +263,7 @@ export default function ImportarProdutosPage() {
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
               <span style={stepLabelStyle}>3</span>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>Revisar e importar</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', margin: 0 }}>Revisar e importar</h3>
             </div>
 
             {/* Summary */}
@@ -298,7 +298,7 @@ export default function ImportarProdutosPage() {
                     <tbody>
                       {validas.slice(0, 10).map((r, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td style={{ padding: '7px 10px', color: '#F2EBD9', fontWeight: 500, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descricao}</td>
+                          <td style={{ padding: '7px 10px', color: '#332F3A', fontWeight: 500, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descricao}</td>
                           <td style={{ padding: '7px 10px', color: 'var(--text-muted)' }}>{r.grupo}</td>
                           <td style={{ padding: '7px 10px', color: 'var(--text-muted)' }}>{r.marca}</td>
                           <td style={{ padding: '7px 10px', color: 'var(--text-muted)' }}>{r.cor}</td>
@@ -330,7 +330,7 @@ export default function ImportarProdutosPage() {
                   {invalidas.map((r, i) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'baseline', padding: '8px 12px', borderRadius: 8, background: 'rgba(229,88,74,0.07)', border: '1px solid rgba(229,88,74,0.15)', fontSize: 12 }}>
                       <span style={{ color: '#E5584A', fontWeight: 700, whiteSpace: 'nowrap' }}>Linha {r.linha}</span>
-                      <span style={{ color: '#F2EBD9', fontWeight: 500 }}>{r.descricao || '(sem descrição)'}</span>
+                      <span style={{ color: '#332F3A', fontWeight: 500 }}>{r.descricao || '(sem descrição)'}</span>
                       <span style={{ color: '#E5584A' }}>{r.erros.join(' · ')}</span>
                     </div>
                   ))}
@@ -354,7 +354,7 @@ export default function ImportarProdutosPage() {
             {/* Result */}
             {resultado && (
               <div style={{ marginBottom: 20, padding: '16px 20px', borderRadius: 10, background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.2)' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 4 }}>Importação concluída</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 4 }}>Importação concluída</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                   <span style={{ color: '#4CAF82', fontWeight: 600 }}>{resultado.sucesso} importados com sucesso</span>
                   {resultado.erros > 0 && <span> · <span style={{ color: '#E5584A', fontWeight: 600 }}>{resultado.erros} com erro</span></span>}

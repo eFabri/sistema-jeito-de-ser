@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { Check, X, Pencil, Trash2 } from 'lucide-react'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 
@@ -107,6 +108,7 @@ export default function EditarCompraPage() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           produto: item.produto,
+          cod_barras: item.cod_barras,
           quantidade: item.quantidade,
           valor_unitario: item.valor_unitario,
           preco_venda: item.preco_venda,
@@ -188,11 +190,11 @@ export default function EditarCompraPage() {
       {novoOpen && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+          background: 'rgba(30,27,75,0.45)', backdropFilter: 'blur(6px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
         }} onClick={e => { if (e.target === e.currentTarget) setNovoOpen(false) }}>
           <div className="card" style={{ width: '100%', maxWidth: 600, padding: 28 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 18 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', marginBottom: 18 }}>
               + Adicionar item
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -205,7 +207,7 @@ export default function EditarCompraPage() {
                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#080608', border: '1px solid var(--border)', borderRadius: 8, zIndex: 10, maxHeight: 220, overflowY: 'auto' }}>
                     {novoSug.map(p => (
                       <div key={p.id} onClick={() => selecionarProdutoModal(p)}
-                        style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#F2EBD9', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
+                        style={{ padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#332F3A', borderBottom: '1px solid rgba(201,168,76,0.05)' }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.05)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <div>{p.descricao}</div>
@@ -223,7 +225,7 @@ export default function EditarCompraPage() {
                 <div><Label>Preço venda (R$)</Label><input className="input" type="number" step="0.01" value={novoItem.preco_venda}
                   onChange={e => setNovoItem(n => ({ ...n, preco_venda: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#F2EBD9', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#332F3A', cursor: 'pointer' }}>
                 <input type="checkbox" checked={novoItem.atualiza_estoque}
                   onChange={e => setNovoItem(n => ({ ...n, atualiza_estoque: e.target.checked }))} />
                 Atualizar estoque ao adicionar
@@ -244,7 +246,7 @@ export default function EditarCompraPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>
               Compra #{compra.codigo_legado || compra.id}
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -361,42 +363,48 @@ function LinhaItem({ item, onChange, onSalvar, onDeletar, isLast }: {
     }}>
       {editando ? (
         <>
-          <input className="input" value={item.produto} onChange={e => alterar('produto', e.target.value)} style={{ fontSize: 12 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <input className="input" value={item.produto} onChange={e => alterar('produto', e.target.value)} style={{ fontSize: 12 }} placeholder="Produto" />
+            <input className="input" value={item.cod_barras || ''} onChange={e => alterar('cod_barras', e.target.value)} style={{ fontSize: 11, fontFamily: 'monospace' }} placeholder="Código" />
+          </div>
           <input className="input" type="number" min="1" value={item.quantidade} onChange={e => alterar('quantidade', parseInt(e.target.value) || 1)} style={{ fontSize: 12 }} />
           <input className="input" type="number" step="0.01" value={item.valor_unitario} onChange={e => alterar('valor_unitario', parseFloat(e.target.value) || 0)} style={{ fontSize: 12 }} />
           <div style={{ fontSize: 13, color: '#C9A84C', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#F2EBD9', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#332F3A', cursor: 'pointer' }}>
             <input type="checkbox" checked={item.atualiza_estoque} onChange={e => alterar('atualiza_estoque', e.target.checked)} />
             estoque
           </label>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => { onSalvar(); setEditando(false) }}
-              style={{ background: 'rgba(76,175,130,0.12)', border: '1px solid rgba(76,175,130,0.3)', color: '#4CAF82', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}>
-              ✓
+              style={{ background: 'rgba(76,175,130,0.12)', border: '1px solid rgba(76,175,130,0.3)', color: '#4CAF82', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              <Check size={11} strokeWidth={2.5} />
             </button>
             <button onClick={() => setEditando(false)}
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer' }}>
-              ✕
+              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              <X size={11} strokeWidth={2.5} />
             </button>
           </div>
         </>
       ) : (
         <>
-          <div style={{ fontSize: 13, color: '#F2EBD9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.produto}</div>
-          <div style={{ fontSize: 13, color: '#F2EBD9' }}>{item.quantidade}</div>
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{ fontSize: 13, color: '#332F3A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.produto}</div>
+            {item.cod_barras && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace' }}>#{item.cod_barras}</div>}
+          </div>
+          <div style={{ fontSize: 13, color: '#332F3A' }}>{item.quantidade}</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>R$ {item.valor_unitario.toFixed(2).replace('.', ',')}</div>
           <div style={{ fontSize: 13, color: '#C9A84C', fontWeight: 700 }}>R$ {(item.quantidade * item.valor_unitario).toFixed(2).replace('.', ',')}</div>
           <div style={{ fontSize: 11, color: item.atualiza_estoque ? '#4CAF82' : 'var(--text-muted)' }}>
-            {item.atualiza_estoque ? '✓ sim' : '— não'}
+            {item.atualiza_estoque ? <><Check size={10} strokeWidth={2.5} /> sim</> : '— não'}
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => setEditando(true)} title="Editar"
-              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--border)', color: '#C9A84C', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
-              ✎
+              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--border)', color: '#C9A84C', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              <Pencil size={11} strokeWidth={2} />
             </button>
             <button onClick={onDeletar} title="Excluir"
-              style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>
-              🗑
+              style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.3)', color: '#E5584A', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              <Trash2 size={11} strokeWidth={2} />
             </button>
           </div>
         </>

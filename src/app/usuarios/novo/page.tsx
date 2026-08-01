@@ -20,7 +20,7 @@ export default function NovoUsuarioPage() {
   return (
     <AppLayout>
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 920 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>
           Novo Usuário
         </h1>
         <FormUsuario inicial={defaultsUsuario()} modo="novo" onSalvar={criar} />

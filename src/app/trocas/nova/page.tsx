@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { Check, ArrowLeft, ChevronRight, AlertTriangle } from 'lucide-react'
 
 const BRL = (v: number) => `R$ ${(v || 0).toFixed(2).replace('.', ',')}`
 
@@ -95,7 +96,7 @@ function StepPills({ step }: { step: number }) {
                     : 'rgba(242,235,217,0.08)',
                 color: isCurrent || isDone ? '#080608' : 'rgba(242,235,217,0.4)',
               }}>
-                {isDone ? '✓' : s.n}
+                {isDone ? <Check size={14} strokeWidth={2.5} /> : s.n}
               </div>
               <span style={{
                 fontSize: 12,
@@ -194,7 +195,7 @@ function ClienteSearch({
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.07)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{c.nome}</div>
+              <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{c.nome}</div>
               {c.telefone && (
                 <div style={{ fontSize: 11, color: 'rgba(242,235,217,0.4)', marginTop: 2 }}>{c.telefone}</div>
               )}
@@ -268,7 +269,7 @@ function ProdutoSearch({
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.07)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500 }}>{p.descricao}</div>
+              <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{p.descricao}</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 3 }}>
                 {p.grupo && <span style={{ fontSize: 10, color: 'rgba(242,235,217,0.35)' }}>{p.grupo}</span>}
                 {p.tamanho && <span style={{ fontSize: 10, color: 'rgba(242,235,217,0.35)' }}>T: {p.tamanho}</span>}
@@ -463,13 +464,13 @@ export default function NovaTrocaPage() {
             width: 80, height: 80, borderRadius: '50%',
             border: '2px solid #4CAF82',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 36, color: '#4CAF82',
+            color: '#4CAF82',
           }}>
-            ✓
+            <Check size={36} strokeWidth={2} />
           </div>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#332F3A', marginBottom: 8 }}>
               Troca registrada!
             </div>
             {trocaId && (
@@ -484,7 +485,7 @@ export default function NovaTrocaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'rgba(242,235,217,0.5)' }}>Cliente</span>
-                <span style={{ color: '#F2EBD9', fontWeight: 600 }}>{cliente?.nome}</span>
+                <span style={{ color: '#332F3A', fontWeight: 600 }}>{cliente?.nome}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'rgba(242,235,217,0.5)' }}>Devolvido</span>
@@ -507,7 +508,7 @@ export default function NovaTrocaPage() {
                     ? `Cliente pagou ${BRL(diferenca)}`
                     : diferenca < 0
                       ? `Crédito ${BRL(Math.abs(diferenca))}`
-                      : 'Troca direta ✓'}
+                      : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Troca direta <Check size={13} strokeWidth={2.5} /></span>}
                 </span>
               </div>
             </div>
@@ -559,7 +560,7 @@ export default function NovaTrocaPage() {
         <div>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700,
-            color: '#F2EBD9', marginBottom: 16,
+            color: '#332F3A', marginBottom: 16,
           }}>
             Nova Troca
           </h1>
@@ -592,7 +593,7 @@ export default function NovaTrocaPage() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#F2EBD9', marginBottom: 4 }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: '#332F3A', marginBottom: 4 }}>
                       {cliente.nome}
                     </div>
                     {cliente.telefone && (
@@ -640,7 +641,7 @@ export default function NovaTrocaPage() {
                 disabled={!cliente}
                 style={{ padding: '11px 28px', opacity: cliente ? 1 : 0.4, cursor: cliente ? 'pointer' : 'not-allowed' }}
               >
-                Próximo →
+                Próximo <ChevronRight size={13} strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -713,7 +714,7 @@ export default function NovaTrocaPage() {
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: 13, color: '#F2EBD9' }}>{item.produto}</span>
+                            <span style={{ fontSize: 13, color: '#332F3A' }}>{item.produto}</span>
                             <span style={{ fontSize: 13, color: '#C9A84C', fontWeight: 600 }}>
                               {BRL(item.valor)} × {item.quantidade}
                             </span>
@@ -816,11 +817,11 @@ export default function NovaTrocaPage() {
             )}
 
             <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'space-between' }}>
-              <button className="btn btn-ghost" onClick={() => { setStep(1); setErro('') }} style={{ padding: '10px 20px' }}>
-                ← Voltar
+              <button className="btn btn-ghost" onClick={() => { setStep(1); setErro('') }} style={{ padding: '10px 20px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <ArrowLeft size={13} strokeWidth={2} /> Voltar
               </button>
-              <button className="btn btn-primary" onClick={irPasso3} style={{ padding: '11px 28px' }}>
-                Próximo →
+              <button className="btn btn-primary" onClick={irPasso3} style={{ padding: '11px 28px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                Próximo <ChevronRight size={13} strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -854,7 +855,7 @@ export default function NovaTrocaPage() {
                 background: 'rgba(76,175,130,0.05)', border: '1px solid rgba(76,175,130,0.2)',
                 borderRadius: 12, padding: 16, marginBottom: 20,
               }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#332F3A', marginBottom: 6 }}>
                   {prodNovo.descricao}
                 </div>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -875,7 +876,7 @@ export default function NovaTrocaPage() {
                     color: prodNovo.estoque === 0 ? '#E5584A' : '#4CAF82',
                   }}>
                     {prodNovo.estoque === 0
-                      ? '⚠ Sem estoque'
+                      ? <><AlertTriangle size={11} strokeWidth={2} style={{ flexShrink: 0 }} /> Sem estoque</>
                       : `Estoque: ${prodNovo.estoque}`}
                   </span>
                 </div>
@@ -936,7 +937,7 @@ export default function NovaTrocaPage() {
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       marginBottom: 16,
                     }}>
-                      <span style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 600 }}>Cliente paga</span>
+                      <span style={{ fontSize: 14, color: '#332F3A', fontWeight: 600 }}>Cliente paga</span>
                       <span style={{ fontSize: 22, color: '#C9A84C', fontWeight: 800, fontFamily: 'var(--font-display)' }}>
                         {BRL(diferenca)}
                       </span>
@@ -967,18 +968,18 @@ export default function NovaTrocaPage() {
 
                 {diferenca === 0 && (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 16, color: '#4CAF82', fontWeight: 700 }}>Troca direta ✓</span>
+                    <span style={{ fontSize: 16, color: '#4CAF82', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>Troca direta <Check size={16} strokeWidth={2.5} /></span>
                   </div>
                 )}
               </div>
             )}
 
             <div style={{ marginTop: 8, display: 'flex', gap: 12, justifyContent: 'space-between' }}>
-              <button className="btn btn-ghost" onClick={() => { setStep(2); setErro('') }} style={{ padding: '10px 20px' }}>
-                ← Voltar
+              <button className="btn btn-ghost" onClick={() => { setStep(2); setErro('') }} style={{ padding: '10px 20px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <ArrowLeft size={13} strokeWidth={2} /> Voltar
               </button>
-              <button className="btn btn-primary" onClick={irPasso4} style={{ padding: '11px 28px' }}>
-                Próximo →
+              <button className="btn btn-primary" onClick={irPasso4} style={{ padding: '11px 28px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                Próximo <ChevronRight size={13} strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -1005,7 +1006,7 @@ export default function NovaTrocaPage() {
                 <span style={{ fontSize: 11, color: 'rgba(242,235,217,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Cliente
                 </span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#F2EBD9' }}>{cliente?.nome}</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#332F3A' }}>{cliente?.nome}</span>
               </div>
 
               <div style={{ height: 1, background: 'rgba(242,235,217,0.06)' }} />
@@ -1017,7 +1018,7 @@ export default function NovaTrocaPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 500 }}>
+                    <div style={{ fontSize: 14, color: '#332F3A', fontWeight: 500 }}>
                       {'produto' in (prodDevolvido as any)
                         ? (prodDevolvido as VendaItem).produto
                         : (prodDevolvido as Produto).descricao
@@ -1039,7 +1040,7 @@ export default function NovaTrocaPage() {
                   Novo
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 14, color: '#F2EBD9', fontWeight: 500 }}>
+                  <div style={{ fontSize: 14, color: '#332F3A', fontWeight: 500 }}>
                     {prodNovo?.descricao} × {qtdNov}
                   </div>
                   <span style={{ fontSize: 16, fontWeight: 700, color: '#4CAF82' }}>{BRL(valorNovo)}</span>
@@ -1064,7 +1065,7 @@ export default function NovaTrocaPage() {
                   fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)',
                   color: diferenca > 0 ? '#C9A84C' : diferenca < 0 ? '#4D9ECC' : '#4CAF82',
                 }}>
-                  {diferenca === 0 ? '✓' : BRL(Math.abs(diferenca))}
+                  {diferenca === 0 ? <Check size={24} strokeWidth={2.5} /> : BRL(Math.abs(diferenca))}
                 </span>
               </div>
 
@@ -1080,18 +1081,18 @@ export default function NovaTrocaPage() {
               <button
                 className="btn btn-ghost"
                 onClick={() => { setStep(3); setErro('') }}
-                style={{ padding: '11px 24px' }}
+                style={{ padding: '11px 24px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 disabled={salvando}
               >
-                ← Corrigir
+                <ArrowLeft size={13} strokeWidth={2} /> Corrigir
               </button>
               <button
                 className="btn btn-primary"
                 onClick={confirmar}
                 disabled={salvando}
-                style={{ padding: '12px 36px', fontSize: 15, fontWeight: 700 }}
+                style={{ padding: '12px 36px', fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                {salvando ? 'Registrando...' : '✓ Confirmar Troca'}
+                {salvando ? 'Registrando...' : <><Check size={13} strokeWidth={2.5} /> Confirmar Troca</>}
               </button>
             </div>
           </div>

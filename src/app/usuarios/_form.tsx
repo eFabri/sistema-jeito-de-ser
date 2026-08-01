@@ -204,7 +204,7 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
           </Campo>
         </div>
         <div style={{ marginTop: 14 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#F2EBD9' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#332F3A' }}>
             <input type="checkbox" checked={dados.ativo} onChange={e => set('ativo', e.target.checked)} />
             Usuário ativo (pode fazer login)
           </label>
@@ -256,7 +256,7 @@ export default function FormUsuario({ inicial, modo, onSalvar, onDeletar }: Prop
                     }}
                       onClick={() => togglePerm(item.key)}
                     >
-                      <span style={{ fontSize: 13, color: ativo ? '#F2EBD9' : 'var(--text-muted)', userSelect: 'none' }}>
+                      <span style={{ fontSize: 13, color: ativo ? '#332F3A' : 'var(--text-muted)', userSelect: 'none' }}>
                         {item.label}
                       </span>
                       {/* Toggle switch */}

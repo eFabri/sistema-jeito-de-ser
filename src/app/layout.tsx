@@ -1,18 +1,18 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from 'next/font/google'
+import { Nunito, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const cormorant = Cormorant_Garamond({
+const nunito = Nunito({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '600', '700', '800', '900'],
   variable: '--font-display',
   display: 'swap',
 })
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '700'],
   variable: '--font-body',
   display: 'swap',
 })
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${cormorant.variable} ${dmSans.variable} ${jetbrains.variable}`}>
+    <html lang="pt-BR" className={`${nunito.variable} ${dmSans.variable} ${jetbrains.variable}`}>
       <body>{children}</body>
     </html>
   )

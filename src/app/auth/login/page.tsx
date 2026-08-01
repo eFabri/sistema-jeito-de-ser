@@ -77,7 +77,7 @@ export default function LoginPage() {
         }}>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600,
-            color: '#F2EBD9', marginBottom: 4,
+            color: 'rgba(242,235,217,0.9)', marginBottom: 4,
           }}>
             Bem-vinda ao sistema Jeito de Ser
           </h2>

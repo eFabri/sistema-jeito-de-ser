@@ -37,7 +37,7 @@ export default function TrocaDetalhePage() {
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1000 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A' }}>
               Troca #{troca.id}
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -82,7 +82,7 @@ function Info({ label, valor, cor, destaque }: { label: string; valor: any; cor?
   return (
     <div>
       <div style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: destaque ? 22 : 16, color: cor || '#F2EBD9', fontWeight: 700, fontFamily: 'var(--font-display)' }}>{valor}</div>
+      <div style={{ fontSize: destaque ? 22 : 16, color: cor || '#332F3A', fontWeight: 700, fontFamily: 'var(--font-display)' }}>{valor}</div>
     </div>
   )
 }
@@ -99,8 +99,8 @@ function SecaoItens({ titulo, cor, itens }: { titulo: string; cor: string; itens
           padding: '12px 20px', alignItems: 'center',
           borderBottom: idx < itens.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
         }}>
-          <div style={{ fontSize: 13, color: '#F2EBD9' }}>{it.produto}</div>
-          <div style={{ fontSize: 13, color: '#F2EBD9' }}>{it.quantidade}</div>
+          <div style={{ fontSize: 13, color: '#332F3A' }}>{it.produto}</div>
+          <div style={{ fontSize: 13, color: '#332F3A' }}>{it.quantidade}</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{BRL(Math.abs(Number(it.valor)))}</div>
           <div style={{ fontSize: 13, color: cor, fontWeight: 600 }}>
             {BRL(Math.abs(Number(it.valor)) * Number(it.quantidade))}

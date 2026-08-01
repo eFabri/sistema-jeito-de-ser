@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+import { Circle, ChevronRight } from 'lucide-react'
 
 export default function UsuariosPage() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function UsuariosPage() {
       <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#F2EBD9', letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A', letterSpacing: '-0.01em' }}>
               Usuários
             </h1>
             <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>
@@ -65,7 +66,7 @@ export default function UsuariosPage() {
             <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</div>
           ) : usuarios.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>◉</div>
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', opacity: 0.3 }}><Circle size={32} strokeWidth={1} /></div>
               Nenhum usuário cadastrado
             </div>
           ) : usuarios.map((u, i) => (
@@ -94,7 +95,7 @@ export default function UsuariosPage() {
                 }}>
                   {u.nome?.charAt(0) || '?'}
                 </div>
-                <div style={{ fontSize: 13, color: '#F2EBD9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {u.nome || '—'}
                 </div>
               </div>
@@ -124,7 +125,7 @@ export default function UsuariosPage() {
                   {u.ativo ? 'Ativo' : 'Inativo'}
                 </span>
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+              <div style={{ color: 'var(--text-muted)', textAlign: 'right' }}><ChevronRight size={16} strokeWidth={1.5} /></div>
             </div>
           ))}
         </div>

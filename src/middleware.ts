@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
   const isAuthPage = pathname.startsWith('/auth')
-  const isCronRoute = pathname.startsWith('/api/whatsapp/cron')
+  const isCronRoute = pathname.startsWith('/api/whatsapp/cron') || pathname.startsWith('/api/condicionais/alertas')
 
   if (isCronRoute) return supabaseResponse
 

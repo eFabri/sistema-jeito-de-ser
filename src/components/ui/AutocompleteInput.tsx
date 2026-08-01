@@ -60,9 +60,9 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
       {open && filtered.length > 0 && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          background: '#1a1610', border: '1px solid rgba(201,168,76,0.25)',
+          background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(124,58,237,0.15)',
           borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: 'auto',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-clay-lg)',
         }}>
           {filtered.map(opt => (
             <button
@@ -72,11 +72,11 @@ export default function AutocompleteInput({ value, onChange, options, placeholde
               style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '8px 12px', background: 'none', border: 'none',
-                color: opt === value ? '#C9A84C' : '#F2EBD9',
+                color: opt === value ? '#7C3AED' : 'var(--text-primary)',
                 fontSize: 13, cursor: 'pointer',
-                borderBottom: '1px solid rgba(201,168,76,0.06)',
+                borderBottom: '1px solid rgba(124,58,237,0.06)',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.08)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
               {opt}
