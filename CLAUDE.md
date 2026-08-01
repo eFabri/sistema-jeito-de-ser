@@ -19,6 +19,21 @@ Este é um sistema web completo em Next.js 14 + Supabase, já construído e pron
 
 ---
 
+## Regras críticas do banco de dados
+
+**TIMEZONE — REGRA OBRIGATÓRIA:** ao contar eventos "de hoje" ou "do dia X" em `whatsapp_logs` ou qualquer tabela com `enviado_em`/`created_at` armazenado em UTC, SEMPRE calcular a fronteira em horário de Brasília (UTC-3):
+- início do dia X BRT = `dia X às 03:00Z`
+- fim do dia X BRT = `dia X+1 às 03:00Z`
+
+Exemplo correto para 28/07:
+```
+enviado_em=gte.2026-07-28T03:00:00Z&enviado_em=lt.2026-07-29T03:00:00Z
+```
+
+**NUNCA** usar meia-noite UTC crua (`00:00:00Z`) como fronteira de dia. Esse erro já causou múltiplos diagnósticos falsos neste projeto (eventos da noite de 27/07 BRT aparecendo como 28/07, bugs "novos" que eram incidentes já resolvidos).
+
+---
+
 ## Etapas do deploy — execute nesta ordem
 
 ### ETAPA 0 — Verificar ambiente
