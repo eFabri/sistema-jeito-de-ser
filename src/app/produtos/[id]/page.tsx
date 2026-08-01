@@ -32,7 +32,7 @@ function InfoRow({ label, value }: any) {
   return (
     <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.05)' }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 140, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#F2EBD9' }}>{value}</span>
+      <span style={{ fontSize: 13, color: '#332F3A' }}>{value}</span>
     </div>
   )
 }
@@ -59,11 +59,11 @@ function ModalAjuste({ produto, onClose, onSalvo }: any) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: '#131109', border: '1px solid var(--border-strong)', borderRadius: 20, padding: '28px 32px', width: 400 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#F2EBD9', marginBottom: 6 }}>Ajuste de Estoque</h3>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: 20, padding: '28px 32px', width: 400 }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#332F3A', marginBottom: 6 }}>Ajuste de Estoque</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
-          {produto.descricao} · Estoque atual: <strong style={{ color: '#F2EBD9' }}>{produto.estoque}</strong>
+          {produto.descricao} · Estoque atual: <strong style={{ color: '#332F3A' }}>{produto.estoque}</strong>
         </p>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
@@ -145,7 +145,7 @@ export default function ProdutoDetalhePage() {
     setSalvando(false)
   }
 
-  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
+  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | string) => {
     const val = typeof e === 'string' ? e : e.target.value
     setForm((prev: any) => {
       const next = { ...prev, [k]: val }
@@ -190,7 +190,7 @@ export default function ProdutoDetalhePage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <button onClick={() => router.push('/produtos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>‹ Produtos</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2EBD9', lineHeight: 1.1 }}>{produto.descricao}</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#332F3A', lineHeight: 1.1 }}>{produto.descricao}</h1>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
               {produto.grupo}{produto.sub_grupo ? ` · ${produto.sub_grupo}` : ''}{produto.marca ? ` · ${produto.marca}` : ''}
             </p>
@@ -220,13 +220,13 @@ export default function ProdutoDetalhePage() {
           ].map(card => (
             <div key={card.label} className="card" style={{ borderColor: card.alert ? 'rgba(232,148,58,0.25)' : undefined }}>
               <div style={{ fontSize: 10, color: card.alert ? '#E8943A' : 'var(--gold-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>{card.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: card.alert ? '#E8943A' : card.highlight ? '#C9A84C' : '#F2EBD9' }}>{card.value}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: card.alert ? '#E8943A' : card.highlight ? '#C9A84C' : '#332F3A' }}>{card.value}</div>
             </div>
           ))}
         </div>
 
         {/* ABAS */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
           {[['info', 'Dados do Produto'], ['vendas', `Vendas (${vendas.length})`], ['compras', `Compras (${compras.length})`]].map(([id, label]) => (
             <button key={id} onClick={() => setAba(id as any)} style={{
               padding: '8px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
@@ -242,7 +242,7 @@ export default function ProdutoDetalhePage() {
         {aba === 'info' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
                 Identificação
               </h3>
               {editando ? (
@@ -289,7 +289,7 @@ export default function ProdutoDetalhePage() {
             </div>
 
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
                 Preço & Estoque
               </h3>
               {editando ? (
@@ -328,6 +328,45 @@ export default function ProdutoDetalhePage() {
           </div>
         )}
 
+        {/* CARD DETALHES */}
+        {aba === 'info' && (
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              Detalhes
+            </h3>
+            {editando ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Campo label="Coleção / Temporada">
+                  <input className="input" placeholder="Ex: Verão 2025" value={form.colecao || ''} onChange={f('colecao')} />
+                </Campo>
+                <Campo label="Composição do Tecido">
+                  <input className="input" placeholder="Ex: 100% Poliéster" value={form.composicao || ''} onChange={f('composicao')} />
+                </Campo>
+                <Campo label="Instruções de Lavagem">
+                  <input className="input" placeholder="Ex: Lavar à mão" value={form.lavagem || ''} onChange={f('lavagem')} />
+                </Campo>
+                <Campo label="Produto Ativo">
+                  <select className="input" value={form.ativo ? 'true' : 'false'} onChange={e => setForm((p: any) => ({ ...p, ativo: e.target.value === 'true' }))}>
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                </Campo>
+                <Campo label="Observações Internas" span={2}>
+                  <textarea className="input" rows={4} placeholder="Anotações internas sobre o produto..." value={form.observacoes_internas || ''} onChange={f('observacoes_internas')} style={{ resize: 'vertical', lineHeight: 1.5 }} />
+                </Campo>
+              </div>
+            ) : (
+              <>
+                <InfoRow label="Coleção / Temporada"    value={p.colecao} />
+                <InfoRow label="Composição do Tecido"   value={p.composicao} />
+                <InfoRow label="Instruções de Lavagem"  value={p.lavagem} />
+                <InfoRow label="Observações Internas"   value={p.observacoes_internas} />
+                <InfoRow label="Produto Ativo"          value={p.ativo ? 'Sim' : 'Não'} />
+              </>
+            )}
+          </div>
+        )}
+
         {/* ABA VENDAS */}
         {aba === 'vendas' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -341,7 +380,7 @@ export default function ProdutoDetalhePage() {
             ) : vendas.map((v: any, i: number) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', padding: '11px 20px', borderBottom: i < vendas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 13, color: '#F2EBD9' }}>{v.vendas?.nome_cliente || '—'}</div>
+                  <div style={{ fontSize: 13, color: '#332F3A' }}>{v.vendas?.nome_cliente || '—'}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtData(v.vendas?.data)}</div>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{v.quantidade}</div>
@@ -364,7 +403,7 @@ export default function ProdutoDetalhePage() {
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma compra registrada</div>
             ) : compras.map((c: any, i: number) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 80px 120px 120px', padding: '11px 20px', borderBottom: i < compras.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'center' }}>
-                <div style={{ fontSize: 13, color: '#F2EBD9' }}>{fmtData(c.compras?.data)}</div>
+                <div style={{ fontSize: 13, color: '#332F3A' }}>{fmtData(c.compras?.data)}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.quantidade}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{BRL(c.valor_unitario)}</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>{BRL(c.sub_total)}</div>

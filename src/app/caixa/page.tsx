@@ -81,15 +81,15 @@ export default function CaixaPage() {
   const buscar = useCallback(async () => {
     const url = idParam ? `/api/caixa?id=${idParam}` : '/api/caixa'
     const [est, per] = await Promise.all([
-      fetch(url).then(r => r.json()),
-      fetch('/api/perfil').then(r => r.ok ? r.json() : null),
+      fetch(url, { cache: 'no-store' }).then(r => r.json()),
+      fetch('/api/perfil', { cache: 'no-store' }).then(r => r.ok ? r.json() : null),
     ])
     setEstado(est)
     setPerfil(per)
     setLoading(false)
 
     if (est?.caixa?.id) {
-      fetch(`/api/caixa/detalhe?caixa_id=${est.caixa.id}`)
+      fetch(`/api/caixa/detalhe?caixa_id=${est.caixa.id}`, { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d) setDetalhe(d) })
     }

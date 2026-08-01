@@ -719,7 +719,7 @@ function SecaoWhatsAppHoje() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/whatsapp?aba=whatsapp_hoje')
+    fetch('/api/whatsapp?aba=whatsapp_hoje', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => setData(d))
       .catch(() => setData({ hoje: '', logs: [] }))

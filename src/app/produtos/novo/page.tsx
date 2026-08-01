@@ -6,6 +6,8 @@ import AppLayout from '@/components/layout/AppLayout'
 import AutocompleteInput from '@/components/ui/AutocompleteInput'
 import { createClient } from '@/lib/supabase/client'
 
+const RASCUNHO_KEY = 'produto_rascunho'
+
 type Aba = 'id' | 'preco' | 'detalhes'
 
 interface Opcoes {
@@ -34,7 +36,7 @@ const FORM_INICIAL = {
   descricao: '', grupo: '', sub_grupo: '', cod_barras: '', cod_referencia: '',
   marca: '', cor: '', tamanho: '', fornecedor: '', localizacao: '',
   estoque: '0', estoque_minimo: '1', preco_custo: '', margem_lucro: '', preco_venda: '',
-  permite_desconto: 'true', colecao: '', composicao: '', lavagem: '', observacoes: '', ativo: 'true',
+  permite_desconto: 'true', colecao: '', composicao: '', lavagem: '', observacoes_internas: '', ativo: 'true',
 }
 
 export default function NovoProdutoPage() {
@@ -50,6 +52,7 @@ export default function NovoProdutoPage() {
   const [erros, setErros]           = useState<Record<string, string>>({})
   const [opcoes, setOpcoes]         = useState<Opcoes>({ grupos: [], subGrupos: {}, cores: [], tamanhos: [], marcas: [], localizacoes: [], fornecedores: [] })
   const [preservar, setPreservar]   = useState({ grupo: '', sub_grupo: '' })
+  const [rascunhoBanner, setRascunhoBanner] = useState(false)
 
   const [form, setForm] = useState({ ...FORM_INICIAL })
 
@@ -63,7 +66,36 @@ export default function NovoProdutoPage() {
       .then(r => r.json())
       .then(d => setOpcoes(d))
       .catch(() => {})
+
+    // Verifica rascunho salvo
+    try {
+      const saved = localStorage.getItem(RASCUNHO_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.descricao || parsed.preco_venda) setRascunhoBanner(true)
+      }
+    } catch {}
   }, [])
+
+  // Auto-save do rascunho sempre que o form mudar
+  useEffect(() => {
+    if (form.descricao || form.preco_venda || form.cod_barras) {
+      localStorage.setItem(RASCUNHO_KEY, JSON.stringify(form))
+    }
+  }, [form])
+
+  function restaurarRascunho() {
+    try {
+      const saved = localStorage.getItem(RASCUNHO_KEY)
+      if (saved) setForm(JSON.parse(saved))
+    } catch {}
+    setRascunhoBanner(false)
+  }
+
+  function descartarRascunho() {
+    localStorage.removeItem(RASCUNHO_KEY)
+    setRascunhoBanner(false)
+  }
 
   const subGruposDisponiveis = opcoes.subGrupos[form.grupo] || []
 
@@ -163,6 +195,7 @@ export default function NovoProdutoPage() {
       })
       if (res.ok) {
         const data = await res.json()
+        localStorage.removeItem(RASCUNHO_KEY)
         setPreservar({ grupo: form.grupo, sub_grupo: form.sub_grupo })
         setSalvoId(data.id)
       } else {
@@ -180,6 +213,7 @@ export default function NovoProdutoPage() {
     const nextRes = await fetch('/api/produtos/proximo-codigo')
     const nextData = await nextRes.json()
 
+    localStorage.removeItem(RASCUNHO_KEY)
     setForm({
       ...FORM_INICIAL,
       grupo:          preservar.grupo,
@@ -212,7 +246,7 @@ export default function NovoProdutoPage() {
         <div className="animate-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
           <div className="card" style={{ textAlign: 'center', padding: '48px 40px', maxWidth: 440, borderColor: 'rgba(201,168,76,0.3)' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(76,175,130,0.15)', border: '2px solid #4CAF82', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 24 }}>✓</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#F2EBD9', marginBottom: 8 }}>Produto salvo!</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#332F3A', marginBottom: 8 }}>Produto salvo!</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>O produto foi cadastrado com sucesso.</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-ghost" onClick={resetarForm}>+ Cadastrar outro</button>
@@ -231,13 +265,23 @@ export default function NovoProdutoPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <button onClick={() => router.push('/produtos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 6, padding: 0 }}>‹ Produtos</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#F2EBD9', margin: 0 }}>Novo Produto</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#332F3A', margin: 0 }}>Novo Produto</h1>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button className="btn btn-ghost" onClick={() => router.push('/produtos')}>Cancelar</button>
             <button className="btn btn-primary" onClick={salvar} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar Produto'}</button>
           </div>
         </div>
+
+        {rascunhoBanner && (
+          <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: '#332F3A' }}>Você tem um cadastro incompleto salvo. Deseja continuar de onde parou?</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={descartarRascunho} style={{ background: 'none', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 8, color: 'var(--text-muted)', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>Descartar</button>
+              <button onClick={restaurarRascunho} style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', borderRadius: 8, color: '#C9A84C', padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Retomar cadastro</button>
+            </div>
+          </div>
+        )}
 
         {erros.geral && (
           <div style={{ background: 'rgba(229,88,74,0.1)', border: '1px solid rgba(229,88,74,0.25)', borderRadius: 10, padding: '12px 16px', color: '#E5584A', fontSize: 13 }}>{erros.geral}</div>
@@ -274,7 +318,7 @@ export default function NovoProdutoPage() {
 
         {abaForm === 'id' && (
           <div className="card">
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Identificação do Produto</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Identificação do Produto</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
 
               <Campo label="Descrição / Nome *" span={2} erro={erros.descricao}>
@@ -348,7 +392,7 @@ export default function NovoProdutoPage() {
         {abaForm === 'preco' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Precificação</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Precificação</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
                 <Campo label="Preço de Custo (R$)">
                   <input type="number" className="input" placeholder="0,00" step={0.01} min={0} value={form.preco_custo} onChange={f('preco_custo')} />
@@ -369,7 +413,7 @@ export default function NovoProdutoPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Custo</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9' }}>{custo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A' }}>{custo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Markup</div>
@@ -377,7 +421,7 @@ export default function NovoProdutoPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Preço Venda</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#F2EBD9' }}>{venda.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#332F3A' }}>{venda.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Lucro/peça · Margem</div>
@@ -390,7 +434,7 @@ export default function NovoProdutoPage() {
             )}
 
             <div className="card">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Estoque</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Estoque</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
                 <Campo label="Estoque Inicial">
                   <input type="number" className="input" value={form.estoque} min={0} onChange={f('estoque')} />
@@ -414,7 +458,7 @@ export default function NovoProdutoPage() {
 
         {abaForm === 'detalhes' && (
           <div className="card">
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#F2EBD9', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Detalhes Adicionais</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>Detalhes Adicionais</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
               <Campo label="Composição do Tecido">
                 <input className="input" placeholder="Ex: 100% Poliéster" value={form.composicao} onChange={f('composicao')} />
@@ -423,7 +467,7 @@ export default function NovoProdutoPage() {
                 <input className="input" placeholder="Ex: Lavar à mão, não torcer" value={form.lavagem} onChange={f('lavagem')} />
               </Campo>
               <Campo label="Observações Internas" span={2}>
-                <textarea className="input" placeholder="Anotações internas sobre o produto..." value={form.observacoes} onChange={f('observacoes')} rows={4} style={{ resize: 'vertical', lineHeight: 1.5 }} />
+                <textarea className="input" placeholder="Anotações internas sobre o produto..." value={form.observacoes_internas} onChange={f('observacoes_internas')} rows={4} style={{ resize: 'vertical', lineHeight: 1.5 }} />
               </Campo>
               <Campo label="Produto Ativo">
                 <select className="input" value={form.ativo} onChange={f('ativo')}>

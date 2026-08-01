@@ -58,22 +58,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [notifCount, setNotifCount] = useState(0)
 
   useEffect(() => {
-    fetch('/api/perfil')
+    fetch('/api/perfil', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d && d.user_id) setPerfil(d) })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('/api/financeiro?aba=resumo_receber')
+    fetch('/api/financeiro?aba=resumo_receber', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.badge != null) setBadges(b => ({ ...b, contasReceber: d.badge })) })
       .catch(() => {})
-    fetch('/api/condicionais?badge=1')
+    fetch('/api/condicionais?badge=1', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.badge != null) setBadges(b => ({ ...b, condicionais: d.badge })) })
       .catch(() => {})
-    fetch('/api/notificacoes?count=1')
+    fetch('/api/notificacoes?count=1', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.count != null) setNotifCount(d.count) })
       .catch(() => {})
