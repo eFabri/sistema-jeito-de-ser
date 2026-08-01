@@ -161,7 +161,6 @@ export async function GET() {
   } catch {}
 
   return NextResponse.json({
-    _debug: { hojeStr, inicioPeriodoVendas, vendas_count: vendasPeriodo.length, top3: vendasPeriodo.slice(0, 3).map((v: any) => ({ id: v.id, data: v.data })) },
     vendas_hoje: { total: totalHoje, qtd: vendasHoje.length, comparativo_ontem_pct: comparativoOntemPct },
     vendas_mes:  { total: totalMes, qtd: vendasMes.length },
     ticket_medio_dia: ticketMedioDia,
