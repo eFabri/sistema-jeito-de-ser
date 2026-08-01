@@ -27,24 +27,15 @@ export async function GET() {
   const inicioPeriodoVendas = ha30Str // pega 30 dias pra trás (cobre 7/14/30/mês)
 
   // ─── 1. Vendas no período (carrega uma vez, fatia depois) ──────
-  // Paginação manual porque podem haver muitas vendas
-  const vendasPeriodo: any[] = []
-  let from = 0
-  while (true) {
-    const { data, error } = await supabase
-      .from('vendas')
-      .select('id, codigo_legado, vendedor, data, nome_cliente, valor_total, situacao, forma_pagamento, created_at')
-      .gte('data', inicioPeriodoVendas)
-      .neq('situacao', 'Cancelada')
-      .order('data', { ascending: false })
-      .range(from, from + 999)
-    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
-    if (!data || data.length === 0) break
-    vendasPeriodo.push(...data)
-    if (data.length < 1000) break
-    from += 1000
-    if (from > 9000) break
-  }
+  const { data: vendasData, error: vendasError } = await supabase
+    .from('vendas')
+    .select('id, codigo_legado, vendedor, data, nome_cliente, valor_total, situacao, forma_pagamento, created_at')
+    .gte('data', inicioPeriodoVendas)
+    .neq('situacao', 'Cancelada')
+    .order('id', { ascending: false })
+    .limit(1500)
+  if (vendasError) return NextResponse.json({ erro: vendasError.message }, { status: 500 })
+  const vendasPeriodo: any[] = vendasData || []
 
   const vendasHoje    = vendasPeriodo.filter(v => v.data === hojeStr)
   const vendasOntem   = vendasPeriodo.filter(v => v.data === ontemStr)
@@ -170,6 +161,7 @@ export async function GET() {
   } catch {}
 
   return NextResponse.json({
+    _debug: { hojeStr, inicioPeriodoVendas, vendas_count: vendasPeriodo.length, top3: vendasPeriodo.slice(0, 3).map((v: any) => ({ id: v.id, data: v.data })) },
     vendas_hoje: { total: totalHoje, qtd: vendasHoje.length, comparativo_ontem_pct: comparativoOntemPct },
     vendas_mes:  { total: totalMes, qtd: vendasMes.length },
     ticket_medio_dia: ticketMedioDia,

@@ -66,8 +66,8 @@ export default function Dashboard() {
     setIsRefreshing(true)
     try {
       const [dash, per] = await Promise.all([
-        fetch('/api/dashboard').then(r => r.json()),
-        fetch('/api/perfil').then(r => r.ok ? r.json() : null),
+        fetch('/api/dashboard', { cache: 'no-store' }).then(r => r.json()),
+        fetch('/api/perfil', { cache: 'no-store' }).then(r => r.ok ? r.json() : null),
       ])
       setD(dash)
       setPerfil(per)
