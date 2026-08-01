@@ -168,7 +168,11 @@ export default function ClienteDetalhePage() {
             ) : (
               <>
                 <button className="btn btn-ghost" onClick={() => router.push(`/vendas/nova?cliente=${cliente.id}`)}>+ Nova Venda</button>
+                {/* DESATIVADO TEMPORARIAMENTE — saldo_credito lançado aqui não é consumível em nenhum
+                    fluxo de venda (vendas/nova só lê credito_troca). Reativar somente após conectar
+                    os dois sistemas de crédito e definir onde o saldo_credito pode ser abatido.
                 <button className="btn btn-ghost" onClick={() => setModalCredito(true)}>+ Lançar Crédito</button>
+                */}
                 <button className="btn btn-primary" onClick={() => setEditando(true)}>Editar</button>
               </>
             )}
