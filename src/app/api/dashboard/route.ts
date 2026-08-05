@@ -1,5 +1,6 @@
 // src/app/api/dashboard/route.ts — agrega tudo que o Dashboard precisa numa só chamada
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 import { NextResponse } from 'next/server'
 import { createServerSupabaseAdmin } from '@/lib/supabase/server'

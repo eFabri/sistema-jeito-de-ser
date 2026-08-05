@@ -51,6 +51,7 @@ export default function Dashboard() {
   )
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string | null>(null)
+  const [ultimaFalha, setUltimaFalha] = useState<string | null>(null)
 
   function toggleValores() {
     setValoresVisiveis(v => {
@@ -64,15 +65,22 @@ export default function Dashboard() {
 
   const buscarDados = useCallback(async () => {
     setIsRefreshing(true)
+    const horaAgora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     try {
+      const bust = Date.now()
       const [dash, per] = await Promise.all([
-        fetch('/api/dashboard', { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/dashboard?_t=${bust}`, { cache: 'no-store' }).then(r => r.json()),
         fetch('/api/perfil', { cache: 'no-store' }).then(r => r.ok ? r.json() : null),
       ])
+      console.log('[Dashboard] refresh ok', { hora: horaAgora, vendas_hoje_qtd: dash?.vendas_hoje?.qtd, vendas_hoje_total: dash?.vendas_hoje?.total })
       setD(dash)
       setPerfil(per)
-      setUltimaAtualizacao(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-    } catch {} finally {
+      setUltimaAtualizacao(horaAgora)
+      setUltimaFalha(null)
+    } catch (err) {
+      console.error('[Dashboard] falha no auto-refresh:', horaAgora, err)
+      setUltimaFalha(horaAgora)
+    } finally {
       setLoading(false)
       setIsRefreshing(false)
     }
@@ -172,11 +180,15 @@ export default function Dashboard() {
                 style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
               </button>
-              {ultimaAtualizacao && (
+              {ultimaFalha ? (
+                <span style={{ fontSize: 9, color: 'var(--danger)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                  tentativa {ultimaFalha} (falhou)
+                </span>
+              ) : ultimaAtualizacao ? (
                 <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
                   {ultimaAtualizacao}
                 </span>
-              )}
+              ) : null}
             </div>
             <button onClick={toggleValores} title={valoresVisiveis ? 'Ocultar valores' : 'Mostrar valores'}
               style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
@@ -286,11 +298,15 @@ export default function Dashboard() {
               style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
               <RefreshCw size={14} strokeWidth={1.8} style={{ transition: 'transform 0.6s', transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)' }} />
             </button>
-            {ultimaAtualizacao && (
+            {ultimaFalha ? (
+              <span style={{ fontSize: 9, color: 'var(--danger)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                tentativa {ultimaFalha} (falhou)
+              </span>
+            ) : ultimaAtualizacao ? (
               <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
                 {ultimaAtualizacao}
               </span>
-            )}
+            ) : null}
           </div>
           <button onClick={toggleValores} title={valoresVisiveis ? 'Ocultar valores' : 'Mostrar valores'}
             style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
