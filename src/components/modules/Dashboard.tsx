@@ -103,6 +103,14 @@ export default function Dashboard() {
     }
   }, [buscarDados])
 
+  useEffect(() => {
+    try {
+      const canal = new BroadcastChannel('vendas-updates')
+      canal.onmessage = (ev) => { if (ev.data?.tipo === 'venda-criada') buscarDados() }
+      return () => canal.close()
+    } catch {}
+  }, [buscarDados])
+
   function salvarMetaMes(v: number) {
     setMetaMes(v)
     if (typeof window !== 'undefined') localStorage.setItem(META_KEY, String(v))

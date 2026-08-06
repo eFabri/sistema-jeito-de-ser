@@ -522,6 +522,11 @@ export default function NovaVendaPage() {
     }
 
     const venda = await res.json()
+    try {
+      const canal = new BroadcastChannel('vendas-updates')
+      canal.postMessage({ tipo: 'venda-criada', id: venda.id })
+      canal.close()
+    } catch {}
     setVendaFinalizada(venda)
     setEtapa('confirmado')
     setSalvando(false)
