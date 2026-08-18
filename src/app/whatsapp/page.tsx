@@ -424,6 +424,9 @@ export default function WhatsAppPage() {
                 </div>
               </div>
 
+              {/* ── DISPARO EM MASSA ──────────────────────── */}
+              <DisparoEmMassa />
+
               {/* Todos os vencimentos dos próximos 7 dias */}
               {(pendentes?.vencimentos?.filter((v: any) => v.dias_para_vencer !== 5)?.length || 0) > 0 && (
                 <div className="card">
@@ -491,4 +494,263 @@ export default function WhatsAppPage() {
       </div>
     </AppLayout>
   )
+}
+
+// ─── DISPARO EM MASSA COM NOME PERSONALIZADO ─────────────────
+type StatusEnvio = 'aguardando' | 'enviando' | 'ok' | 'erro'
+
+interface LinhaMassa {
+  nome: string
+  numero: string
+  mensagem: string
+  status: StatusEnvio
+  erro?: string
+}
+
+function DisparoEmMassa() {
+  const [listaRaw,   setListaRaw]   = useState('')
+  const [template,   setTemplate]   = useState('Olá {{nome}}, tudo bem? 😊')
+  const [linhas,     setLinhas]     = useState<LinhaMassa[]>([])
+  const [etapa,      setEtapa]      = useState<'editor' | 'preview' | 'enviando' | 'concluido'>('editor')
+  const [atual,      setAtual]      = useState(0)
+  const [parar,      setParar]      = useState(false)
+  const pararRef = { current: false }
+
+  // Parse da lista colada (suporta vírgula, tab ou ;)
+  function parseLista(): LinhaMassa[] {
+    return listaRaw
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+      .map(linha => {
+        const partes = linha.split(/[\t,;]/).map(p => p.trim())
+        const nome   = partes[0] || ''
+        const numero = partes[1] || ''
+        const msg    = template.replace(/\{\{nome\}\}/g, nome.split(' ')[0] || nome)
+        return { nome, numero, mensagem: msg, status: 'aguardando' as StatusEnvio }
+      })
+      .filter(l => l.nome && l.numero)
+  }
+
+  function abrirPreview() {
+    const parsed = parseLista()
+    if (parsed.length === 0) return
+    setLinhas(parsed)
+    setEtapa('preview')
+  }
+
+  async function iniciarDisparo() {
+    if (!confirm(`Confirma o disparo para ${linhas.length} pessoa(s)? Essa ação não pode ser desfeita.`)) return
+    setEtapa('enviando')
+    setAtual(0)
+    setParar(false)
+    pararRef.current = false
+
+    const lista = [...linhas]
+    for (let i = 0; i < lista.length; i++) {
+      if (pararRef.current) break
+      setAtual(i)
+      setLinhas(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'enviando' } : l))
+
+      try {
+        const res = await fetch('/api/whatsapp/disparo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: lista[i].nome, numero: lista[i].numero, mensagem: lista[i].mensagem }),
+        })
+        const json = await res.json()
+        setLinhas(prev => prev.map((l, idx) =>
+          idx === i ? { ...l, status: json.ok ? 'ok' : 'erro', erro: json.erro } : l
+        ))
+      } catch (e: any) {
+        setLinhas(prev => prev.map((l, idx) =>
+          idx === i ? { ...l, status: 'erro', erro: e.message } : l
+        ))
+      }
+
+      // Espera 15s antes do próximo (exceto no último)
+      if (i < lista.length - 1 && !pararRef.current) {
+        await new Promise(r => setTimeout(r, 15000))
+      }
+    }
+    setEtapa('concluido')
+  }
+
+  const enviados = linhas.filter(l => l.status === 'ok').length
+  const erros    = linhas.filter(l => l.status === 'erro').length
+  const falhas   = linhas.filter(l => l.status === 'erro')
+
+  // ── EDITOR ────────────────────────────────────────────────
+  if (etapa === 'editor') return (
+    <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A', marginBottom: 4 }}>
+        📤 Disparo em Massa Personalizado
+      </h3>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+        Cole a lista e defina o template. O envio é feito com intervalo de 15s entre cada mensagem.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Lista */}
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+            Lista de Contatos (Nome, Número — um por linha)
+          </label>
+          <textarea
+            className="input"
+            style={{ width: '100%', height: 180, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+            placeholder={'Ana Silva, 31999990001\nBruna Costa\t31999990002\nCarlos, 31999990003'}
+            value={listaRaw}
+            onChange={e => setListaRaw(e.target.value)}
+          />
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+            Aceita vírgula, tab ou ponto-e-vírgula como separador. Pode colar direto de planilha.
+          </div>
+        </div>
+
+        {/* Template */}
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+            Mensagem Template
+          </label>
+          <textarea
+            className="input"
+            style={{ width: '100%', height: 180, resize: 'vertical', fontSize: 13 }}
+            placeholder={'Olá {{nome}}, tudo bem?\n\nPassando pra avisar sobre nossa nova coleção! 🌸'}
+            value={template}
+            onChange={e => setTemplate(e.target.value)}
+          />
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+            Use <code style={{ background: 'rgba(201,168,76,0.12)', padding: '1px 5px', borderRadius: 4, color: '#C9A84C' }}>{'{{nome}}'}</code> para inserir o primeiro nome de cada pessoa.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          className="btn btn-primary"
+          style={{ padding: '10px 24px' }}
+          disabled={!listaRaw.trim() || !template.trim()}
+          onClick={abrirPreview}
+        >
+          Pré-visualizar →
+        </button>
+      </div>
+    </div>
+  )
+
+  // ── PREVIEW ───────────────────────────────────────────────
+  if (etapa === 'preview') return (
+    <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A' }}>
+            Pré-visualização — {linhas.length} mensagem(ns)
+          </h3>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>Confira antes de disparar. O envio demora ~{Math.round(linhas.length * 15 / 60)} min.</p>
+        </div>
+        <button onClick={() => setEtapa('editor')} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+          ← Voltar e editar
+        </button>
+      </div>
+
+      <div style={{ maxHeight: 380, overflowY: 'auto', borderRadius: 10, border: '1px solid var(--border)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '160px 130px 1fr', padding: '10px 14px', background: 'rgba(201,168,76,0.04)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0 }}>
+          {['Nome', 'Número', 'Mensagem final'].map(h => (
+            <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
+          ))}
+        </div>
+        {linhas.map((l, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '160px 130px 1fr', padding: '10px 14px', borderBottom: i < linhas.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'start' }}>
+            <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{l.nome}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{l.numero}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{l.mensagem}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button onClick={() => setEtapa('editor')} className="btn btn-ghost" style={{ padding: '10px 20px' }}>
+          Cancelar
+        </button>
+        <button onClick={iniciarDisparo} className="btn btn-primary" style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #4CAF82, #3a9168)' }}>
+          ▶ Iniciar disparo para {linhas.length} pessoa(s)
+        </button>
+      </div>
+    </div>
+  )
+
+  // ── ENVIANDO ──────────────────────────────────────────────
+  if (etapa === 'enviando' || etapa === 'concluido') {
+    const pct = linhas.length > 0 ? Math.round(((enviados + erros) / linhas.length) * 100) : 0
+    return (
+      <div className="card" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#332F3A' }}>
+            {etapa === 'concluido' ? '✅ Disparo concluído' : `⏳ Enviando ${atual + 1} de ${linhas.length}...`}
+          </h3>
+          {etapa === 'enviando' && (
+            <button
+              onClick={() => { pararRef.current = true; setParar(true) }}
+              className="btn btn-ghost"
+              style={{ padding: '6px 16px', fontSize: 12, borderColor: '#E5584A', color: '#E5584A' }}
+            >
+              ⏹ Parar
+            </button>
+          )}
+        </div>
+
+        {/* Barra de progresso */}
+        <div style={{ background: 'rgba(201,168,76,0.08)', borderRadius: 8, height: 8, overflow: 'hidden', marginBottom: 14 }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #C9A84C, #4CAF82)', borderRadius: 8, transition: 'width 0.4s ease' }} />
+        </div>
+
+        {/* Métricas */}
+        <div style={{ display: 'flex', gap: 20, marginBottom: 16 }}>
+          <span style={{ fontSize: 13, color: '#4CAF82', fontWeight: 700 }}>✓ {enviados} enviados</span>
+          {erros > 0 && <span style={{ fontSize: 13, color: '#E5584A', fontWeight: 700 }}>✕ {erros} falharam</span>}
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{linhas.length - enviados - erros} pendentes</span>
+        </div>
+
+        {/* Lista de progresso */}
+        <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {linhas.map((l, i) => {
+            const icon = l.status === 'ok' ? '✅' : l.status === 'erro' ? '❌' : l.status === 'enviando' ? '⏳' : '○'
+            const cor  = l.status === 'ok' ? '#4CAF82' : l.status === 'erro' ? '#E5584A' : l.status === 'enviando' ? '#C9A84C' : 'var(--text-muted)'
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8, background: l.status === 'enviando' ? 'rgba(201,168,76,0.07)' : 'transparent' }}>
+                <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
+                <span style={{ fontSize: 13, color: cor, fontWeight: l.status === 'enviando' ? 700 : 400, flex: 1 }}>
+                  {l.nome} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>({l.numero})</span>
+                </span>
+                {l.erro && <span style={{ fontSize: 10, color: '#E5584A', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.erro}</span>}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Resumo final */}
+        {etapa === 'concluido' && falhas.length > 0 && (
+          <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: 'rgba(229,88,74,0.06)', border: '1px solid rgba(229,88,74,0.15)' }}>
+            <div style={{ fontSize: 12, color: '#E5584A', fontWeight: 700, marginBottom: 8 }}>Falhas — verifique os números:</div>
+            {falhas.map((f, i) => (
+              <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                {f.nome} ({f.numero}) — {f.erro}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {etapa === 'concluido' && (
+          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => { setEtapa('editor'); setListaRaw(''); setLinhas([]) }} className="btn btn-ghost" style={{ padding: '8px 20px', fontSize: 13 }}>
+              Novo disparo
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return null
 }
