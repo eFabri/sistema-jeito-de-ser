@@ -89,7 +89,7 @@ function Section({ title, children, action, onAction }: any) {
 }
 
 // ─── RELATÓRIOS PRINCIPAL ─────────────────────────────────
-type TipoRelatorio = 'vendas' | 'produtos' | 'inadimplencia' | 'estoque' | 'vendedoras' | 'inativos' | 'top-clientes'
+type TipoRelatorio = 'vendas' | 'produtos' | 'inadimplencia' | 'estoque' | 'vendedoras' | 'inativos' | 'top-clientes' | 'contatos'
 
 export default function RelatoriosPage() {
   const router     = useRouter()
@@ -105,6 +105,12 @@ export default function RelatoriosPage() {
   const [tipoRanking, setTipoRanking] = useState<'mes' | 'trimestre' | 'custom'>('mes')
   const [rankIni, setRankIni] = useState('')
   const [rankFim, setRankFim] = useState('')
+
+  // Filtros de contatos
+  const [contatoAtivo,    setContatoAtivo]    = useState<'todos' | 'true' | 'false'>('todos')
+  const [contatoCidade,   setContatoCidade]   = useState('')
+  const [contatoCategoria,setContatoCategoria]= useState('')
+  const [contatoBusca,    setContatoBusca]    = useState('')
 
   const { ini, fim } = periodo === 'custom'
     ? { ini: iniCustom, fim: fimCustom }
@@ -123,6 +129,13 @@ export default function RelatoriosPage() {
       } else {
         res = await fetch(`/api/relatorios/top-clientes?tipo=${tipoRanking}&limit=20`)
       }
+    } else if (relatorio === 'contatos') {
+      const params = new URLSearchParams()
+      if (contatoAtivo !== 'todos') params.set('ativo', contatoAtivo)
+      if (contatoCidade)    params.set('cidade', contatoCidade)
+      if (contatoCategoria) params.set('categoria', contatoCategoria)
+      if (contatoBusca)     params.set('q', contatoBusca)
+      res = await fetch(`/api/relatorios/clientes?${params}`)
     } else {
       const tipoMap: Record<string, string> = {
         vendas: 'vendas_periodo', produtos: 'produtos',
@@ -133,7 +146,8 @@ export default function RelatoriosPage() {
     const json = await res.json()
     setData(json)
     setLoading(false)
-  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom, diasInativo, tipoRanking, rankIni, rankFim])
+  }, [relatorio, ini, fim, periodo, iniCustom, fimCustom, diasInativo, tipoRanking, rankIni, rankFim,
+      contatoAtivo, contatoCidade, contatoCategoria, contatoBusca])
 
   useEffect(() => { carregar() }, [carregar])
 
@@ -145,6 +159,7 @@ export default function RelatoriosPage() {
     { id: 'inativos',      label: 'Inativos',     icon: '◌' },
     { id: 'inadimplencia', label: 'Inadimplência',icon: '⚠' },
     { id: 'estoque',       label: 'Estoque',      icon: '◐' },
+    { id: 'contatos',      label: 'Contatos',     icon: '◎' },
   ]
 
   return (
@@ -211,6 +226,47 @@ export default function RelatoriosPage() {
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
               }}>+{d}d</button>
             ))}
+          </div>
+        )}
+
+        {/* FILTROS CONTATOS */}
+        {relatorio === 'contatos' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 4 }}>Status:</span>
+            {([['todos', 'Todos'], ['true', 'Ativos'], ['false', 'Inativos']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setContatoAtivo(id)} style={{
+                padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                border: `1px solid ${contatoAtivo === id ? 'rgba(201,168,76,0.3)' : 'var(--border)'}`,
+                background: contatoAtivo === id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                color: contatoAtivo === id ? '#C9A84C' : 'var(--text-muted)',
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+              }}>{label}</button>
+            ))}
+            <input
+              type="text" placeholder="Buscar por nome..." className="input"
+              style={{ width: 200, marginLeft: 8 }}
+              value={contatoBusca} onChange={e => setContatoBusca(e.target.value)}
+            />
+            {data?.cidades?.length > 0 && (
+              <select className="input" style={{ width: 160 }}
+                value={contatoCidade} onChange={e => setContatoCidade(e.target.value)}>
+                <option value="">Todas as cidades</option>
+                {data.cidades.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+            {data?.categorias?.length > 0 && (
+              <select className="input" style={{ width: 160 }}
+                value={contatoCategoria} onChange={e => setContatoCategoria(e.target.value)}>
+                <option value="">Todas categorias</option>
+                {data.categorias.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+            {(contatoCidade || contatoCategoria || contatoBusca || contatoAtivo !== 'todos') && (
+              <button onClick={() => { setContatoAtivo('todos'); setContatoCidade(''); setContatoCategoria(''); setContatoBusca('') }}
+                style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>
+                Limpar filtros
+              </button>
+            )}
           </div>
         )}
 
@@ -478,6 +534,8 @@ export default function RelatoriosPage() {
             <TopClientesBlock data={data} router={router} />
           ) : relatorio === 'inativos' && data ? (
             <InativosBlock data={data} router={router} dias={diasInativo} />
+          ) : relatorio === 'contatos' && data ? (
+            <ContatosBlock data={data} router={router} />
           ) : null
         )}
       </div>
@@ -618,6 +676,140 @@ function RankingRow({ cliente, onClick }: { cliente: any; onClick: () => void })
       </div>
 
       <div style={{ color: 'var(--text-muted)', fontSize: 16, textAlign: 'right' }}>›</div>
+    </div>
+  )
+}
+
+// ─── CONTATOS ────────────────────────────────────────────────
+function exportarCSV(clientes: any[]) {
+  const cabecalho = ['Nome', 'Celular', 'WhatsApp', 'Cidade', 'Categoria', 'Status']
+  const linhas = clientes.map(c => [
+    `"${(c.nome || '').replace(/"/g, '""')}"`,
+    `"${c.celular || ''}"`,
+    `"${c.whatsapp || ''}"`,
+    `"${c.cidade || ''}"`,
+    `"${c.categoria || ''}"`,
+    c.ativo ? 'Ativo' : 'Inativo',
+  ].join(','))
+  const csv = [cabecalho.join(','), ...linhas].join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href  = url
+  link.download = `contatos-clientes-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function ContatosBlock({ data, router }: { data: any; router: any }) {
+  const clientes: any[] = data.clientes || []
+  const temContato = clientes.filter(c => c.celular || c.whatsapp).length
+  const semContato = clientes.length - temContato
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Métricas */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px,1fr))', gap: 12 }}>
+        <MetricCard label="Total filtrado"   value={clientes.length.toLocaleString('pt-BR')} gold />
+        <MetricCard label="Com contato"      value={temContato.toLocaleString('pt-BR')} sub="celular ou WhatsApp" />
+        <MetricCard label="Sem contato"      value={semContato.toLocaleString('pt-BR')} alert={semContato > 0} />
+      </div>
+
+      {/* Barra de ações */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          {clientes.length === 0 ? 'Nenhum cliente encontrado.' : `${clientes.length} cliente(s) — ${temContato} com contato`}
+        </span>
+        <button
+          onClick={() => exportarCSV(clientes)}
+          disabled={clientes.length === 0}
+          style={{
+            padding: '9px 20px', borderRadius: 9, cursor: clientes.length > 0 ? 'pointer' : 'not-allowed',
+            border: '1px solid rgba(201,168,76,0.4)',
+            background: clientes.length > 0 ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+            color: clientes.length > 0 ? '#C9A84C' : 'var(--text-muted)',
+            fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}
+        >
+          ↓ Exportar CSV ({clientes.length})
+        </button>
+      </div>
+
+      {/* Tabela */}
+      {clientes.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 150px 150px 130px 110px 70px',
+            padding: '11px 18px', borderBottom: '1px solid var(--border)',
+            background: 'rgba(201,168,76,0.03)',
+          }}>
+            {['Nome', 'Celular', 'WhatsApp', 'Cidade', 'Categoria', 'Status'].map(h => (
+              <div key={h} style={{ fontSize: 10, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</div>
+            ))}
+          </div>
+          {clientes.slice(0, 300).map((c, i) => (
+            <div
+              key={c.id}
+              onClick={() => router.push(`/clientes/${c.id}`)}
+              style={{
+                display: 'grid', gridTemplateColumns: '1fr 150px 150px 130px 110px 70px',
+                padding: '11px 18px', alignItems: 'center', cursor: 'pointer',
+                borderBottom: i < clientes.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none',
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.05))',
+                  border: '1px solid var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 12,
+                }}>
+                  {c.nome?.charAt(0)}
+                </div>
+                <span style={{ fontSize: 13, color: '#332F3A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.nome}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.celular || <span style={{ color: 'var(--text-muted)' }}>—</span>}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {c.whatsapp
+                  ? <a href={`https://wa.me/55${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      style={{ color: '#4CAF82', textDecoration: 'none', fontSize: 12 }}>
+                      {c.whatsapp} ↗
+                    </a>
+                  : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.cidade || <span style={{ color: 'var(--text-muted)' }}>—</span>}</div>
+              <div>
+                {c.categoria
+                  ? <span className="badge badge-gold" style={{ fontSize: 9 }}>{c.categoria}</span>
+                  : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+              </div>
+              <div>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                  background: c.ativo ? 'rgba(76,175,130,0.15)' : 'rgba(229,88,74,0.1)',
+                  color: c.ativo ? '#4CAF82' : '#E5584A',
+                  border: `1px solid ${c.ativo ? 'rgba(76,175,130,0.3)' : 'rgba(229,88,74,0.2)'}`,
+                }}>
+                  {c.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+              </div>
+            </div>
+          ))}
+          {clientes.length > 300 && (
+            <div style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, borderTop: '1px solid var(--border)' }}>
+              Mostrando 300 de {clientes.length}. O CSV exporta todos os {clientes.length} clientes.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
