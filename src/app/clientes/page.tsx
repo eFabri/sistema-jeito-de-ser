@@ -4,6 +4,43 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 
+function exportarCSV(rows: any[], avancado: boolean) {
+  const BOM = '﻿'
+  let csv: string
+  if (avancado) {
+    const header = ['Nome', 'WhatsApp', 'Celular', 'Cidade', 'Compras', 'Total Comprado', 'Ultima Compra', 'Formas Usadas']
+    const linhas = rows.map(c => [
+      c.nome || '',
+      c.whatsapp || '',
+      c.celular || '',
+      c.cidade || '',
+      c.qtd_compras || 0,
+      (c.total_comprado || 0).toFixed(2).replace('.', ','),
+      c.ultima_compra ? new Date(c.ultima_compra + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+      c.formas_usadas || '',
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    csv = BOM + [header.join(';'), ...linhas].join('\r\n')
+  } else {
+    const header = ['Nome', 'WhatsApp', 'Celular', 'Cidade', 'Categoria', 'Limite Credito']
+    const linhas = rows.map(c => [
+      c.nome || '',
+      c.whatsapp || '',
+      c.celular || '',
+      c.cidade || '',
+      c.categoria || '',
+      (c.limite_credito || 0).toFixed(2).replace('.', ','),
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    csv = BOM + [header.join(';'), ...linhas].join('\r\n')
+  }
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `clientes_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const fmtData = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
 
@@ -59,13 +96,14 @@ export default function ClientesPage() {
   const router = useRouter()
 
   // Busca simples
-  const [q,        setQ]        = useState('')
-  const [busca,    setBusca]    = useState('')
-  const [categoria,setCategoria]= useState('Todos')
-  const [pagina,   setPagina]   = useState(1)
-  const [loading,  setLoading]  = useState(true)
-  const [clientes, setClientes] = useState<any[]>([])
-  const [total,    setTotal]    = useState(0)
+  const [q,           setQ]           = useState('')
+  const [busca,       setBusca]       = useState('')
+  const [categoria,   setCategoria]   = useState('Todos')
+  const [pagina,      setPagina]      = useState(1)
+  const [loading,     setLoading]     = useState(true)
+  const [exportando,  setExportando]  = useState(false)
+  const [clientes,    setClientes]    = useState<any[]>([])
+  const [total,       setTotal]       = useState(0)
   const limite = 25
 
   // Filtros avançados
@@ -139,6 +177,39 @@ export default function ClientesPage() {
 
   const totalPaginas = Math.ceil(total / limite)
 
+  async function exportarTudo() {
+    setExportando(true)
+    try {
+      if (avancado) {
+        const { ini, fim } = periodo === 'custom'
+          ? { ini: iniCustom, fim: fimCustom }
+          : calcDatas(periodo)
+        const params = new URLSearchParams({
+          pagina: '1', limite: '9999',
+          ...(ini && { ini }),
+          ...(fim && { fim }),
+          ...(formasSel.length > 0 && { formas: formasSel.join(',') }),
+          ...(ticketMin && { ticket_min: ticketMin }),
+          ...(ticketMax && { ticket_max: ticketMax }),
+          ...(busca && { q: busca }),
+        })
+        const res  = await fetch(`/api/clientes/filtro-compras?${params}`)
+        const data = await res.json()
+        exportarCSV(data.clientes || [], true)
+      } else {
+        const params = new URLSearchParams({
+          q: busca, pagina: '1', limite: '9999',
+          ...(categoria !== 'Todos' && { categoria }),
+        })
+        const res  = await fetch(`/api/clientes?${params}`)
+        const data = await res.json()
+        exportarCSV(data.clientes || [], false)
+      }
+    } finally {
+      setExportando(false)
+    }
+  }
+
   const { ini: iniAtivo, fim: fimAtivo } = periodo === 'custom'
     ? { ini: iniCustom, fim: fimCustom }
     : calcDatas(periodo)
@@ -159,9 +230,23 @@ export default function ClientesPage() {
                 : `${total.toLocaleString('pt-BR')} clientes cadastrados`}
             </p>
           </div>
-          <button className="btn btn-primary" onClick={() => router.push('/clientes/novo')}>
-            + Novo Cliente
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={exportarTudo}
+              disabled={exportando || total === 0}
+              style={{
+                padding: '9px 16px', borderRadius: 9, cursor: exportando || total === 0 ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+                background: 'rgba(201,168,76,0.08)', color: '#C9A84C',
+                border: '1px solid rgba(201,168,76,0.25)', opacity: exportando || total === 0 ? 0.5 : 1,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+              {exportando ? '⏳ Exportando...' : '↓ Exportar CSV'}
+            </button>
+            <button className="btn btn-primary" onClick={() => router.push('/clientes/novo')}>
+              + Novo Cliente
+            </button>
+          </div>
         </div>
 
         {/* BUSCA + TOGGLE FILTROS */}
