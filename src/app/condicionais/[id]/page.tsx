@@ -3,12 +3,18 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
-import { Check, ArrowLeft, ChevronRight, RotateCcw, Printer } from 'lucide-react'
+import { Check, ArrowLeft, ChevronRight, RotateCcw, Printer, Search, X, Trash2 } from 'lucide-react'
 import ModalImpressao from '@/components/ui/ModalImpressao'
 import { DadosRecibo } from '@/lib/impressora'
 
 const BRL = (v: number) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDataHora = (d: string) => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'
+
+const INPUT_STYLE: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+  borderRadius: 8, padding: '8px 12px', color: '#332F3A', fontSize: 13,
+  width: '100%', boxSizing: 'border-box',
+}
 
 type StatusItem = 'pendente' | 'ficou' | 'devolvido'
 
@@ -21,6 +27,15 @@ export default function CondicionalDetalhe() {
   const [confirmando, setConfirmando] = useState(false)
   const [resultado, setResultado] = useState<{ status: string; venda_id?: number; codigo_legado?: string } | null>(null)
   const [modalImprimir, setModalImprimir] = useState(false)
+
+  // Fix 3: desconto global
+  const [descontoVenda, setDescontoVenda] = useState(0)
+
+  // Fix 4: itens extras
+  const [itensExtras, setItensExtras] = useState<{ cod_produto: number | null; produto: string; quantidade: number; preco_venda: number }[]>([])
+  const [buscaExtra, setBuscaExtra] = useState('')
+  const [resExtra, setResExtra] = useState<any[]>([])
+  const [buscandoExtra, setBuscandoExtra] = useState(false)
 
   useEffect(() => {
     fetch(`/api/condicionais/${params.id}`)
@@ -40,6 +55,37 @@ export default function CondicionalDetalhe() {
       })
       .catch(() => setLoading(false))
   }, [params.id])
+
+  // Busca produto para extras
+  useEffect(() => {
+    if (!buscaExtra || buscaExtra.length < 2) { setResExtra([]); return }
+    setBuscandoExtra(true)
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/produtos?q=${encodeURIComponent(buscaExtra)}&limite=8`).then(r => r.json())
+        setResExtra(r.produtos || [])
+      } finally {
+        setBuscandoExtra(false)
+      }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [buscaExtra])
+
+  function addItemExtra(prod: any) {
+    setItensExtras(prev => [...prev, {
+      cod_produto: prod.id || null,
+      produto: prod.descricao || prod.nome || '',
+      quantidade: 1,
+      preco_venda: Number(prod.preco_venda || prod.preco || 0),
+    }])
+    setBuscaExtra(''); setResExtra([])
+  }
+
+  function removeItemExtra(idx: number) { setItensExtras(p => p.filter((_, i) => i !== idx)) }
+
+  function updItemExtra(idx: number, field: string, val: any) {
+    setItensExtras(p => p.map((item, i) => i !== idx ? item : { ...item, [field]: val }))
+  }
 
   function dadosCondicional(): DadosRecibo {
     const itensLista: any[] = data?.vendas_condicionais_itens || []
@@ -68,6 +114,8 @@ export default function CondicionalDetalhe() {
   const itens: any[] = data?.vendas_condicionais_itens || []
   const itensConfirmados = itens.filter(i => statusItens[i.id] === 'ficou')
   const totalConfirmado = itensConfirmados.reduce((s, i) => s + Number(i.preco_venda) * i.quantidade, 0)
+  const totalExtras = itensExtras.reduce((s, i) => s + Number(i.preco_venda) * i.quantidade, 0)
+  const totalFinal = Math.max(0, totalConfirmado + totalExtras - descontoVenda)
   const todosDefinidos = itens.every(i => statusItens[i.id] === 'ficou' || statusItens[i.id] === 'devolvido')
 
   async function confirmar() {
@@ -80,6 +128,8 @@ export default function CondicionalDetalhe() {
         body: JSON.stringify({
           confirmar: true,
           itens: itens.map(i => ({ id: i.id, status: statusItens[i.id] })),
+          desc_valor: descontoVenda,
+          itens_extras: itensExtras,
         }),
       })
       const result = await res.json()
@@ -188,12 +238,12 @@ export default function CondicionalDetalhe() {
 
         {/* ITENS */}
         {!resultado && (
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card" style={{ padding: 0, overflow: 'visible' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', background: 'rgba(201,168,76,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', margin: 0 }}>
                 {fechada
                   ? (data.status === 'confirmada' ? 'Itens confirmados' : 'Itens devolvidos')
-                  : 'Marque o status de cada peça'}
+                  : 'Itens da condicional'}
               </h3>
               {!fechada && !todosDefinidos && (
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -262,33 +312,139 @@ export default function CondicionalDetalhe() {
               )
             })}
 
-            {/* RODAPÉ */}
+            {/* SEÇÃO DE ITENS EXTRAS */}
             {!fechada && (
-              <div style={{ padding: '16px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, background: 'rgba(201,168,76,0.02)' }}>
-                <div>
-                  {itensConfirmados.length > 0 ? (
-                    <>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {itensConfirmados.length} {itensConfirmados.length === 1 ? 'item ficou' : 'itens ficaram'}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#C9A84C', marginTop: 2 }}>
-                        {BRL(totalConfirmado)}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                      {todosDefinidos ? 'Todos os itens serão devolvidos' : 'Marque cada item acima'}
-                    </div>
-                  )}
+              <>
+                <div style={{ borderTop: '2px solid var(--border)', padding: '12px 18px 8px', background: 'rgba(201,168,76,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, color: 'var(--gold-dim)', letterSpacing: '0.09em', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Itens adicionados
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>peças extras que não estavam na condicional</span>
                 </div>
-                <button
-                  className="btn btn-primary"
-                  style={{ opacity: todosDefinidos ? 1 : 0.45, padding: '11px 24px', fontSize: 14 }}
-                  disabled={!todosDefinidos || confirmando}
-                  onClick={confirmar}>
-                  {confirmando ? 'Registrando...' : todosDefinidos ? <><Check size={13} strokeWidth={2.5} /> Confirmar</> : 'Marque todos os itens'}
-                </button>
-              </div>
+
+                {/* Busca produto extra */}
+                <div style={{ padding: '0 18px 12px', background: 'rgba(201,168,76,0.02)', position: 'relative', zIndex: 20 }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={13} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                    <input
+                      style={{ ...INPUT_STYLE, paddingLeft: 32 }}
+                      placeholder="Buscar produto para adicionar..."
+                      value={buscaExtra}
+                      onChange={e => setBuscaExtra(e.target.value)}
+                    />
+                    {buscaExtra && (
+                      <button onClick={() => { setBuscaExtra(''); setResExtra([]) }}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                        <X size={13} strokeWidth={2} />
+                      </button>
+                    )}
+                    {buscandoExtra && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'white', border: '1px solid var(--border)', borderRadius: 8 }}>Buscando...</div>
+                    )}
+                    {resExtra.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'white', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 8, maxHeight: 240, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 9999 }}>
+                        {resExtra.map((p: any, i: number) => (
+                          <div key={p.id || i} onClick={() => addItemExtra(p)}
+                            style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: i < resExtra.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,168,76,0.06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <div>
+                              <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{p.descricao || p.nome}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                {p.grupo && <span>{p.grupo}</span>}
+                                {p.cor && <span> · {p.cor}</span>}
+                                {p.tamanho && <span> · {p.tamanho}</span>}
+                                {' · '}Estoque: <span style={{ color: p.estoque > 0 ? '#4CAF82' : '#E5584A', fontWeight: 600 }}>{p.estoque ?? 0}</span>
+                              </div>
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#C9A84C', fontSize: 14, flexShrink: 0, marginLeft: 12 }}>
+                              {BRL(p.preco_venda || 0)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lista de extras */}
+                {itensExtras.length > 0 && (
+                  <div style={{ background: 'rgba(201,168,76,0.02)', borderTop: '1px solid rgba(201,168,76,0.08)' }}>
+                    {itensExtras.map((item, idx) => (
+                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 100px 90px 36px', gap: 8, padding: '10px 18px', borderBottom: '1px solid rgba(201,168,76,0.05)', alignItems: 'center' }}>
+                        <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{item.produto}</div>
+                        <input
+                          type="number" min="1" step="1"
+                          value={item.quantidade}
+                          onChange={e => updItemExtra(idx, 'quantidade', Number(e.target.value))}
+                          style={{ ...INPUT_STYLE, padding: '6px 8px', textAlign: 'center' }}
+                        />
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={item.preco_venda}
+                          onChange={e => updItemExtra(idx, 'preco_venda', Number(e.target.value))}
+                          style={{ ...INPUT_STYLE, padding: '6px 8px' }}
+                        />
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#C9A84C', textAlign: 'right' }}>
+                          {BRL(item.preco_venda * item.quantidade)}
+                        </div>
+                        <button onClick={() => removeItemExtra(idx)}
+                          style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 6, padding: 6, cursor: 'pointer', color: '#E5584A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Trash2 size={12} strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* RODAPÉ com desconto + total + confirmar */}
+                <div style={{ padding: '16px 18px', borderTop: '2px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, background: 'rgba(201,168,76,0.02)', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {itensConfirmados.length > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {itensConfirmados.length} {itensConfirmados.length === 1 ? 'peça' : 'peças'} da condicional: {BRL(totalConfirmado)}
+                      </div>
+                    )}
+                    {itensExtras.length > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        + {itensExtras.length} {itensExtras.length === 1 ? 'peça' : 'peças'} adicionada(s): {BRL(totalExtras)}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Desconto (R$):</span>
+                      <div style={{ position: 'relative', width: 110 }}>
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={descontoVenda}
+                          onChange={e => setDescontoVenda(Number(e.target.value))}
+                          style={{ ...INPUT_STYLE, padding: '6px 8px', width: 110 }}
+                        />
+                      </div>
+                    </div>
+                    {(itensConfirmados.length > 0 || itensExtras.length > 0) ? (
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#C9A84C', marginTop: 2 }}>
+                        Total: {BRL(totalFinal)}
+                        {descontoVenda > 0 && (
+                          <span style={{ fontSize: 12, color: '#E5584A', fontWeight: 400, marginLeft: 8 }}>
+                            − {BRL(descontoVenda)} desconto
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                        {todosDefinidos ? 'Todos os itens serão devolvidos' : 'Marque cada item acima'}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ opacity: todosDefinidos ? 1 : 0.45, padding: '11px 24px', fontSize: 14, whiteSpace: 'nowrap' }}
+                    disabled={!todosDefinidos || confirmando}
+                    onClick={confirmar}>
+                    {confirmando ? 'Registrando...' : todosDefinidos ? <><Check size={13} strokeWidth={2.5} /> Confirmar</> : 'Marque todos os itens'}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}

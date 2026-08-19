@@ -69,7 +69,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   // Itens existentes (update) + novos (insert)
   for (const item of itens as any[]) {
-    const sub = Number(item.quantidade) * Number(item.preco_venda)
+    const sub = Number(item.quantidade) * Number(item.preco_venda) - Number(item.desconto_valor || 0)
     if (item.id && oldItemMap.has(Number(item.id))) {
       const old = oldItemMap.get(Number(item.id))
       await supabase.from('vendas_itens').update({
@@ -77,6 +77,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         cod_produto: item.cod_produto || null,
         quantidade: item.quantidade,
         preco_venda: item.preco_venda,
+        desconto_valor: item.desconto_valor || 0,
+        desconto_pct: 0,
         sub_total: sub,
       }).eq('id', item.id)
       // Ajustar estoque pela diferença de quantidade
@@ -94,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         quantidade: item.quantidade,
         preco_venda: item.preco_venda,
         sub_total: sub,
-        desconto_valor: 0,
+        desconto_valor: item.desconto_valor || 0,
         desconto_pct: 0,
       })
       if (item.cod_produto) {

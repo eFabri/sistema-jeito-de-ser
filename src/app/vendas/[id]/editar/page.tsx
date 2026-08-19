@@ -37,6 +37,7 @@ export default function EditarVendaPage() {
   const [pagamentos, setPagamentos] = useState<any[]>([])
   const [parcelas, setParcelas]     = useState<any[]>([])
   const [parcelasPagas, setParcelasPagas] = useState<any[]>([])
+  const [dataVenda, setDataVenda]   = useState('')
   const [observacao, setObservacao] = useState('')
   const [vendedor, setVendedor]     = useState('')
   const [perfis, setPerfis]         = useState<any[]>([])
@@ -73,7 +74,12 @@ export default function EditarVendaPage() {
       if (vendaRes.erro) { setErro(vendaRes.erro); setLoading(false); return }
       const { venda, itens: its, pagamentos: pgs, crediario } = vendaRes
       setVendaOrig(venda)
-      setItens(its.map((i: any) => ({ ...i })))
+      setDataVenda(venda.data || '')
+      setItens(its.map((i: any) => ({
+        ...i,
+        desconto_valor: Number(i.desconto_valor || 0),
+        sub_total: Number(i.quantidade) * Number(i.preco_venda) - Number(i.desconto_valor || 0),
+      })))
       setPagamentos(pgs.map((p: any) => ({ ...p })))
       setObservacao(venda.observacao || '')
       setVendedor(venda.vendedor || '')
@@ -102,19 +108,21 @@ export default function EditarVendaPage() {
   }, [buscaProd])
 
   function addItemDoCatalogo(prod: any) {
+    const preco = Number(prod.preco_venda || prod.preco || 0)
     setItens(prev => [...prev, {
       id: undefined,
       cod_produto: prod.id || null,
       produto: prod.nome || prod.descricao || '',
       quantidade: 1,
-      preco_venda: Number(prod.preco_venda || prod.preco || 0),
-      sub_total:   Number(prod.preco_venda || prod.preco || 0),
+      preco_venda: preco,
+      desconto_valor: 0,
+      sub_total: preco,
     }])
     setBuscaProd(''); setResProd([])
   }
 
   function addItemManual() {
-    setItens(prev => [...prev, { id: undefined, cod_produto: null, produto: '', quantidade: 1, preco_venda: 0, sub_total: 0 }])
+    setItens(prev => [...prev, { id: undefined, cod_produto: null, produto: '', quantidade: 1, preco_venda: 0, desconto_valor: 0, sub_total: 0 }])
   }
 
   function removeItem(idx: number) { setItens(p => p.filter((_, i) => i !== idx)) }
@@ -122,7 +130,8 @@ export default function EditarVendaPage() {
     setItens(p => p.map((item, i) => {
       if (i !== idx) return item
       const u = { ...item, [field]: val }
-      if (field === 'quantidade' || field === 'preco_venda') u.sub_total = Number(u.quantidade) * Number(u.preco_venda)
+      if (field === 'quantidade' || field === 'preco_venda' || field === 'desconto_valor')
+        u.sub_total = Math.max(0, Number(u.quantidade) * Number(u.preco_venda) - Number(u.desconto_valor || 0))
       return u
     }))
   }
@@ -142,7 +151,7 @@ export default function EditarVendaPage() {
     setParcelas(p => p.map((par, i) => i !== idx ? par : { ...par, [field]: val }))
   }
 
-  const totalItens = itens.reduce((s, i) => s + Number(i.quantidade || 0) * Number(i.preco_venda || 0), 0)
+  const totalItens = itens.reduce((s, i) => s + Number(i.sub_total ?? Number(i.quantidade) * Number(i.preco_venda)), 0)
   const totalPgto  = pagamentos.reduce((s, p) => s + Number(p.valor || 0), 0)
 
   async function salvar() {
@@ -159,6 +168,7 @@ export default function EditarVendaPage() {
             produto: i.produto,
             quantidade: Number(i.quantidade),
             preco_venda: Number(i.preco_venda),
+            desconto_valor: Number(i.desconto_valor || 0),
           })),
           pagamentos: pagamentos.map(p => ({
             forma: p.forma,
@@ -171,6 +181,7 @@ export default function EditarVendaPage() {
             data_vencimento: p.data_vencimento,
             valor: Number(p.valor),
           })),
+          data: dataVenda || undefined,
           valor_total: totalItens,
           observacao,
           vendedor: vendedor || null,
@@ -226,6 +237,18 @@ export default function EditarVendaPage() {
                   <option value="">— Sem vendedora —</option>
                   {perfis.map((p: any) => <option key={p.id} value={p.nome}>{p.nome}</option>)}
                 </select>
+              </div>
+            )}
+            {isAdmin && (
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <label style={{ fontSize: 10, color: 'var(--gold-dim)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>Data da Venda:</label>
+                <input
+                  type="date"
+                  value={dataVenda}
+                  onChange={e => setDataVenda(e.target.value)}
+                  disabled={readOnly}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px', color: '#332F3A', fontSize: 13 }}
+                />
               </div>
             )}
             {!isAdmin && vendaOrig.vendedor && (
@@ -316,7 +339,7 @@ export default function EditarVendaPage() {
             {itens.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Nenhum item</div>
             ) : itens.map((item, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 110px 100px 36px', gap: 8, padding: '12px 0', borderBottom: idx < itens.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'end' }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 100px 90px 90px 36px', gap: 8, padding: '12px 0', borderBottom: idx < itens.length - 1 ? '1px solid rgba(201,168,76,0.05)' : 'none', alignItems: 'end' }}>
                 <div>
                   {idx === 0 && <label style={LABEL}>Produto</label>}
                   {readOnly
@@ -339,9 +362,16 @@ export default function EditarVendaPage() {
                   }
                 </div>
                 <div>
+                  {idx === 0 && <label style={LABEL}>Desc. R$</label>}
+                  {readOnly
+                    ? <div style={{ fontSize: 13, color: item.desconto_valor > 0 ? '#E5584A' : 'var(--text-muted)', padding: '8px 0' }}>{item.desconto_valor > 0 ? `-${BRL(item.desconto_valor)}` : '—'}</div>
+                    : <input style={INPUT} type="number" min="0" step="0.01" value={item.desconto_valor || 0} onChange={e => updItem(idx, 'desconto_valor', e.target.value)} />
+                  }
+                </div>
+                <div>
                   {idx === 0 && <label style={LABEL}>Subtotal</label>}
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#C9A84C', padding: '8px 0' }}>
-                    {BRL(Number(item.quantidade) * Number(item.preco_venda))}
+                    {BRL(item.sub_total ?? Number(item.quantidade) * Number(item.preco_venda))}
                   </div>
                 </div>
                 <div style={{ paddingTop: idx === 0 ? 22 : 0 }}>
