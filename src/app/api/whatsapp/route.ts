@@ -1,7 +1,7 @@
 // src/app/api/whatsapp/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
-import { verificarInstancia, obterQRCode } from '@/lib/whatsapp'
+import { verificarInstancia } from '@/lib/whatsapp'
 import { hojeNoBrasil, diasAFrente } from '@/lib/dates'
 
 // GET — status da instância + modelos + logs recentes
@@ -11,10 +11,19 @@ export async function GET(req: NextRequest) {
   const aba = searchParams.get('aba') || 'status'
 
   if (aba === 'status') {
-    let status = { state: 'desconhecido', qrcode: null as any }
+    // Cloud API: verificarInstancia retorna {display_phone_number, verified_name, quality_rating, status}
+    let status = { state: 'desconhecido', numero: '', nome: '', qualidade: '', qrcode: null as any }
     try {
       const inst = await verificarInstancia()
-      status.state = inst?.instance?.state || inst?.state || 'disconnected'
+      if (inst?.error) {
+        status.state = 'sem_conexao'
+      } else {
+        // status da Cloud API: CONNECTED, DISCONNECTED, PENDING, DELETED, MIGRATED, BANNED, UNKNOWN
+        status.state    = inst?.status === 'CONNECTED' ? 'open' : (inst?.status?.toLowerCase() || 'disconnected')
+        status.numero   = inst?.display_phone_number || ''
+        status.nome     = inst?.verified_name || ''
+        status.qualidade = inst?.quality_rating || ''
+      }
     } catch { status.state = 'sem_conexao' }
 
     const { data: modelos } = await supabase
@@ -29,10 +38,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status, modelos: modelos || [], logs: logs || [] })
   }
 
+  // aba 'qr' não existe na Cloud API — retorna info do número em vez de QR
   if (aba === 'qr') {
     try {
-      const qr = await obterQRCode()
-      return NextResponse.json({ qr })
+      const info = await verificarInstancia()
+      return NextResponse.json({ info, mensagem: 'Cloud API não usa QR Code. Número já conectado via Meta.' })
     } catch (e: any) {
       return NextResponse.json({ erro: e.message }, { status: 500 })
     }
