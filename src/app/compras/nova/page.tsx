@@ -82,11 +82,41 @@ export default function NovaCompraPage() {
   const [erros, setErros] = useState<Record<string, string>>({})
   const [concluido, setConcluido] = useState<ResultadoCompra | null>(null)
 
+  // Draft auto-save — lazy init reads localStorage synchronously so mostrarBanner is true
+  // from render 1, preventing auto-save from overwriting the draft before user decides
+  const [rascunhoSalvo, setRascunhoSalvo] = useState<{ cab: Cabecalho; linhas: ItemRow[] } | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = localStorage.getItem('compra_rascunho')
+      if (!raw) return null
+      const r = JSON.parse(raw)
+      const temDados = r.linhas?.some((l: any) => l.produto || l.sub_grupo || l.preco_custo > 0)
+      return temDados ? r : null
+    } catch { return null }
+  })
+  const [mostrarBanner, setMostrarBanner] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const raw = localStorage.getItem('compra_rascunho')
+      if (!raw) return false
+      const r = JSON.parse(raw)
+      return r.linhas?.some((l: any) => l.produto || l.sub_grupo || l.preco_custo > 0) ?? false
+    } catch { return false }
+  })
+
   // Tracks how many barcodes have been generated this session so each new line gets a unique code
   const barcodeOffsetRef = useRef(0)
   // Stable ref to linhas so async handlers can read current state without stale closures
   const linhasRef = useRef(linhas)
   useEffect(() => { linhasRef.current = linhas }, [linhas])
+
+  // Auto-save rascunho a cada mudança (pula enquanto banner está visível para não sobrescrever)
+  useEffect(() => {
+    if (mostrarBanner || concluido) return
+    try {
+      localStorage.setItem('compra_rascunho', JSON.stringify({ cab, linhas }))
+    } catch {}
+  }, [cab, linhas, mostrarBanner, concluido])
 
   useEffect(() => {
     fetch('/api/compras/opcoes').then(r => r.json()).then(d => setOpcoes(d)).catch(() => {})
@@ -231,6 +261,7 @@ export default function NovaCompraPage() {
       }
       const data = await res.json()
       if (!res.ok) { setErros({ geral: data.erro || 'Erro ao salvar compra.' }); return }
+      localStorage.removeItem('compra_rascunho')
       setConcluido(data)
     } catch {
       setErros({ geral: 'Erro de conexão. Verifique sua internet.' })
@@ -239,7 +270,27 @@ export default function NovaCompraPage() {
     }
   }
 
+  function retomar() {
+    if (!rascunhoSalvo) return
+    // Atualiza rowSeq para evitar colisão de ids com as linhas restauradas
+    const maxNum = rascunhoSalvo.linhas.reduce((m, l) => {
+      const n = parseInt(l.id.replace('r', '')) || 0
+      return Math.max(m, n)
+    }, 0)
+    rowSeq = maxNum + 1
+    setCab(rascunhoSalvo.cab)
+    setLinhas(rascunhoSalvo.linhas)
+    setMostrarBanner(false)
+  }
+
+  function descartar() {
+    localStorage.removeItem('compra_rascunho')
+    setMostrarBanner(false)
+    setRascunhoSalvo(null)
+  }
+
   function resetar() {
+    localStorage.removeItem('compra_rascunho')
     setCab({ ...CAB_INICIAL, data: getHoje() })
     setLinhas([novaLinha()])
     setErros({})
@@ -325,6 +376,34 @@ export default function NovaCompraPage() {
         <button onClick={() => router.push('/compras')} style={{ background: 'none', border: 'none', color: '#8a7a60', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}><ArrowLeft size={18} strokeWidth={2} /></button>
         <h1 style={{ margin: 0, fontSize: 20, color: '#C9A84C', fontWeight: 700 }}>Nova Compra</h1>
       </div>
+
+      {/* Banner de rascunho */}
+      {mostrarBanner && rascunhoSalvo && (() => {
+        const totalPecasRasc = rascunhoSalvo.linhas.reduce((s, l) => s + Number(l.quantidade), 0)
+        const totalCustoRasc = rascunhoSalvo.linhas.reduce((s, l) => s + Number(l.sub_total), 0)
+        return (
+          <div className="no-print" style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.35)', borderRadius: 10, padding: '14px 18px', marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 700, marginBottom: 3 }}>
+                Você tem uma compra incompleta salva
+              </div>
+              <div style={{ fontSize: 12, color: '#8a7a60' }}>
+                {rascunhoSalvo.linhas.length} linha(s) · {totalPecasRasc} peças · R$ {BRL(totalCustoRasc)}
+                {rascunhoSalvo.cab.fornecedor_nome ? ` · ${rascunhoSalvo.cab.fornecedor_nome}` : ''}
+                {rascunhoSalvo.cab.evento ? ` · ${rascunhoSalvo.cab.evento}` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button onClick={descartar} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(138,122,96,0.4)', borderRadius: 8, cursor: 'pointer', color: '#8a7a60', fontSize: 13 }}>
+                Descartar
+              </button>
+              <button onClick={retomar} style={{ padding: '8px 20px', background: '#C9A84C', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#111', fontSize: 13, fontWeight: 700 }}>
+                Retomar
+              </button>
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="no-print" style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(124,58,237,0.12)', borderRadius: 10, padding: 18, marginBottom: 18 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14 }}>
