@@ -20,6 +20,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     preco_venda: body.preco_venda || null,
     atualiza_estoque: body.atualiza_estoque !== false,
     atualiza_preco: !!body.atualiza_preco,
+    sub_grupo: body.sub_grupo || null,
+    partes: body.partes || null,
+    tamanho: body.tamanho || null,
+    cor: body.cor || null,
+    marca: body.marca || null,
   }
 
   const { data: novoItem, error } = await supabase
