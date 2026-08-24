@@ -218,46 +218,83 @@ export async function imprimirRecibo(
 
 // ─── TALÃO DE CREDIÁRIO ────────────────────────────────────
 
-export function montarTalaoCrediario(d: DadosTalaoCrediario, labelVia?: string): string {
-  // colunas do talão
-  const VCOL   = 9   // vencimento (DD/MM) + espaço
-  const VALCOL = 14  // valor (R$ X.XXX,XX) + espaço
-  const ALTCOL = 7   // alteração + espaço
+// Largura do talão: 48 colunas, igual ao recibo do sistema antigo
+const COL_TALAO = 48
 
+// Larguras das colunas da tabela de parcelas.
+// Receb. fecha a linha, então não precisa de padding.
+const T_VENC  = 8    // "25/05" + espaços
+const T_VALOR = 13   // "R$1.136,94" + espaços
+const T_ALTER = 10
+
+// Conteúdo das colunas preenchidas à mão (Alter. e Receb.):
+// uma linha para a vendedora escrever em cima, como no talão do sistema antigo.
+const MARCA_MANUAL = '____'
+
+// Largura da linha de anotação sob OBSERVACOES
+const COL_OBS = 31
+
+// "R$1.136,94" — sem espaço após o R$, como sai no talão impresso
+function brlCompacto(v: number): string {
+  return 'R$' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// 248 -> "000248"
+function numVenda(v: number | string): string {
+  const digitos = String(v).replace(/\D/g, '')
+  return digitos.padStart(6, '0')
+}
+
+// "2017-06-15" -> "15/06"   |   "15/06/2017" -> "15/06"
+function vencCurto(s: string): string {
+  if (s.includes('-')) {
+    const [, mes, dia] = s.split('T')[0].split('-')
+    return `${dia}/${mes}`
+  }
+  return s.slice(0, 5)
+}
+
+// "CLIENTE    : Fulana"
+function campoTalao(label: string, valor: string): string {
+  return label.padEnd(11) + ': ' + valor + '\n'
+}
+
+export function montarTalaoCrediario(d: DadosTalaoCrediario, labelVia?: string): string {
+  const sep = '-'.repeat(COL_TALAO) + '\n'
   let t = ''
 
   t += '\x1B\x40'
-  t += '\x1B\x21\x10'
-  t += center('JEITO DE SER LTDA.')
-  t += '\x1B\x21\x00'
-  t += center('Talão de Crediário')
-  if (labelVia) t += center(`*** ${labelVia} ***`)
-  t += linha()
+  t += '\x1B\x21\x10'                          // corpo maior (altura dupla)
+  t += center('JEITO DE SER LTDA', COL_TALAO)
+  t += '\x1B\x21\x00'                          // volta ao corpo normal
+  if (labelVia) t += center(`*** ${labelVia} ***`, COL_TALAO)
+  t += '\n'
 
-  t += `CLIENTE : ${d.nomeCliente}\n`
-  t += `CPF     : ${d.cpf || ''}\n`
-  t += `VENDA N.: ${d.codVenda}\n`
-  t += `DATA    : ${d.data}\n`
-  t += `VALOR   : ${brl(d.valorTotal)}\n`
-  t += linha()
+  t += campoTalao('CLIENTE',     d.nomeCliente)
+  t += campoTalao('VENDA N.',    numVenda(d.codVenda))
+  t += campoTalao('DATA',        d.data)
+  t += campoTalao('VALOR TOTAL', brl(d.valorTotal))
+  t += '\n'
 
-  t += 'Venc.'.padEnd(VCOL) + 'Valor'.padEnd(VALCOL) + 'Alter.'.padEnd(ALTCOL) + 'Receb.\n'
-  t += linha('-')
+  t += sep
+  t += 'Venc.'.padEnd(T_VENC) + 'Valor'.padEnd(T_VALOR) + 'Alter.'.padEnd(T_ALTER) + 'Receb.\n'
+  t += sep
 
   for (const p of d.parcelas) {
-    const v = p.vencimento.includes('-')
-      ? p.vencimento.split('-').reverse().join('/')
-      : p.vencimento
-    t += v.slice(0, 5).padEnd(VCOL) + brl(p.valor).padEnd(VALCOL) + '___'.padEnd(ALTCOL) + '___\n'
+    const linhaParcela =
+      vencCurto(p.vencimento).padEnd(T_VENC) +
+      brlCompacto(p.valor).padEnd(T_VALOR) +
+      MARCA_MANUAL.padEnd(T_ALTER) +
+      MARCA_MANUAL
+    t += linhaParcela.replace(/\s+$/, '') + '\n'
   }
-  t += linha()
+  t += sep
+  t += '\n'
 
   t += 'OBSERVACOES:\n'
-  t += '_'.repeat(COL) + '\n'
-  t += '_'.repeat(COL) + '\n'
-  t += '\n'
-  t += `Assinatura:${'_'.repeat(COL - 11)}\n`
-  t += linha()
+  t += '_'.repeat(COL_OBS) + '\n'
+  t += '_'.repeat(COL_OBS) + '\n'
+
   t += '\n\n'
   t += '\x1D\x56\x00'
 
