@@ -116,7 +116,14 @@ export default function CondicionalDetalhe() {
   const totalConfirmado = itensConfirmados.reduce((s, i) => s + Number(i.preco_venda) * i.quantidade, 0)
   const totalExtras = itensExtras.reduce((s, i) => s + Number(i.preco_venda) * i.quantidade, 0)
   const totalFinal = Math.max(0, totalConfirmado + totalExtras - descontoVenda)
-  const todosDefinidos = itens.every(i => statusItens[i.id] === 'ficou' || statusItens[i.id] === 'devolvido')
+  const itensPendentes = itens.filter(i => statusItens[i.id] !== 'ficou' && statusItens[i.id] !== 'devolvido')
+  const todosDefinidos = itensPendentes.length === 0
+
+  function irParaPrimeiroPendente() {
+    const alvo = itensPendentes[0]
+    if (!alvo) return
+    document.getElementById(`cond-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   async function confirmar() {
     if (!todosDefinidos) return
@@ -254,15 +261,26 @@ export default function CondicionalDetalhe() {
 
             {itens.map(item => {
               const st = statusItens[item.id] || 'pendente'
+              const pendente = !fechada && st === 'pendente'
               return (
-                <div key={item.id} style={{
+                <div key={item.id} id={`cond-item-${item.id}`} style={{
                   display: 'grid', gridTemplateColumns: '1fr auto auto auto',
                   gap: 12, padding: '14px 18px',
                   borderBottom: '1px solid rgba(201,168,76,0.05)',
+                  borderLeft: `3px solid ${pendente ? '#C9A84C' : 'transparent'}`,
+                  background: pendente ? 'rgba(201,168,76,0.07)' : 'transparent',
                   alignItems: 'center',
+                  transition: 'background 0.2s',
                 }}>
                   <div>
-                    <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>{item.produto}</div>
+                    <div style={{ fontSize: 13, color: '#332F3A', fontWeight: 500 }}>
+                      {item.produto}
+                      {pendente && (
+                        <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#C9A84C', border: '1px solid rgba(201,168,76,0.4)', borderRadius: 4, padding: '1px 6px', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                          pendente
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: '#C9A84C', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                       {BRL(item.preco_venda)} × {item.quantidade}
                     </div>
@@ -430,19 +448,44 @@ export default function CondicionalDetalhe() {
                           </span>
                         )}
                       </div>
-                    ) : (
+                    ) : todosDefinidos ? (
                       <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                        {todosDefinidos ? 'Todos os itens serão devolvidos' : 'Marque cada item acima'}
+                        Todos os itens serão devolvidos
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, maxWidth: 380 }}>
+                    {!todosDefinidos && (
+                      <div style={{
+                        background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.35)',
+                        borderRadius: 8, padding: '10px 12px', textAlign: 'right', width: '100%',
+                      }}>
+                        <div style={{ fontSize: 12, color: '#332F3A', lineHeight: 1.5 }}>
+                          <strong style={{ color: '#C9A84C' }}>
+                            Faltam marcar {itensPendentes.length} {itensPendentes.length === 1 ? 'peça' : 'peças'}:
+                          </strong>{' '}
+                          {itensPendentes.slice(0, 3).map(i => i.produto).join(', ')}
+                          {itensPendentes.length > 3 && ` e mais ${itensPendentes.length - 3}`}
+                        </div>
+                        <button
+                          onClick={irParaPrimeiroPendente}
+                          style={{
+                            marginTop: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                            color: '#C9A84C', fontSize: 12, fontWeight: 700, textDecoration: 'underline',
+                          }}>
+                          Ir para o primeiro pendente ↓
+                        </button>
                       </div>
                     )}
+                    <button
+                      className="btn btn-primary"
+                      style={{ opacity: todosDefinidos ? 1 : 0.45, padding: '11px 24px', fontSize: 14, whiteSpace: 'nowrap' }}
+                      disabled={!todosDefinidos || confirmando}
+                      onClick={confirmar}>
+                      {confirmando ? 'Registrando...' : todosDefinidos ? <><Check size={13} strokeWidth={2.5} /> Confirmar</> : 'Marque todos os itens'}
+                    </button>
                   </div>
-                  <button
-                    className="btn btn-primary"
-                    style={{ opacity: todosDefinidos ? 1 : 0.45, padding: '11px 24px', fontSize: 14, whiteSpace: 'nowrap' }}
-                    disabled={!todosDefinidos || confirmando}
-                    onClick={confirmar}>
-                    {confirmando ? 'Registrando...' : todosDefinidos ? <><Check size={13} strokeWidth={2.5} /> Confirmar</> : 'Marque todos os itens'}
-                  </button>
                 </div>
               </>
             )}

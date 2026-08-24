@@ -57,20 +57,58 @@ interface ResultadoCompra {
   itens: Array<{ produto: string; cod_barras: string; quantidade: number; preco_custo: number; preco_venda: number }>
 }
 
+const LINHA_DEFAULTS: Omit<ItemRow, 'id'> = {
+  cod_barras: '', sub_grupo: '', marca: '', produto: '', partes: '',
+  tamanho: '', cor: '', quantidade: 1, preco_custo: 0,
+  sub_total: 0, ganho_rs: 0, ganho_pct: 0, preco_venda: 0,
+}
+
 let rowSeq = 1
 function novaLinha(): ItemRow {
-  return {
-    id: `r${rowSeq++}`,
-    cod_barras: '', sub_grupo: '', marca: '', produto: '', partes: '',
-    tamanho: '', cor: '', quantidade: 1, preco_custo: 0,
-    sub_total: 0, ganho_rs: 0, ganho_pct: 0, preco_venda: 0,
-  }
+  return { id: `r${rowSeq++}`, ...LINHA_DEFAULTS }
 }
 
 const getHoje = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 const CAB_INICIAL: Cabecalho = {
   fornecedor_id: null, fornecedor_nome: '', data: getHoje(),
   nota_numero: '', grupo: '', evento: '', forma_pagamento: '',
+}
+
+const RASCUNHO_KEY = 'compra_rascunho'
+
+// Campos que nunca contam como "digitado pela usuária":
+// id é sempre único, cod_barras é gerado automaticamente no mount,
+// sub_total é derivado de quantidade × custo.
+const CAMPOS_NAO_CONTAM = new Set(['id', 'cod_barras', 'sub_total'])
+
+function linhaTemDados(l: Partial<ItemRow> | undefined): boolean {
+  if (!l) return false
+  return (Object.keys(LINHA_DEFAULTS) as (keyof Omit<ItemRow, 'id'>)[])
+    .filter(k => !CAMPOS_NAO_CONTAM.has(k))
+    .some(k => l[k] !== undefined && l[k] !== LINHA_DEFAULTS[k])
+}
+
+function cabTemDados(c: Partial<Cabecalho> | undefined): boolean {
+  if (!c) return false
+  if (c.fornecedor_nome || c.fornecedor_id || c.nota_numero || c.grupo || c.evento || c.forma_pagamento) return true
+  // data vem pré-preenchida com hoje; só conta se a usuária trocou
+  return !!c.data && c.data !== getHoje()
+}
+
+function rascunhoTemDados(r: { cab?: Cabecalho; linhas?: ItemRow[] } | null | undefined): boolean {
+  if (!r) return false
+  return cabTemDados(r.cab) || (r.linhas ?? []).some(linhaTemDados)
+}
+
+// Lê o rascunho do localStorage e devolve apenas se tiver algum dado real
+function lerRascunho(): { cab: Cabecalho; linhas: ItemRow[] } | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(RASCUNHO_KEY)
+    if (!raw) return null
+    const r = JSON.parse(raw)
+    return rascunhoTemDados(r) ? r : null
+  } catch { return null }
 }
 
 export default function NovaCompraPage() {
@@ -84,25 +122,8 @@ export default function NovaCompraPage() {
 
   // Draft auto-save — lazy init reads localStorage synchronously so mostrarBanner is true
   // from render 1, preventing auto-save from overwriting the draft before user decides
-  const [rascunhoSalvo, setRascunhoSalvo] = useState<{ cab: Cabecalho; linhas: ItemRow[] } | null>(() => {
-    if (typeof window === 'undefined') return null
-    try {
-      const raw = localStorage.getItem('compra_rascunho')
-      if (!raw) return null
-      const r = JSON.parse(raw)
-      const temDados = r.linhas?.some((l: any) => l.produto || l.sub_grupo || l.preco_custo > 0)
-      return temDados ? r : null
-    } catch { return null }
-  })
-  const [mostrarBanner, setMostrarBanner] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      const raw = localStorage.getItem('compra_rascunho')
-      if (!raw) return false
-      const r = JSON.parse(raw)
-      return r.linhas?.some((l: any) => l.produto || l.sub_grupo || l.preco_custo > 0) ?? false
-    } catch { return false }
-  })
+  const [rascunhoSalvo, setRascunhoSalvo] = useState<{ cab: Cabecalho; linhas: ItemRow[] } | null>(lerRascunho)
+  const [mostrarBanner, setMostrarBanner] = useState<boolean>(() => lerRascunho() !== null)
 
   // Tracks how many barcodes have been generated this session so each new line gets a unique code
   const barcodeOffsetRef = useRef(0)
@@ -110,11 +131,17 @@ export default function NovaCompraPage() {
   const linhasRef = useRef(linhas)
   useEffect(() => { linhasRef.current = linhas }, [linhas])
 
-  // Auto-save rascunho a cada mudança (pula enquanto banner está visível para não sobrescrever)
+  // Auto-save rascunho a cada mudança (pula enquanto banner está visível para não sobrescrever).
+  // Só grava se houver dado real — assim a chave nunca guarda um rascunho vazio, e limpar
+  // tudo na tela também limpa o rascunho.
   useEffect(() => {
     if (mostrarBanner || concluido) return
     try {
-      localStorage.setItem('compra_rascunho', JSON.stringify({ cab, linhas }))
+      if (rascunhoTemDados({ cab, linhas })) {
+        localStorage.setItem(RASCUNHO_KEY, JSON.stringify({ cab, linhas }))
+      } else {
+        localStorage.removeItem(RASCUNHO_KEY)
+      }
     } catch {}
   }, [cab, linhas, mostrarBanner, concluido])
 
@@ -261,7 +288,7 @@ export default function NovaCompraPage() {
       }
       const data = await res.json()
       if (!res.ok) { setErros({ geral: data.erro || 'Erro ao salvar compra.' }); return }
-      localStorage.removeItem('compra_rascunho')
+      localStorage.removeItem(RASCUNHO_KEY)
       setConcluido(data)
     } catch {
       setErros({ geral: 'Erro de conexão. Verifique sua internet.' })
@@ -284,13 +311,13 @@ export default function NovaCompraPage() {
   }
 
   function descartar() {
-    localStorage.removeItem('compra_rascunho')
+    localStorage.removeItem(RASCUNHO_KEY)
     setMostrarBanner(false)
     setRascunhoSalvo(null)
   }
 
   function resetar() {
-    localStorage.removeItem('compra_rascunho')
+    localStorage.removeItem(RASCUNHO_KEY)
     setCab({ ...CAB_INICIAL, data: getHoje() })
     setLinhas([novaLinha()])
     setErros({})
