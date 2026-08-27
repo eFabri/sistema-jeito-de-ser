@@ -98,6 +98,12 @@ function stripEscPos(s: string): string {
     .replace(/\x1D\x56[\s\S]/g, '')    // GS V N cut
 }
 
+const POPUP_CSS = `
+@page { size: 80mm auto; margin: 3mm; }
+body { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.4; margin: 0; padding: 0; }
+pre { white-space: pre; margin: 0; }
+`
+
 // ─── CUPOM DE VENDA ────────────────────────────────────────
 
 export function montarTextoRecibo(d: DadosRecibo, labelVia?: string): string {
@@ -161,28 +167,31 @@ export function montarTextoRecibo(d: DadosRecibo, labelVia?: string): string {
   return t
 }
 
-// Fallback: impressão via navegador usando <pre> com o mesmo texto ESC/POS,
-// garantindo fonte monospace e alinhamento correto por pontos
-function imprimirNavegador(dados: DadosRecibo, vias: 1 | 2 = 1) {
+function htmlCupom(dados: DadosRecibo, vias: 1 | 2): string {
   function texto(labelVia?: string) {
     return stripEscPos(montarTextoRecibo(dados, labelVia))
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
-
-  const conteudo = vias === 1
+  return vias === 1
     ? `<pre>${texto()}</pre>`
     : `<pre>${texto('VIA DO CLIENTE')}</pre><div style="page-break-before:always"></div><pre>${texto('VIA DA LOJA')}</pre>`
+}
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Cupom #${dados.codVenda}</title>
-<style>
-@page { size: 80mm auto; margin: 3mm; }
-body { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.4; margin: 0; padding: 0; }
-pre { white-space: pre; margin: 0; }
-</style></head><body>${conteudo}</body></html>`
-
+function abrirJanelaBrowser(htmlBody: string, titulo: string): { ok: boolean; erro?: string } {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titulo}</title><style>${POPUP_CSS}</style></head><body>${htmlBody}</body></html>`
   const w = window.open('', '_blank', 'width=420,height=620')
-  if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.print(); w.close() } }
+  if (!w) return { ok: false, erro: 'Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.' }
+  w.document.write(html)
+  w.document.close()
+  // setTimeout(0) garante que o documento foi processado antes de chamar print()
+  setTimeout(() => { w.print() }, 0)
+  // fecha somente após o diálogo de impressão ser descartado
+  w.onafterprint = () => w.close()
+  return { ok: true }
+}
+
+function imprimirNavegador(dados: DadosRecibo, vias: 1 | 2 = 1): { ok: boolean; erro?: string } {
+  return abrirJanelaBrowser(htmlCupom(dados, vias), `Cupom #${dados.codVenda}`)
 }
 
 export async function imprimirRecibo(
@@ -191,15 +200,15 @@ export async function imprimirRecibo(
   vias: 1 | 2 = 1
 ): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const ok = await conectarQZ()
-    if (!ok) { imprimirNavegador(dados, vias); return { ok: true } }
+    const qzOk = await conectarQZ()
+    if (!qzOk) return imprimirNavegador(dados, vias)
 
     let impressora = nomeImpressora
     if (!impressora) {
       const lista = await listarImpressoras()
       impressora = lista[0]
     }
-    if (!impressora) { imprimirNavegador(dados, vias); return { ok: true } }
+    if (!impressora) return imprimirNavegador(dados, vias)
 
     const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
     if (vias === 1) {
@@ -211,8 +220,7 @@ export async function imprimirRecibo(
     return { ok: true }
   } catch (e: any) {
     console.error('Erro impressão:', e)
-    imprimirNavegador(dados, vias)
-    return { ok: true }
+    return imprimirNavegador(dados, vias)
   }
 }
 
@@ -301,26 +309,18 @@ export function montarTalaoCrediario(d: DadosTalaoCrediario, labelVia?: string):
   return t
 }
 
-function imprimirTalaoNavegador(dados: DadosTalaoCrediario, vias: 1 | 2 = 1) {
+function htmlTalao(dados: DadosTalaoCrediario, vias: 1 | 2): string {
   function texto(labelVia?: string) {
     return stripEscPos(montarTalaoCrediario(dados, labelVia))
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
-
-  const conteudo = vias === 1
+  return vias === 1
     ? `<pre>${texto()}</pre>`
     : `<pre>${texto('VIA DO CLIENTE')}</pre><div style="page-break-before:always"></div><pre>${texto('VIA DA LOJA')}</pre>`
+}
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Talão Crediário #${dados.codVenda}</title>
-<style>
-@page { size: 80mm auto; margin: 3mm; }
-body { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.4; margin: 0; padding: 0; }
-pre { white-space: pre; margin: 0; }
-</style></head><body>${conteudo}</body></html>`
-
-  const w = window.open('', '_blank', 'width=420,height=620')
-  if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.print(); w.close() } }
+function imprimirTalaoNavegador(dados: DadosTalaoCrediario, vias: 1 | 2 = 1): { ok: boolean; erro?: string } {
+  return abrirJanelaBrowser(htmlTalao(dados, vias), `Talão Crediário #${dados.codVenda}`)
 }
 
 export async function imprimirTalaoCrediario(
@@ -329,15 +329,15 @@ export async function imprimirTalaoCrediario(
   vias: 1 | 2 = 1
 ): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const ok = await conectarQZ()
-    if (!ok) { imprimirTalaoNavegador(dados, vias); return { ok: true } }
+    const qzOk = await conectarQZ()
+    if (!qzOk) return imprimirTalaoNavegador(dados, vias)
 
     let impressora = nomeImpressora
     if (!impressora) {
       const lista = await listarImpressoras()
       impressora = lista[0]
     }
-    if (!impressora) { imprimirTalaoNavegador(dados, vias); return { ok: true } }
+    if (!impressora) return imprimirTalaoNavegador(dados, vias)
 
     const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
     if (vias === 1) {
@@ -349,7 +349,61 @@ export async function imprimirTalaoCrediario(
     return { ok: true }
   } catch (e: any) {
     console.error('Erro impressão talão:', e)
-    imprimirTalaoNavegador(dados, vias)
+    return imprimirTalaoNavegador(dados, vias)
+  }
+}
+
+// ─── CUPOM + TALÃO UNIFICADOS ──────────────────────────────
+
+// Abre UMA janela com cupom e talão separados por page-break,
+// eliminando a corrida entre duas janelas e dois diálogos de impressão.
+export async function imprimirCupomETalao(
+  cupom: DadosRecibo,
+  talao: DadosTalaoCrediario,
+  nomeImpressora?: string,
+  viasCupom: 1 | 2 = 1,
+  viasTalao: 1 | 2 = 1
+): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const qzOk = await conectarQZ()
+    if (!qzOk) {
+      const corpo = htmlCupom(cupom, viasCupom) +
+        `<div style="page-break-before:always"></div>` +
+        htmlTalao(talao, viasTalao)
+      return abrirJanelaBrowser(corpo, `Cupom + Talão #${cupom.codVenda}`)
+    }
+
+    let impressora = nomeImpressora
+    if (!impressora) {
+      const lista = await listarImpressoras()
+      impressora = lista[0]
+    }
+    if (!impressora) {
+      const corpo = htmlCupom(cupom, viasCupom) +
+        `<div style="page-break-before:always"></div>` +
+        htmlTalao(talao, viasTalao)
+      return abrirJanelaBrowser(corpo, `Cupom + Talão #${cupom.codVenda}`)
+    }
+
+    const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
+    if (viasCupom === 1) {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(cupom) }])
+    } else {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(cupom, 'VIA DO CLIENTE') }])
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(cupom, 'VIA DA LOJA') }])
+    }
+    if (viasTalao === 1) {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(talao) }])
+    } else {
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(talao, 'VIA DO CLIENTE') }])
+      await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(talao, 'VIA DA LOJA') }])
+    }
     return { ok: true }
+  } catch (e: any) {
+    console.error('Erro impressão cupom+talão:', e)
+    const corpo = htmlCupom(cupom, viasCupom) +
+      `<div style="page-break-before:always"></div>` +
+      htmlTalao(talao, viasTalao)
+    return abrirJanelaBrowser(corpo, `Cupom + Talão #${cupom.codVenda}`)
   }
 }

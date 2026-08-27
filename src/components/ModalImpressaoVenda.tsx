@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { Printer } from 'lucide-react'
-import { DadosRecibo, DadosTalaoCrediario, imprimirRecibo, imprimirTalaoCrediario } from '@/lib/impressora'
+import { Printer, AlertTriangle } from 'lucide-react'
+import { DadosRecibo, DadosTalaoCrediario, imprimirRecibo, imprimirCupomETalao } from '@/lib/impressora'
 
 interface Props {
   dadosCupom: DadosRecibo
@@ -14,21 +14,31 @@ export default function ModalImpressaoVenda({ dadosCupom, dadosTalao, titulo = '
   const [viasCupom, setViasCupom]   = useState<1 | 2>(1)
   const [viasTalao, setViasTalao]   = useState<1 | 2>(1)
   const [imprimindo, setImprimindo] = useState(false)
+  const [erro, setErro]             = useState<string | null>(null)
 
   async function executarImpressao(vias: 1 | 2) {
     setImprimindo(true)
-    await imprimirRecibo(dadosCupom, undefined, vias)
+    setErro(null)
+    const res = await imprimirRecibo(dadosCupom, undefined, vias)
     setImprimindo(false)
+    if (!res.ok) {
+      setErro(res.erro ?? 'Erro ao imprimir.')
+      return
+    }
     onClose()
   }
 
   async function executarImpressaoCompleta() {
     setImprimindo(true)
-    await imprimirRecibo(dadosCupom, undefined, viasCupom)
-    if (dadosTalao) {
-      await imprimirTalaoCrediario(dadosTalao, undefined, viasTalao)
-    }
+    setErro(null)
+    const res = dadosTalao
+      ? await imprimirCupomETalao(dadosCupom, dadosTalao, undefined, viasCupom, viasTalao)
+      : await imprimirRecibo(dadosCupom, undefined, viasCupom)
     setImprimindo(false)
+    if (!res.ok) {
+      setErro(res.erro ?? 'Erro ao imprimir.')
+      return
+    }
     onClose()
   }
 
@@ -66,6 +76,13 @@ export default function ModalImpressaoVenda({ dadosCupom, dadosTalao, titulo = '
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Pedido #{dadosCupom.codVenda}</div>
           </div>
         </div>
+
+        {erro && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(220,38,38,0.08)', border: '1.5px solid rgba(220,38,38,0.3)', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
+            <AlertTriangle size={15} color="#DC2626" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span style={{ fontSize: 12, color: '#DC2626', lineHeight: 1.5 }}>{erro}</span>
+          </div>
+        )}
 
         {/* Modo simples: sem talão */}
         {!dadosTalao && (
