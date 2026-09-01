@@ -1,6 +1,7 @@
 // src/app/whatsapp/page.tsx
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
@@ -205,6 +206,7 @@ function ModalQR({ onClose }: any) {
 
 // ─── WHATSAPP PRINCIPAL ───────────────────────────────────
 export default function WhatsAppPage() {
+  const router = useRouter()
   const [aba, setAba]             = useState<'conexao' | 'modelos' | 'disparos' | 'logs'>('conexao')
   const [data, setData]           = useState<any>(null)
   const [pendentes, setPendentes] = useState<any>(null)
@@ -274,8 +276,22 @@ export default function WhatsAppPage() {
 
         {/* HEADER */}
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>WhatsApp</h1>
-          <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Mensagens automáticas e manuais</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 700, color: '#332F3A' }}>WhatsApp</h1>
+              <p style={{ color: 'var(--gold-dim)', fontSize: 13, marginTop: 4 }}>Mensagens automáticas e manuais</p>
+            </div>
+            <button
+              onClick={() => router.push('/whatsapp/optin')}
+              style={{
+                background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)',
+                borderRadius: 12, padding: '8px 16px', cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, color: '#8A7030',
+              }}
+            >
+              Gerenciar opt-in marketing
+            </button>
+          </div>
         </div>
 
         {feedback && (
