@@ -1,8 +1,15 @@
 // src/app/whatsapp/page.tsx
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+
+declare global {
+  interface Window {
+    FB: any
+    fbAsyncInit: () => void
+  }
+}
 
 const BRL = (v: number) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '—'
 const fmtDT = (d: string) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -204,6 +211,171 @@ function ModalQR({ onClose }: any) {
   )
 }
 
+// ─── CONECTOR META OFICIAL (Embedded Signup) ─────────────
+function ConectorMetaOficial() {
+  const [estado, setEstado]       = useState<'idle'|'abrindo'|'trocando'|'ok'|'erro'>('idle')
+  const [erro, setErro]           = useState('')
+  const [resultado, setResultado] = useState<{phone_number_id:string;waba_id:string;expires_at:string}|null>(null)
+  const dadosCapturados           = useRef<{phone_number_id?:string;waba_id?:string}>({})
+
+  // Carrega o FB SDK uma única vez
+  useEffect(() => {
+    if (window.FB || document.getElementById('fb-sdk')) return
+    window.fbAsyncInit = () => {
+      window.FB.init({ appId: '965760143217209', autoLogAppEvents: true, xfbml: true, version: 'v20.0' })
+    }
+    const s = document.createElement('script')
+    s.id = 'fb-sdk'
+    s.src = 'https://connect.facebook.net/pt_BR/sdk.js'
+    s.async = true; s.defer = true
+    document.body.appendChild(s)
+  }, [])
+
+  // Captura phone_number_id e waba_id vindos do popup
+  useEffect(() => {
+    const handler = (ev: MessageEvent) => {
+      if (!ev.origin.endsWith('facebook.com')) return
+      try {
+        const parsed = JSON.parse(ev.data)
+        if (parsed.type !== 'WA_EMBEDDED_SIGNUP') return
+        if (parsed.event === 'FINISH' || parsed.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') {
+          dadosCapturados.current = {
+            phone_number_id: parsed.data?.phone_number_id,
+            waba_id:         parsed.data?.waba_id,
+          }
+        } else if (parsed.event === 'ERROR') {
+          setEstado('erro')
+          setErro(parsed.data?.error_message || 'Erro reportado pelo popup do WhatsApp.')
+        }
+      } catch {}
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
+
+  // Aguarda até 2s (10 × 200ms) pela chegada dos dados do popup
+  function aguardarDados(): Promise<{phone_number_id?:string;waba_id?:string}> {
+    return new Promise(resolve => {
+      if (dadosCapturados.current.phone_number_id) { resolve(dadosCapturados.current); return }
+      let tentativas = 0
+      const timer = setInterval(() => {
+        tentativas++
+        if (dadosCapturados.current.phone_number_id || tentativas >= 10) {
+          clearInterval(timer)
+          resolve(dadosCapturados.current)
+        }
+      }, 200)
+    })
+  }
+
+  async function conectar() {
+    if (!window.FB) {
+      setEstado('erro')
+      setErro('SDK do Facebook ainda está carregando. Aguarde alguns segundos e tente novamente.')
+      return
+    }
+    setEstado('abrindo')
+    setErro('')
+    dadosCapturados.current = {}
+
+    window.FB.login(async (response: any) => {
+      // Nunca falha em silêncio — código ausente = erro explícito
+      if (!response.authResponse?.code) {
+        setEstado('erro')
+        setErro('Login cancelado ou não concluído. Tente novamente.')
+        return
+      }
+
+      const code = response.authResponse.code
+      setEstado('trocando')
+
+      // Tolera até 2s de atraso na chegada do evento WA_EMBEDDED_SIGNUP
+      const dados = await aguardarDados()
+
+      if (!dados.phone_number_id || !dados.waba_id) {
+        setEstado('erro')
+        setErro('Dados do WhatsApp não capturados após o popup. Complete todo o fluxo antes de fechar.')
+        return
+      }
+
+      try {
+        const res  = await fetch('/api/whatsapp/meta-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, phone_number_id: dados.phone_number_id, waba_id: dados.waba_id }),
+        })
+        const json = await res.json()
+        if (json.ok) {
+          setEstado('ok')
+          setResultado(json)
+        } else {
+          setEstado('erro')
+          setErro(json.erro || 'Erro desconhecido ao salvar configuração.')
+        }
+      } catch (e: any) {
+        setEstado('erro')
+        setErro(e.message)
+      }
+    }, {
+      config_id:                      '1550930079689332',
+      response_type:                  'code',
+      override_default_response_type: true,
+      extras: {
+        setup:              {},
+        featureType:        'whatsapp_business_app_onboarding',
+        sessionInfoVersion: '3',
+      },
+    })
+  }
+
+  return (
+    <div className="card" style={{ borderColor: 'rgba(76,175,130,0.2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(76,175,130,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🟢</div>
+        <div>
+          <div style={{ fontSize: 15, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#332F3A' }}>API Oficial Meta</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Conecte via Embedded Signup — com suporte a Coexistência</div>
+        </div>
+      </div>
+
+      {estado === 'idle' && (
+        <button className="btn btn-primary" onClick={conectar}
+          style={{ padding: '10px 22px', fontSize: 13, background: 'linear-gradient(135deg, #25D366, #128C7E)' }}>
+          Conectar via API oficial →
+        </button>
+      )}
+      {estado === 'abrindo' && (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: '8px 0' }}>
+          Popup da Meta aberto — conclua o fluxo de autorização...
+        </div>
+      )}
+      {estado === 'trocando' && (
+        <div style={{ fontSize: 13, color: '#C9A84C', padding: '8px 0' }}>Salvando credenciais...</div>
+      )}
+      {estado === 'ok' && resultado && (
+        <div style={{ background: 'rgba(76,175,130,0.08)', border: '1px solid rgba(76,175,130,0.2)', borderRadius: 10, padding: '14px 16px' }}>
+          <div style={{ color: '#4CAF82', fontWeight: 700, fontSize: 14, marginBottom: 10 }}>✓ Conta conectada com sucesso</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace', lineHeight: 1.8 }}>
+            Phone ID: {resultado.phone_number_id}<br />
+            WABA ID: {resultado.waba_id}<br />
+            Token válido até: {new Date(resultado.expires_at).toLocaleDateString('pt-BR')}
+          </div>
+        </div>
+      )}
+      {estado === 'erro' && (
+        <div style={{ background: 'rgba(229,88,74,0.08)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 10, padding: '14px 16px' }}>
+          <div style={{ color: '#E5584A', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>✕ Erro na conexão</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>{erro}</div>
+          <button className="btn btn-ghost" onClick={() => { setEstado('idle'); setErro('') }}
+            style={{ padding: '6px 14px', fontSize: 12 }}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── WHATSAPP PRINCIPAL ───────────────────────────────────
 export default function WhatsAppPage() {
   const router = useRouter()
@@ -322,6 +494,8 @@ export default function WhatsAppPage() {
           aba === 'conexao' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 600 }}>
               <StatusConexao status={data?.status} onConectar={() => setMostrarQR(true)} />
+
+              <ConectorMetaOficial />
 
               <div className="card">
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#332F3A', marginBottom: 14 }}>Como funciona</h3>
