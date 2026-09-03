@@ -278,8 +278,9 @@ function ConectorMetaOficial() {
     setErro('')
     dadosCapturados.current = {}
 
-    window.FB.login(async (response: any) => {
-      // Nunca falha em silêncio — código ausente = erro explícito
+    // FB SDK rejeita callbacks async (verifica fn.constructor.name === 'AsyncFunction').
+    // Solução: callback síncrono que dispara uma função async separada (fire-and-forget).
+    async function processarResposta(response: any) {
       if (!response.authResponse?.code) {
         setEstado('erro')
         setErro('Login cancelado ou não concluído. Tente novamente.')
@@ -289,7 +290,6 @@ function ConectorMetaOficial() {
       const code = response.authResponse.code
       setEstado('trocando')
 
-      // Tolera até 2s de atraso na chegada do evento WA_EMBEDDED_SIGNUP
       const dados = await aguardarDados()
 
       if (!dados.phone_number_id || !dados.waba_id) {
@@ -316,6 +316,10 @@ function ConectorMetaOficial() {
         setEstado('erro')
         setErro(e.message)
       }
+    }
+
+    window.FB.login((response: any) => {
+      processarResposta(response)
     }, {
       config_id:                      '1550930079689332',
       response_type:                  'code',
