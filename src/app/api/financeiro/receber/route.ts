@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   // Atualiza conta a receber
   const novoValorPago = (Number(conta.valor_pago) || 0) + valor_recebido
-  await supabase.from('contas_a_receber').update({
+  const { error: errUpdate } = await supabase.from('contas_a_receber').update({
     pago:                   quitado,
     status:                 quitado ? 'Pago' : 'Pago Parcial',
     juros:                  (Number(conta.juros) || 0) + juros,
@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
     valor_pago:             novoValorPago,
     parcialmente_pago:      !quitado,
   }).eq('id', cod_conta)
+
+  if (errUpdate) return NextResponse.json({ erro: 'Erro ao atualizar conta: ' + errUpdate.message }, { status: 500 })
 
   // Fluxo de caixa
   await supabase.from('fluxo_caixa').insert({

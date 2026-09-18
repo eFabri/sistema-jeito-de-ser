@@ -256,6 +256,15 @@ export default function CaixaPage() {
       byForma[p.forma].total += Number(p.valor)
       byForma[p.forma].count++
     }
+
+    // Vendas sem registros em vendas_pagamento ficam fora do byForma mas dentro do totalVendas.
+    // Exibi-las como "Sem forma registrada" garante que o breakdown sempre feche com o total.
+    const vendasSemPgto = vendas.filter((v: any) => !v.vendas_pagamento?.length)
+    const totalSemPgto  = vendasSemPgto.reduce((s: number, v: any) => s + Number(v.valor_total), 0)
+    if (totalSemPgto > 0.01) {
+      byForma['Sem forma registrada'] = { total: totalSemPgto, count: vendasSemPgto.length }
+    }
+
     const ORDEM = ['Dinheiro', 'Crediário', 'PIX', 'Cartão', 'Boleto', 'Depósito']
     const formasOrdenadas = ORDEM.filter(f => byForma[f]).concat(
       Object.keys(byForma).filter(f => !ORDEM.includes(f))

@@ -356,17 +356,23 @@ export default function ContasReceberPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams({ aba: 'receber', filtro, q: busca, pagina: String(pagina), limite: String(limite) })
-    const [res, res2] = await Promise.all([
-      fetch(`/api/financeiro?${params}`, { cache: 'no-store' }),
-      fetch('/api/financeiro?aba=resumo_receber', { cache: 'no-store' }),
-    ])
-    const d  = await res.json()
-    const r  = await res2.json()
-    setContas(d.contas || [])
-    setTotal(d.total || 0)
-    setResumo(r)
-    setLoading(false)
+    try {
+      const params = new URLSearchParams({ aba: 'receber', filtro, q: busca, pagina: String(pagina), limite: String(limite) })
+      const [res, res2] = await Promise.all([
+        fetch(`/api/financeiro?${params}`, { cache: 'no-store' }),
+        fetch('/api/financeiro?aba=resumo_receber', { cache: 'no-store' }),
+      ])
+      const d = await res.json()
+      const r = await res2.json()
+      setContas(d.contas || [])
+      setTotal(d.total || 0)
+      setResumo(r)
+    } catch {
+      setContas([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
   }, [filtro, busca, pagina])
 
   useEffect(() => { carregar() }, [carregar])

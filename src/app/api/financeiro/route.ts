@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (q) {
-      const { data: clis } = await supabase.from('clientes').select('id').ilike('nome', `%${q}%`)
+      const { data: clis } = await supabase.from('clientes').select('id').ilike('nome', `%${q}%`).limit(100)
       const ids = (clis || []).map((c: any) => c.id)
       if (ids.length > 0) query = query.in('cod_cliente', ids)
       else return NextResponse.json({ contas: [], total: 0 })
