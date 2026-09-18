@@ -353,6 +353,53 @@ export async function imprimirTalaoCrediario(
   }
 }
 
+// ─── IMPRESSÃO SELETIVA (checkboxes) ──────────────────────
+
+export interface OpcaoImpressao {
+  notaFiscal: boolean       // via da loja do cupom
+  canhotoVenda: boolean     // via do cliente do cupom
+  canhotoCrediario: boolean // talão de crediário
+}
+
+function htmlSeletivo(cupom: DadosRecibo, talao: DadosTalaoCrediario | undefined, opcoes: OpcaoImpressao): string {
+  function esc(s: string) {
+    return stripEscPos(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+  const partes: string[] = []
+  if (opcoes.canhotoVenda)                   partes.push(`<pre>${esc(montarTextoRecibo(cupom, 'VIA DO CLIENTE'))}</pre>`)
+  if (opcoes.notaFiscal)                     partes.push(`<pre>${esc(montarTextoRecibo(cupom, 'VIA DA LOJA'))}</pre>`)
+  if (opcoes.canhotoCrediario && talao)      partes.push(`<pre>${esc(montarTalaoCrediario(talao, 'VIA DO CLIENTE'))}</pre>`)
+  return partes.join('<div style="page-break-before:always"></div>')
+}
+
+export async function imprimirSeletivo(
+  cupom: DadosRecibo,
+  talao: DadosTalaoCrediario | undefined,
+  opcoes: OpcaoImpressao,
+  nomeImpressora?: string
+): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const qzOk = await conectarQZ()
+    if (!qzOk) return abrirJanelaBrowser(htmlSeletivo(cupom, talao, opcoes), `Venda #${cupom.codVenda}`)
+
+    let impressora = nomeImpressora
+    if (!impressora) {
+      const lista = await listarImpressoras()
+      impressora = lista[0]
+    }
+    if (!impressora) return abrirJanelaBrowser(htmlSeletivo(cupom, talao, opcoes), `Venda #${cupom.codVenda}`)
+
+    const config = window.qz.configs.create(impressora, { encoding: 'Cp1252' })
+    if (opcoes.canhotoVenda)              await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(cupom, 'VIA DO CLIENTE') }])
+    if (opcoes.notaFiscal)                await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTextoRecibo(cupom, 'VIA DA LOJA') }])
+    if (opcoes.canhotoCrediario && talao) await window.qz.print(config, [{ type: 'raw', format: 'plain', data: montarTalaoCrediario(talao, 'VIA DO CLIENTE') }])
+    return { ok: true }
+  } catch (e: any) {
+    console.error('Erro impressão seletiva:', e)
+    return abrirJanelaBrowser(htmlSeletivo(cupom, talao, opcoes), `Venda #${cupom.codVenda}`)
+  }
+}
+
 // ─── CUPOM + TALÃO UNIFICADOS ──────────────────────────────
 
 // Abre UMA janela com cupom e talão separados por page-break,

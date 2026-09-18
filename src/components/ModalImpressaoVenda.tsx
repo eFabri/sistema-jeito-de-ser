@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Printer, AlertTriangle } from 'lucide-react'
-import { DadosRecibo, DadosTalaoCrediario, imprimirRecibo, imprimirCupomETalao } from '@/lib/impressora'
+import { DadosRecibo, DadosTalaoCrediario, OpcaoImpressao, imprimirSeletivo } from '@/lib/impressora'
 
 interface Props {
   dadosCupom: DadosRecibo
@@ -11,15 +11,24 @@ interface Props {
 }
 
 export default function ModalImpressaoVenda({ dadosCupom, dadosTalao, titulo = 'Imprimir', onClose }: Props) {
-  const [viasCupom, setViasCupom]   = useState<1 | 2>(1)
-  const [viasTalao, setViasTalao]   = useState<1 | 2>(1)
+  const [opcoes, setOpcoes] = useState<OpcaoImpressao>({
+    notaFiscal:       true,
+    canhotoVenda:     true,
+    canhotoCrediario: !!dadosTalao,
+  })
   const [imprimindo, setImprimindo] = useState(false)
   const [erro, setErro]             = useState<string | null>(null)
 
-  async function executarImpressao(vias: 1 | 2) {
+  const nenhumMarcado = !opcoes.notaFiscal && !opcoes.canhotoVenda && !(opcoes.canhotoCrediario && !!dadosTalao)
+
+  function toggle(campo: keyof OpcaoImpressao) {
+    setOpcoes(prev => ({ ...prev, [campo]: !prev[campo] }))
+  }
+
+  async function executarImpressao() {
     setImprimindo(true)
     setErro(null)
-    const res = await imprimirRecibo(dadosCupom, undefined, vias)
+    const res = await imprimirSeletivo(dadosCupom, dadosTalao, opcoes)
     setImprimindo(false)
     if (!res.ok) {
       setErro(res.erro ?? 'Erro ao imprimir.')
@@ -28,45 +37,42 @@ export default function ModalImpressaoVenda({ dadosCupom, dadosTalao, titulo = '
     onClose()
   }
 
-  async function executarImpressaoCompleta() {
-    setImprimindo(true)
-    setErro(null)
-    const res = dadosTalao
-      ? await imprimirCupomETalao(dadosCupom, dadosTalao, undefined, viasCupom, viasTalao)
-      : await imprimirRecibo(dadosCupom, undefined, viasCupom)
-    setImprimindo(false)
-    if (!res.ok) {
-      setErro(res.erro ?? 'Erro ao imprimir.')
-      return
-    }
-    onClose()
-  }
-
-  const btnVia = (ativo: boolean, label: string, onClick: () => void) => (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '8px 18px',
-        borderRadius: 8,
-        border: `1.5px solid ${ativo ? 'rgba(201,168,76,0.7)' : 'rgba(201,168,76,0.2)'}`,
-        background: ativo ? 'rgba(201,168,76,0.12)' : 'transparent',
-        color: ativo ? '#C9A84C' : 'var(--text-muted)',
-        fontWeight: ativo ? 700 : 400,
-        cursor: 'pointer',
-        fontSize: 13,
+  function CheckItem({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: () => void; disabled?: boolean }) {
+    return (
+      <label style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        cursor: disabled ? 'default' : 'pointer',
+        padding: '10px 14px', borderRadius: 8,
+        border: `1.5px solid ${checked && !disabled ? 'rgba(201,168,76,0.4)' : 'rgba(0,0,0,0.08)'}`,
+        background: checked && !disabled ? 'rgba(201,168,76,0.06)' : 'transparent',
+        opacity: disabled ? 0.4 : 1,
         transition: 'all 0.15s',
-      }}
-    >
-      {label}
-    </button>
-  )
+        userSelect: 'none',
+      }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          disabled={disabled}
+          style={{ width: 16, height: 16, accentColor: '#C9A84C', cursor: disabled ? 'default' : 'pointer', flexShrink: 0 }}
+        />
+        <span style={{
+          fontSize: 13,
+          color: checked && !disabled ? '#C9A84C' : 'var(--text-secondary)',
+          fontWeight: checked && !disabled ? 600 : 400,
+        }}>
+          {label}
+        </span>
+      </label>
+    )
+  }
 
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
       style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,75,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' }}
     >
-      <div className="card" style={{ width: '100%', maxWidth: 440, padding: 28 }}>
+      <div className="card" style={{ width: '100%', maxWidth: 420, padding: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Printer size={18} color="#C9A84C" strokeWidth={1.8} />
@@ -84,74 +90,39 @@ export default function ModalImpressaoVenda({ dadosCupom, dadosTalao, titulo = '
           </div>
         )}
 
-        {/* Modo simples: sem talão */}
-        {!dadosTalao && (
-          <>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>Quantas vias deseja imprimir?</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={imprimindo}>
-                Cancelar
-              </button>
-              <button
-                className="btn btn-ghost"
-                style={{ flex: 1, borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C' }}
-                onClick={() => executarImpressao(1)}
-                disabled={imprimindo}
-              >
-                <Printer size={13} strokeWidth={1.8} /> {imprimindo ? 'Imprimindo...' : '1 Via'}
-              </button>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1 }}
-                onClick={() => executarImpressao(2)}
-                disabled={imprimindo}
-              >
-                <Printer size={13} strokeWidth={1.8} /> {imprimindo ? 'Imprimindo...' : '2 Vias'}
-              </button>
-            </div>
-          </>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <CheckItem
+            label="Nota fiscal / Recibo"
+            checked={opcoes.notaFiscal}
+            onChange={() => toggle('notaFiscal')}
+          />
+          <CheckItem
+            label="Canhoto de venda (via cliente)"
+            checked={opcoes.canhotoVenda}
+            onChange={() => toggle('canhotoVenda')}
+          />
+          <CheckItem
+            label="Canhoto de crediário"
+            checked={opcoes.canhotoCrediario}
+            onChange={() => toggle('canhotoCrediario')}
+            disabled={!dadosTalao}
+          />
+        </div>
 
-        {/* Modo complexo: com talão de crediário */}
-        {dadosTalao && (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Cupom de venda:
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {btnVia(viasCupom === 1, '1 Via', () => setViasCupom(1))}
-                  {btnVia(viasCupom === 2, '2 Vias', () => setViasCupom(2))}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Talão de crediário:
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {btnVia(viasTalao === 1, '1 Via', () => setViasTalao(1))}
-                  {btnVia(viasTalao === 2, '2 Vias', () => setViasTalao(2))}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={imprimindo}>
-                Cancelar
-              </button>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                onClick={executarImpressaoCompleta}
-                disabled={imprimindo}
-              >
-                <Printer size={13} strokeWidth={1.8} />
-                {imprimindo ? 'Imprimindo...' : 'Imprimir'}
-              </button>
-            </div>
-          </>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={imprimindo}>
+            Cancelar
+          </button>
+          <button
+            className="btn btn-primary"
+            style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            onClick={executarImpressao}
+            disabled={imprimindo || nenhumMarcado}
+          >
+            <Printer size={13} strokeWidth={1.8} />
+            {imprimindo ? 'Imprimindo...' : 'Imprimir'}
+          </button>
+        </div>
       </div>
     </div>
   )
