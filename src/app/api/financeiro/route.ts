@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .from('contas_a_receber')
       .select(`
         id, cod_cliente, cod_venda, parcela,
-        data_vencimento, data_lancamento, valor, juros,
+        data_vencimento, data_lancamento, data_recebimento, valor, juros,
         saldo_devedor, saldo_devedor_original, valor_pago, parcialmente_pago,
         status, pago, inadimplente, historico,
         clientes!cod_cliente(id, nome, celular, whatsapp)
@@ -131,6 +131,50 @@ export async function GET(req: NextRequest) {
       proximos_7:  agg(prox7.data || []),
       badge:       (venc.data || []).length + (hj.data || []).length,
     })
+  }
+
+  // ─── RESUMO POR CLIENTE (painel lateral em Contas a Receber) ─
+  if (aba === 'resumo_cliente') {
+    const qStr = q
+    if (!qStr) return NextResponse.json({ resumo: null })
+
+    const { data: clis } = await supabase.from('clientes').select('id').ilike('nome', `%${qStr}%`).limit(10)
+    const ids = (clis || []).map((c: any) => c.id)
+    if (!ids.length) return NextResponse.json({ resumo: null })
+
+    const { data: contas } = await supabase
+      .from('contas_a_receber')
+      .select('valor, saldo_devedor_original, parcialmente_pago, data_vencimento')
+      .in('cod_cliente', ids)
+      .eq('pago', false)
+
+    const saldoFn  = (c: any) => c.parcialmente_pago ? Number(c.saldo_devedor_original || c.valor) : Number(c.valor)
+    const todas    = contas || []
+    const totalAberto  = todas.reduce((s, c) => s + saldoFn(c), 0)
+    const totalVencido = todas.filter(c => c.data_vencimento < hoje).reduce((s, c) => s + saldoFn(c), 0)
+
+    // Breakdown por mês — só parcelas com vencimento >= hoje (vencidas já estão em totalVencido)
+    const [anoHj, mesHj] = hoje.split('-').map(Number)
+    const porMes: Record<string, { mes: string; total: number; count: number }> = {}
+    for (const c of todas) {
+      if (c.data_vencimento < hoje) continue
+      const [anoV, mesV] = c.data_vencimento.split('-').map(Number)
+      const diffMeses = (anoV - anoHj) * 12 + mesV - mesHj
+      if (diffMeses < 0 || diffMeses > 5) continue
+      const key = `${anoV}-${String(mesV).padStart(2, '0')}`
+      if (!porMes[key]) {
+        const nomeMes = new Date(anoV, mesV - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+        porMes[key] = { mes: nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1), total: 0, count: 0 }
+      }
+      porMes[key].total += saldoFn(c)
+      porMes[key].count++
+    }
+
+    const meses = Object.entries(porMes)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v)
+
+    return NextResponse.json({ resumo: { totalAberto, totalVencido, meses } })
   }
 
   // ─── RESUMO GERAL ──────────────────────────────────────

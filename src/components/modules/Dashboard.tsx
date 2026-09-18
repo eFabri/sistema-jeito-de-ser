@@ -599,6 +599,9 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* ─── CLIENTES CADASTRADOS HOJE ──────────────────────── */}
+      <SecaoClientesHoje />
+
       {/* ─── MENSAGENS AUTOMÁTICAS HOJE ─────────────────────── */}
       <SecaoWhatsAppHoje />
 
@@ -736,6 +739,147 @@ function statusIcon(status: string) {
   if (status === 'sem_whatsapp')                 return { icon: '⚪', cor: 'var(--text-muted)' }
   if (status === 'erro' || status === 'erro_interno') return { icon: '❌', cor: 'var(--danger)' }
   return { icon: '—', cor: 'var(--text-muted)' }
+}
+
+// ─── CLIENTES CADASTRADOS HOJE ───────────────────────────────
+function SecaoClientesHoje() {
+  const router = useRouter()
+  const [clientes, setClientes] = useState<any[]>([])
+  const [encaminhados, setEncaminhados] = useState<any[]>([])
+  const [colapsado, setColapsado] = useState(false)
+  const [carregando, setCarregando] = useState(true)
+
+  async function carregar() {
+    try {
+      const res = await fetch('/api/dashboard/clientes-dia', { cache: 'no-store' })
+      const d   = await res.json()
+      const todos = d.clientes || []
+      setClientes(todos.filter((c: any) => !c.encaminhado_em))
+      setEncaminhados(todos.filter((c: any) => !!c.encaminhado_em))
+    } catch {}
+    setCarregando(false)
+  }
+
+  useEffect(() => { carregar() }, [])
+
+  async function encaminhar(id: number) {
+    await fetch('/api/dashboard/clientes-dia', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, acao: 'encaminhar' }),
+    })
+    carregar()
+  }
+
+  async function dispararAcao(id: number, acao: string) {
+    await fetch('/api/dashboard/clientes-dia', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, acao }),
+    })
+    carregar()
+  }
+
+  if (carregando) return null
+  if (clientes.length === 0 && encaminhados.length === 0) return null
+
+  const fone = (c: any) => c.celular || c.whatsapp || '—'
+  const acoesEncaminhado = (c: any): string[] => (c.acoes_disparadas || []).map((a: any) => a.acao)
+
+  return (
+    <div className="card" style={{ padding: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 20 }}>🆕</span>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              Clientes de Hoje
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {clientes.length + encaminhados.length} cadastrado{clientes.length + encaminhados.length !== 1 ? 's' : ''} hoje
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pendentes de encaminhamento */}
+      {clientes.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: encaminhados.length > 0 ? 14 : 0 }}>
+          {clientes.map(c => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  onClick={() => router.push(`/clientes/${c.id}`)}>
+                  {c.nome}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fone(c)}</div>
+              </div>
+              <button
+                onClick={() => encaminhar(c.id)}
+                style={{ padding: '5px 12px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: '1px solid rgba(76,175,130,0.4)', background: 'rgba(76,175,130,0.1)', color: '#4CAF82', cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                Encaminhar
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: encaminhados.length > 0 ? 14 : 0 }}>
+          Todos os clientes já foram encaminhados.
+        </div>
+      )}
+
+      {/* Encaminhados */}
+      {encaminhados.length > 0 && (
+        <div>
+          <button
+            onClick={() => setColapsado(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, padding: '4px 0', marginBottom: 8 }}>
+            {colapsado ? '▶' : '▼'} Encaminhados hoje ({encaminhados.length})
+          </button>
+          {!colapsado && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {encaminhados.map(c => {
+                const feitas = acoesEncaminhado(c)
+                return (
+                  <div key={c.id} style={{ padding: '10px 12px', background: 'rgba(76,175,130,0.04)', border: '1px solid rgba(76,175,130,0.15)', borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}
+                          onClick={() => router.push(`/clientes/${c.id}`)}>
+                          {c.nome}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fone(c)}</div>
+                      </div>
+                      <span style={{ fontSize: 10, color: '#4CAF82', fontWeight: 700, background: 'rgba(76,175,130,0.1)', border: '1px solid rgba(76,175,130,0.3)', borderRadius: 99, padding: '2px 8px' }}>✓ Encaminhado</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+                      {[
+                        { id: 'boas-vindas',          label: 'Boas-vindas' },
+                        { id: 'gostou-da-compra',     label: 'Gostou da compra' },
+                        { id: 'oferta-segunda-compra', label: 'Oferta 2ª compra' },
+                      ].map(a => (
+                        <button key={a.id}
+                          onClick={() => !feitas.includes(a.id) && dispararAcao(c.id, a.id)}
+                          style={{
+                            padding: '4px 10px', fontSize: 10, borderRadius: 6, cursor: feitas.includes(a.id) ? 'default' : 'pointer',
+                            border: `1px solid ${feitas.includes(a.id) ? 'rgba(76,175,130,0.3)' : 'rgba(201,168,76,0.3)'}`,
+                            background: feitas.includes(a.id) ? 'rgba(76,175,130,0.1)' : 'rgba(201,168,76,0.08)',
+                            color: feitas.includes(a.id) ? '#4CAF82' : '#C9A84C',
+                            fontWeight: 600,
+                          }}>
+                          {feitas.includes(a.id) ? '✓ ' : ''}{a.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function SecaoWhatsAppHoje() {

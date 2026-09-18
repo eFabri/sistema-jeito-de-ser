@@ -9,7 +9,7 @@ import {
   Wallet, Receipt, CreditCard, ShoppingCart, RefreshCw,
   BarChart3, MessageCircle, UserCog, Settings, AlertCircle,
   ChevronLeft, ChevronRight, AlertTriangle, ArrowLeft, LogOut,
-  Banknote,
+  Banknote, FileSpreadsheet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import PageTransition from '@/components/layout/PageTransition'
@@ -36,6 +36,7 @@ const NAV: NavItem[] = [
   { id: '/compras',          label: 'Compras',          Icon: ShoppingCart,    permissao: 'ver_compras',      grupo: 'operacao' },
   { id: '/trocas',           label: 'Trocas',           Icon: RefreshCw,       permissao: 'ver_trocas',       grupo: 'operacao' },
   { id: '/relatorios',       label: 'Relatórios',       Icon: BarChart3,       permissao: 'ver_relatorios',   grupo: 'admin' },
+  { id: '/relatorio-vendas', label: 'Rel. de Vendas',   Icon: FileSpreadsheet, permissao: 'ver_relatorios',   grupo: 'admin' },
   { id: '/whatsapp',         label: 'WhatsApp',         Icon: MessageCircle,   permissao: 'ver_whatsapp',     grupo: 'admin' },
   { id: '/usuarios',         label: 'Usuários',         Icon: UserCog,         permissao: '__admin__',        grupo: 'admin' },
   { id: '/configuracoes',    label: 'Configurações',    Icon: Settings,        permissao: 'ver_configuracoes',grupo: 'admin' },

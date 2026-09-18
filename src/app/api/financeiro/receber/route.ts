@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     saldo_devedor_original: quitado ? 0 : novoSaldo,
     valor_pago:             novoValorPago,
     parcialmente_pago:      !quitado,
+    data_recebimento:       hoje,
   }).eq('id', cod_conta)
 
   if (errUpdate) return NextResponse.json({ erro: 'Erro ao atualizar conta: ' + errUpdate.message }, { status: 500 })

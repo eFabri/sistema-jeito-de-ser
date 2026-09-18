@@ -334,9 +334,10 @@ export default function ContasReceberPage() {
   const [q, setQ]             = useState('')
   const [busca, setBusca]     = useState('')
   const [pagina, setPagina]   = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [modal, setModal]     = useState<any>(null)
-  const [toast, setToast]     = useState('')
+  const [loading, setLoading]           = useState(true)
+  const [modal, setModal]               = useState<any>(null)
+  const [toast, setToast]               = useState('')
+  const [resumoCliente, setResumoCliente] = useState<any>(null)
   const hoje = dataHj()
   const limite = 50
 
@@ -378,6 +379,13 @@ export default function ContasReceberPage() {
   useEffect(() => { carregar() }, [carregar])
   useEffect(() => { const t = setTimeout(() => { setBusca(q); setPagina(1) }, 350); return () => clearTimeout(t) }, [q])
   useEffect(() => { setPagina(1) }, [filtro])
+  useEffect(() => {
+    if (busca.length < 2) { setResumoCliente(null); return }
+    fetch(`/api/financeiro?aba=resumo_cliente&q=${encodeURIComponent(busca)}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setResumoCliente(d.resumo || null))
+      .catch(() => {})
+  }, [busca])
 
   // Busca cliente para crediário avulso
   useEffect(() => {
@@ -646,6 +654,38 @@ export default function ContasReceberPage() {
           </div>
         </div>
 
+        {/* PAINEL DE RESUMO POR CLIENTE */}
+        {resumoCliente && busca.length >= 2 && (
+          <div className="card" style={{ padding: 18, borderLeft: '3px solid rgba(201,168,76,0.5)' }}>
+            <div style={{ fontSize: 11, color: 'var(--gold-dim)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+              Resumo financeiro · {busca}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: resumoCliente.meses?.length > 0 ? 16 : 0 }}>
+              <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 8, padding: '10px 14px' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total em aberto</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#C9A84C', marginTop: 2 }}>{BRL(resumoCliente.totalAberto)}</div>
+              </div>
+              <div style={{ background: 'rgba(229,88,74,0.06)', border: '1px solid rgba(229,88,74,0.2)', borderRadius: 8, padding: '10px 14px' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total vencido</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#E5584A', marginTop: 2 }}>{BRL(resumoCliente.totalVencido)}</div>
+              </div>
+            </div>
+            {resumoCliente.meses?.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Por mês a receber</div>
+                {resumoCliente.meses.map((m: any) => (
+                  <div key={m.mes} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(201,168,76,0.04)', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{m.mes}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#332F3A' }}>
+                      {BRL(m.total)} <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 11 }}>({m.count} parcela{m.count !== 1 ? 's' : ''})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TABELA */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {/* Header */}
@@ -683,6 +723,9 @@ export default function ContasReceberPage() {
                 <div>
                   <div style={{ fontSize: 13, color: atrasado ? '#E5584A' : '#332F3A', fontWeight: atrasado ? 600 : 400 }}>{fmtDt(c.data_vencimento)}</div>
                   {atrasado && <div style={{ fontSize: 10, color: '#E5584A' }}>{dias}d atraso</div>}
+                  {c.pago && c.data_recebimento && (
+                    <div style={{ fontSize: 10, color: '#4CAF82' }}>Recebido: {fmtDt(c.data_recebimento)}</div>
+                  )}
                 </div>
 
                 {/* Cliente */}
